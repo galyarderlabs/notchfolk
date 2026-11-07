@@ -6,6 +6,22 @@ All notable changes to Notchfolk are listed here. The format follows
 
 ## [Unreleased]
 
+### Documentation
+
+- **Spoken replies are written down.** The assistant guide says what **Speak the replies** needs, how a
+  router that names its voices in the model id takes them, why the answer comes back as MP3 and is
+  decoded with `ffmpeg`, and where to look when nothing is spoken; the README lists `ffmpeg` with the
+  voice assistant's requirements.
+
+## [1.2.5] - 2026-11-07
+
+### Fixed
+
+- **Speech is heard without a pause first.** The room's noise was the tenth percentile of every
+  chunk recorded, so a request that began at once filled the recording with the speaker's own
+  voice: the noise floor became that voice, and the threshold three times it, which nothing could
+  clear. The quietest tenth is averaged instead, so speaking straight away is heard as it is.
+
 ## [1.2.4] - 2026-11-07
 
 ### Fixed

@@ -133,9 +133,15 @@ pub async fn speak(
     text: &str,
 ) -> anyhow::Result<tokio::process::Child> {
     let url = url(base, path);
+    // A router that names its voices in the model id (ElevenLabs' `el/<model>/<voice>`) takes no
+    // separate voice: sending both leaves the model bare, which it answers with a gateway error.
+    let model = if voice.is_empty() || model.ends_with(voice) {
+        model.to_owned()
+    } else {
+        format!("{model}/{voice}")
+    };
     let request = serde_json::json!({
         "model": model,
-        "voice": voice,
         "input": text,
         "response_format": "wav",
     });
@@ -166,19 +172,42 @@ pub async fn speak(
     if spoken.is_empty() {
         bail!("the speech router answered without audio");
     }
-    let mut child = tokio::process::Command::new("pw-play")
-        .arg("-")
+    // Routers answer mp3 whatever was asked for, and `pw-play` reads only files it can open by
+    // name (libsndfile, not a pipe): ffmpeg decodes it into a WAV in the runtime dir, which plays.
+    let path = std::env::temp_dir().join(format!("notchfolk-said-{}.wav", std::process::id()));
+    let decoded = tokio::process::Command::new("ffmpeg")
+        .args(["-hide_banner", "-loglevel", "error", "-i", "pipe:0"])
+        .arg("-y")
+        .arg(&path)
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .kill_on_drop(true)
         .spawn()
+        .context("could not decode the spoken reply")?;
+    let mut decoder = decoded;
+    let mut decoder_in = decoder.stdin.take().expect("piped stdin");
+    // Decoding finishes before playing: libsndfile reads the header `ffmpeg` writes first, and a
+    // half-written file is not one.
+    if decoder_in.write_all(&spoken).await.is_ok() {
+        decoder_in.flush().await.ok();
+    }
+    drop(decoder_in);
+    let status = decoder.wait().await.context("could not decode the spoken reply")?;
+    if !status.success() {
+        bail!("the speech router's audio could not be decoded");
+    }
+    let mut child = tokio::process::Command::new("pw-play")
+        .arg(&path)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .kill_on_drop(true)
+        .spawn()
         .context("could not play the spoken reply")?;
-    let mut stdin = child.stdin.take().expect("piped stdin");
+    let cleanup = path.clone();
     tokio::spawn(async move {
-        if stdin.write_all(&spoken).await.is_ok() {
-            stdin.flush().await.ok();
-        }
+        let _ = tokio::time::sleep(std::time::Duration::from_secs(120)).await;
+        std::fs::remove_file(&cleanup).ok();
     });
     Ok(child)
 }

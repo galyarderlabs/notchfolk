@@ -90,9 +90,21 @@ after 10 minutes, and a command is stopped after 30.
    recording to the router's `/v1/audio/transcriptions`, with its base URL, model and API key set in
    Settings — nothing is assumed, not even the router; the key is kept in the desktop's secret store,
    never in a plain file. The endpoint paths (`audio/transcriptions`, `audio/speech`) are editable too, for a
-   router that names its own. **Speak the replies** does the same through `/v1/audio/speech`, so answers are spoken
-   as well as shown. Local Whisper takes over by itself when the router cannot be reached (or is
+   router that names its own. Local Whisper takes over by itself when the router cannot be reached (or is
    not configured), and **Local Whisper (offline)** in Settings makes it the only engine.
+
+   **Speak the replies** sends each answer to the router's `/v1/audio/speech` as well as showing it, so
+   the assistant answers out loud. It needs a text-to-speech model, a voice and the same API key as
+   speech recognition; with the model or the voice blank, nothing is spoken and the answer is only
+   shown. The model and the voice are the router's own names, and a router that names its voices in
+   the model id takes them as one: `el/eleven_multilingual_v2` with voice `hpp4J3VqNfWAUOO0d1Us` is
+   sent as `el/eleven_multilingual_v2/hpp4J3VqNfWAUOO0d1Us`, which is what ElevenLabs-shaped routers
+   expect. What comes back is usually MP3 whatever was asked for, so Notchfolk decodes it with
+   `ffmpeg` into a WAV in your runtime folder and plays that with `pw-play`; without `ffmpeg`
+   installed the reply is shown but not spoken, and the log says so
+   (`journalctl --user -u notchfolkd | grep -i speak`). A router that answers with an error speaks
+   nothing and names the URL it tried, with how long it waited.
+
 3. Set up local speech recognition, once: press **Set up** when the assistant asks
    for it, or run `~/.local/bin/notchfolk-setup-voice` in a terminal (`notchfolk-setup-voice` with a .deb,
    .rpm or AUR package; from the source folder: `scripts/setup-voice.sh`). It downloads the speech

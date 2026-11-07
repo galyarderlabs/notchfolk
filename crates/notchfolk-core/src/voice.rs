@@ -67,6 +67,10 @@ impl Endpointer {
     }
 
     /// The room's noise: the quietest tenth of the recording, digital silence aside.
+    ///
+    /// The quietest tenth, not the tenth percentile of everything: speech that starts at once fills
+    /// most of a short recording, and a percentile of that is the speaker's own voice, which no
+    /// speech can then be three times louder than.
     fn noise(&self) -> f32 {
         let mut heard: Vec<f32> = self
             .levels
@@ -78,7 +82,8 @@ impl Endpointer {
             return 0.0;
         }
         heard.sort_by(f32::total_cmp);
-        heard[heard.len() / 10]
+        let quiet = (heard.len() / 10).max(1);
+        heard[..quiet].iter().sum::<f32>() / quiet as f32
     }
 
     /// Takes the next chunk's RMS level (0..1).

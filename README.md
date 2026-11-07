@@ -155,7 +155,9 @@ your windows uncovered.
 - For the voice assistant (optional): a microphone and
   one of Claude Code, Codex, Grok, opencode or Antigravity signed in (Codex and the npm
   install of Claude Code need Node.js 18 or newer); see
-  [assistant guide](docs/assistant.md).
+  [assistant guide](docs/assistant.md). To have the answers spoken aloud, `ffmpeg`
+  (`sudo pacman -S ffmpeg`, `sudo apt install ffmpeg`), which turns the router's audio
+  into what `pw-play` plays.
 
 ## Installation
 
