@@ -6,6 +6,16 @@ All notable changes to Notchfolk are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-11-07
+
+### Fixed
+
+- **Spoken replies reach the router, and are heard.** A router that names its voices in the model id
+  (ElevenLabs' `el/<model>/<voice>`) takes no separate voice field: sending both left the model bare,
+  which it answered with a gateway error. Routers also answer MP3 whatever was asked for, and
+  `pw-play` cannot open a pipe, so the reply is decoded with `ffmpeg` into a WAV first, and only once
+  `ffmpeg` has finished writing it.
+
 ### Documentation
 
 - **Spoken replies are written down.** The assistant guide says what **Speak the replies** needs, how a
