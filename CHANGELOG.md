@@ -6,6 +6,16 @@ All notable changes to Notchfolk are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-11-08
+
+### Fixed
+
+- **Speech recordings are written out.** The speech dump folder is created before writing, so
+  `NOTCHFOLK_SPEECH_DUMP` no longer fails silently on a fresh folder; the write runs off the
+  async runtime thread.
+- **Shortcut labels cannot carry markup.** The key is now the text after the last `>`, with any
+  leftover angle brackets stripped, so a label can never contain `<script` (CodeQL #37, #38).
+
 ## [1.2.6] - 2026-11-07
 
 ### Fixed

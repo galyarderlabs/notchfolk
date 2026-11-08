@@ -12,7 +12,7 @@ members = [
 default-members = ["crates/notchfolk-core", "crates/notchfolk-daemon"]
 
 [workspace.package]
-version = "1.2.6"
+version = "1.2.7"
 edition = "2024"
 # notchfolk-core and notchfolkd use let chains (1.88); notchfolk-shelf sets its own, for gtk-rs.
 rust-version = "1.88"
