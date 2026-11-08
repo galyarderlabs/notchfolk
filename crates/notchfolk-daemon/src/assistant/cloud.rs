@@ -81,19 +81,17 @@ pub async fn transcribe(
     tokio::task::spawn_blocking(move || {
         if let Some(dump) = dump {
             let mut ready = true;
-            if let Some(parent) = dump.parent().filter(|p| !p.as_os_str().is_empty()) {
-                if let Err(err) = std::fs::create_dir_all(parent) {
-                    warn!(
-                        "could not create the speech dump folder {}: {err}",
-                        parent.display()
-                    );
-                    ready = false;
-                }
+            if let Some(parent) = dump.parent().filter(|p| !p.as_os_str().is_empty())
+                && let Err(err) = std::fs::create_dir_all(parent)
+            {
+                warn!(
+                    "could not create the speech dump folder {}: {err}",
+                    parent.display()
+                );
+                ready = false;
             }
-            if ready {
-                if let Err(err) = std::fs::write(&dump, &wav) {
-                    warn!("could not write the recording to {}: {err}", dump.display());
-                }
+            if ready && let Err(err) = std::fs::write(&dump, &wav) {
+                warn!("could not write the recording to {}: {err}", dump.display());
             }
         }
         let mut form = Form::new().text("model", &model);
@@ -208,11 +206,14 @@ pub async fn speak(
         decoder_in.flush().await.ok();
     }
     drop(decoder_in);
-    let status = decoder.wait().await.context("could not decode the spoken reply")?;
+    let status = decoder
+        .wait()
+        .await
+        .context("could not decode the spoken reply")?;
     if !status.success() {
         bail!("the speech router's audio could not be decoded");
     }
-    let mut child = tokio::process::Command::new("pw-play")
+    let child = tokio::process::Command::new("pw-play")
         .arg(&path)
         .stdout(Stdio::null())
         .stderr(Stdio::null())

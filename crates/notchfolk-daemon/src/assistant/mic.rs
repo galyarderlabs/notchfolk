@@ -28,7 +28,15 @@ impl Mic {
         let mut child = Command::new("pw-record")
             // Tagged as Notchfolk's own, so the island does not take it for a call.
             // `--raw`: without it pw-record writes a WAV header to stdout, which the i16 reader takes for samples.
-            .args(["--rate", "16000", "--channels", "1", "--format", "s16", "--raw"])
+            .args([
+                "--rate",
+                "16000",
+                "--channels",
+                "1",
+                "--format",
+                "s16",
+                "--raw",
+            ])
             .args([
                 "-P",
                 "{ application.id = \"io.galyarderlabs.notchfolk\" }",
