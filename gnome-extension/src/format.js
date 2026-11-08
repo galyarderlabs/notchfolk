@@ -47,7 +47,11 @@ export function timeOfDay(dateTime) {
 export function shortcutLabel(accelerator) {
     const names = {super: 'Super', primary: 'Ctrl', control: 'Ctrl', ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift', meta: 'Meta'};
     const modifiers = [...(accelerator ?? '').matchAll(/<(\w+)>/g)].map(([, name]) => names[name.toLowerCase()] ?? name);
-    const key = (accelerator ?? '').replace(/<[^>]*>?/g, '').replace(/</g, '');
+    const key = (accelerator ?? '')
+        .replace(/<[^>]*>?/g, '')
+        // No angle bracket may survive in the key: dropping "<…>" groups alone is not a
+        // complete sanitisation, so any leftover "<" or ">" goes too.
+        .replace(/[<>]/g, '');
     if (!key)
         return '';
     return [...modifiers, key.length === 1 ? key.toUpperCase() : key[0].toUpperCase() + key.slice(1)].join('+');
