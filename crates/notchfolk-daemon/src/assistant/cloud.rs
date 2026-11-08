@@ -71,16 +71,31 @@ pub async fn transcribe(
     let wav = wav(audio);
     // NOTCHFOLK_SPEECH_DUMP names a folder to also write each recording to, as the WAV sent to the
     // router, kept until the next one: for listening to what the assistant actually heard.
-    if let Some(dump) = std::env::var_os("NOTCHFOLK_SPEECH_DUMP") {
-        let dump = std::path::Path::new(&dump).join("notchfolk-heard.wav");
-        if let Err(err) = std::fs::write(&dump, &wav) {
-            warn!("could not write the recording to {}: {err}", dump.display());
-        }
-    }
+    // The write itself happens inside `spawn_blocking` below: the folder is created first, and
+    // the synchronous write stays off the async runtime thread.
+    let dump = std::env::var_os("NOTCHFOLK_SPEECH_DUMP")
+        .map(|dir| std::path::Path::new(&dir).join("notchfolk-heard.wav"));
     let key = key.to_owned();
     let model = model.to_owned();
     let language = language.to_owned();
     tokio::task::spawn_blocking(move || {
+        if let Some(dump) = dump {
+            let mut ready = true;
+            if let Some(parent) = dump.parent().filter(|p| !p.as_os_str().is_empty()) {
+                if let Err(err) = std::fs::create_dir_all(parent) {
+                    warn!(
+                        "could not create the speech dump folder {}: {err}",
+                        parent.display()
+                    );
+                    ready = false;
+                }
+            }
+            if ready {
+                if let Err(err) = std::fs::write(&dump, &wav) {
+                    warn!("could not write the recording to {}: {err}", dump.display());
+                }
+            }
+        }
         let mut form = Form::new().text("model", &model);
         // Settings' language is a list for local whisper ("id,en" tells the two apart); a router
         // takes one code, so only a list of one is sent, and a longer one is left to the router to
