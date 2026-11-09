@@ -381,7 +381,7 @@ svg.ctl { width: 17px; height: 17px; fill: #fff; } /* tombol prev / play / next 
   border: 1px solid var(--line); background: rgba(26,34,51,.04); transition: transform .25s var(--spring), border-color .2s; }
 .donate a:hover { transform: translateY(-2px); border-color: rgba(26,34,51,.25); }
 .donate a span { font-weight: 400; color: var(--mist); font-size: 14px; }
-.donate a i { font-style: normal; font-size: 18px; }
+.donate a svg { width: 18px; height: 18px; flex: none; }
 /* Dua tombol dukungan (Yapp & PayPal): sama-sama putih dan sama ukurannya */
 .donate a.primary { min-width: 280px; justify-content: center; }
 .donate a .pp-img { height: 24px; width: auto; display: block; }
@@ -1138,9 +1138,9 @@ footer a:hover { color: var(--ink); }
     <h2 class="sec-title">Keep Notchfolk going.</h2>
     <p class="sec-lede">If Notchfolk makes your day a little better, a star on GitHub helps more people find it &mdash; and tells me it&apos;s worth building.</p>
     <div class="donate js-donate">
-      <a data-key="star" href="https://github.com/galyarderlabs/notchfolk" target="_blank" rel="noopener">Star <span>on GitHub</span></a>
-      <a data-key="issues" href="https://github.com/galyarderlabs/notchfolk/issues" target="_blank" rel="noopener"><i>&#9998;</i> Report an issue <span>on GitHub</span></a>
-      <a data-key="docs" href="https://github.com/galyarderlabs/notchfolk#readme" target="_blank" rel="noopener"><i>&#128214;</i> Read the docs <span>on GitHub</span></a>
+      <a data-key="star" href="https://github.com/galyarderlabs/notchfolk" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9 6.6 19.8l1.1-6.1L3.2 9.4l6.1-.8z"/></svg> Star <span>on GitHub</span></a>
+      <a data-key="issues" href="https://github.com/galyarderlabs/notchfolk/issues" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V13"/><path d="M12 16.5h.01"/></svg> Report an issue <span>on GitHub</span></a>
+      <a data-key="docs" href="https://github.com/galyarderlabs/notchfolk#readme" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg> Read the docs <span>on GitHub</span></a>
     </div>
     <p class="support-note">Notchfolk is free and open source (GPL-3.0). Issues and stars are how it grows.</p>
    </div>
