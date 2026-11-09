@@ -46,9 +46,16 @@ a { color: inherit; }
 
 /* ===== Bilah atas + notch maskot di tepi halaman ================================= */
 .bar {
-  position: absolute; inset: 0 0 auto 0; z-index: 5;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) 24px 0; font-size: 15px;
+  position: fixed; inset: 0 0 auto 0; z-index: 40;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 24px 12px; font-size: 15px;
+  transition: background .3s ease, box-shadow .3s ease;
+}
+.bar.scrolled {
+  background: rgba(253,252,248,.78);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 1px 0 var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; }
 .brand img { width: 26px; height: 26px; }
@@ -523,6 +530,9 @@ svg.ctl { width: 17px; height: 17px; fill: #fff; } /* tombol prev / play / next 
   box-shadow: 0 4px 14px -6px rgba(0,0,0,.6); transition: transform .45s var(--spring); }
 .lang[data-l="id"] .lang-thumb { transform: translateX(100%); }
 @media (prefers-reduced-motion: reduce) { .lang-thumb { transition: none; } }
+@media (prefers-reduced-transparency: reduce) {
+  .bar.scrolled { background: var(--void); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 
 /* Tombol pratinjau */
 .try { margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
@@ -537,6 +547,7 @@ svg.ctl { width: 17px; height: 17px; fill: #fff; } /* tombol prev / play / next 
 
 /* ===== Fitur ======================================================================== */
 section { padding: 110px 0 0; }
+section[id] { scroll-margin-top: 84px; }
 .sec-title { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 0 0 14px; max-width: 16ch; }
 .sec-lede { color: var(--mist); max-width: 36em; margin: 0 0 54px; }
 .features { display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 64px; }
@@ -1202,6 +1213,11 @@ footer a:hover { color: var(--ink); }
 </footer>
 
 <script>
+const topBar = document.querySelector(".bar");
+const barSync = () => topBar.classList.toggle("scrolled", scrollY > 24);
+barSync();
+addEventListener("scroll", barSync, { passive: true });
+
 // ---- Download ------------------------------------------------------------------------
 // Setiap rilis baru: ubah VERSION, dan SHA256 sesuai installer yang di-upload ke GitHub.
 const DOWNLOAD_URL = "https://github.com/galyarderlabs/notchfolk/releases";
