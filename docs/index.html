@@ -737,7 +737,7 @@ footer a:hover { color: var(--ink); }
           Star on GitHub
         </a>
       </div>
-      <small>Version <span class="js-ver">1.1.0</span> · GPL-3.0 · GNOME 46–51</small>
+      <small>Version <span class="js-ver">1.2.7</span> · GPL-3.0 · GNOME 46–51</small>
       <span class="dl-count js-dlcount"></span>
     </div>
   </div>
@@ -978,7 +978,7 @@ footer a:hover { color: var(--ink); }
       </div>
       <div class="feature">
         <span class="app" style="--c:#30abdb"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path class="ln" d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></span>
-        <div><h3>Voice control</h3><p>Press Super+I and talk. On-device Whisper turns your words into text &mdash; nothing you say leaves your computer.</p></div>
+        <div><h3>Voice control</h3><p>Press Super+I and talk. Local Whisper keeps it offline, or point it at your own OpenAI-compatible router &mdash; the key stays in your desktop's secret store.</p></div>
       </div>
       <div class="feature">
         <span class="app" style="--c:#2d5bff"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path class="ln" d="M7.5 8 10.8 15.8M16.5 8 13.2 15.8M8.5 6h7"/></svg></span>
@@ -1080,24 +1080,26 @@ footer a:hover { color: var(--ink); }
   </section>
 
     <section id="new" class="wrap">
-    <h2 class="sec-title">New in Notchfolk 1.1.0.</h2>
-    <p class="sec-lede">Reminder history, opencode 2 fixed, and everything a little smoother.</p>
+    <h2 class="sec-title">New in Notchfolk 1.2.7.</h2>
+    <p class="sec-lede">Speech on an OpenAI-compatible router, replies that can be spoken, and a microphone that is finally heard.</p>
     <div class="news">
       <div>
         <h3>What&apos;s new</h3>
         <ul>
-          <li><b>Reminder history</b><span>A reminder that fired while you were away, or that you simply missed, can still be looked up: the Reminders page has a &ldquo;Last 7 days&rdquo; section, and agents can read it with the new list_reminder_history tool (56 tools now).</span></li>
+          <li><b>Speech on your router</b><span>Speech recognition can run on an OpenAI-compatible router: the base URL, model and API key are set in Settings, the key kept in the desktop's secret store, and the endpoint paths editable. Local Whisper stays as the offline choice.</span></li>
+          <li><b>Spoken replies</b><span>The assistant can speak its answer through the same router, with the model and voice set in Settings. A request that arrives cuts the spoken reply short.</span></li>
         </ul>
       </div>
       <div>
         <h3>Fixes</h3>
         <ul>
-          <li><b>opencode 2 works again</b><span>From upstream Isle&apos;s PR #45, by AlphaBeast97: the model list fills and requests answer, with --standalone and the plain opencode models output 2.x uses, while opencode 1.x keeps its own flags.</span></li>
+          <li><b>The microphone is heard again</b><span>The recorder was reading a WAV container as raw samples, so every recording looked like noise at full scale. Speech now comes through, however the gain is set.</span></li>
+          <li><b>Shortcut labels cannot carry markup</b><span>The key shown is the text after the last &gt;, with any leftover angle brackets stripped, so a label can never contain markup (CodeQL #37, #38).</span></li>
         </ul>
         <div class="news-note">
           <h3>Good to know</h3>
-          <p>The one-shot island alert is unchanged &mdash; history only adds a way to look back.</p>
-          <p>Version 1.1.0 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
+          <p>Local Whisper still answers offline &mdash; it takes over by itself whenever your router cannot be reached.</p>
+          <p>Version 1.2.7 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
         </div>
       </div>
     </div>
@@ -1178,7 +1180,7 @@ footer a:hover { color: var(--ink); }
     <section id="privacy" class="wrap">
     <h2 class="sec-title">Privacy</h2>
     <p>Notchfolk doesn&apos;t collect personal data and has no analytics. Your tasks, reminders, files, clipboard history, and settings are saved only on your computer, in ~/.local/share/notchfolk and ~/.config/notchfolk.</p>
-    <p>Prayer times are calculated on your computer from the city you choose. Voice is transcribed on your device with Whisper &mdash; nothing you say leaves your computer.</p>
+    <p>Prayer times are calculated on your computer from the city you choose. Voice is transcribed by local Whisper on your device, or by the speech router you configure yourself &mdash; nothing is sent anywhere you have not set up.</p>
     <p>When you use synced lyrics, Notchfolk sends the song title, artist, and length to LRCLIB (lrclib.net) to find matching lyrics.</p>
     <p>When you use an AI provider, your request goes to that provider, as you chose in Settings. The MCP server runs on your computer (localhost); if you expose it with a tunnel, only the people and tools you give the address to can reach it.</p>
   </section>
@@ -1201,7 +1203,7 @@ footer a:hover { color: var(--ink); }
 // ---- Download ------------------------------------------------------------------------
 // Setiap rilis baru: ubah VERSION, dan SHA256 sesuai installer yang di-upload ke GitHub.
 const DOWNLOAD_URL = "https://github.com/galyarderlabs/notchfolk/releases";
-const VERSION = "1.1.0";
+const VERSION = "1.2.7";
 document.querySelectorAll(".js-dl").forEach(a => { if (a.closest("#download")) a.href = DOWNLOAD_URL; });
 document.querySelectorAll(".js-ver").forEach(e => e.textContent = VERSION);
 
@@ -1628,7 +1630,7 @@ fit(); addEventListener("resize", fit);
  "Today's events at a glance, with a gentle nudge before each one starts.": "Acara hari ini sekilas, dengan pengingat lembut sebelum setiap acara dimulai.",
  "Ask in plain words and get an answer in the island. Claude, Codex, Hermes, OpenAI, and more — the provider you chose in Settings.": "Tanya dengan kata-kata biasa dan dapatkan jawaban di island. Claude, Codex, Hermes, OpenAI, dan lainnya — penyedia yang kamu pilih di Settings.",
  "Voice control": "Kontrol suara",
- "Press Super+I and talk. On-device Whisper turns your words into text — nothing you say leaves your computer.": "Tekan Super+I lalu bicara. Whisper di perangkat mengubah ucapanmu menjadi teks — tidak ada yang kamu katakan keluar dari komputermu.",
+ "Press Super+I and talk. Local Whisper keeps it offline, or point it at your own OpenAI-compatible router — the key stays in your desktop's secret store.": "Tekan Super+I lalu bicara. Local Whisper menjaganya tetap offline, atau arahkan ke router OpenAI-compatible milikmu sendiri — key tersimpan di secret store desktopmu.",
  "MCP server": "Server MCP",
  "56 tools your AI can use — tasks, calendar, reminders, files, and more — over a local server on your computer.": "56 tool yang bisa dipakai AI-mu — tugas, kalender, pengingat, file, dan lainnya — lewat server lokal di komputermu.",
  "A calm Pomodoro with the whole round at a glance, a breathing Live Activity in the notch and gentle reminders.": "Pomodoro yang tenang: satu putaran terlihat sekilas, Live Activity yang bernapas di notch, dan pengingat yang lembut.",
@@ -1677,16 +1679,20 @@ fit(); addEventListener("resize", fit);
  "Black": "Hitam",
  "Glass": "Kaca",
  "Settings → Appearance → Island": "Settings → Appearance → Island",
- "New in Notchfolk 1.1.0.": "Yang baru di Notchfolk 1.1.0.",
- "Reminder history, opencode 2 fixed, and everything a little smoother.": "Riwayat pengingat, opencode 2 sudah diperbaiki, dan semuanya terasa lebih halus.",
- "Reminder history": "Riwayat pengingat",
- "A reminder that fired while you were away, or that you simply missed, can still be looked up: the Reminders page has a “Last 7 days” section, and agents can read it with the new list_reminder_history tool (56 tools now).": "Pengingat yang berbunyi saat kamu pergi, atau yang terlewat begitu saja, tetap bisa dicari: halaman Reminders punya bagian “Last 7 days”, dan agen bisa membacanya lewat tool baru list_reminder_history (sekarang 56 tool).",
+ "New in Notchfolk 1.2.7.": "Yang baru di Notchfolk 1.2.7.",
+ "Speech on an OpenAI-compatible router, replies that can be spoken, and a microphone that is finally heard.": "Speech lewat router yang kompatibel OpenAI, jawaban yang bisa diucapkan, dan mikrofon yang akhirnya terdengar.",
+ "Speech on your router": "Speech di router-mu",
+ "Speech recognition can run on an OpenAI-compatible router: the base URL, model and API key are set in Settings, the key kept in the desktop's secret store, and the endpoint paths editable. Local Whisper stays as the offline choice.": "Speech recognition bisa berjalan di router yang kompatibel OpenAI: base URL, model, dan API key diatur di Settings, key disimpan di secret store desktop, dan path endpoint bisa diubah. Local Whisper tetap jadi pilihan offline.",
+ "Spoken replies": "Jawaban yang diucapkan",
+ "The assistant can speak its answer through the same router, with the model and voice set in Settings. A request that arrives cuts the spoken reply short.": "Asisten bisa mengucapkan jawabannya lewat router yang sama, dengan model dan voice diatur di Settings. Permintaan baru yang datang memotong jawaban yang sedang diucapkan.",
  "Fixes": "Perbaikan",
- "opencode 2 works again": "opencode 2 berfungsi lagi",
- "From upstream Isle's PR #45, by AlphaBeast97: the model list fills and requests answer, with --standalone and the plain opencode models output 2.x uses, while opencode 1.x keeps its own flags.": "Dari PR #45 upstream Isle, oleh AlphaBeast97: daftar model terisi dan permintaan dijawab, dengan --standalone dan output polos opencode models yang dipakai 2.x, sementara opencode 1.x tetap memakai flag-nya sendiri.",
+ "The microphone is heard again": "Mikrofon terdengar lagi",
+ "The recorder was reading a WAV container as raw samples, so every recording looked like noise at full scale. Speech now comes through, however the gain is set.": "Perekam membaca kontainer WAV sebagai sampel mentah, jadi setiap rekaman terlihat seperti noise skala penuh. Sekarang suara terdengar, bagaimanapun gainnya diatur.",
+ "Shortcut labels cannot carry markup": "Label pintasan tidak bisa membawa markup",
+ "The key shown is the text after the last >, with any leftover angle brackets stripped, so a label can never contain markup (CodeQL #37, #38).": "Key yang ditampilkan adalah teks setelah > terakhir, dengan sisa tanda kurung sudut dibuang, jadi label tidak mungkin berisi markup (CodeQL #37, #38).",
  "Good to know": "Perlu diketahui",
- "The one-shot island alert is unchanged — history only adds a way to look back.": "Peringatan island sekali jalan tidak berubah — riwayat hanya menambah cara untuk melihat ke belakang.",
- "Version 1.1.0 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.1.0 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
+ "Local Whisper still answers offline — it takes over by itself whenever your router cannot be reached.": "Local Whisper tetap menjawab offline — ia mengambil alih sendiri setiap kali router-mu tidak bisa dihubungi.",
+ "Version 1.2.7 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.2.7 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
  "Get Notchfolk for GNOME": "Dapatkan Notchfolk untuk GNOME",
  "GNOME 46–51 on Linux, x86_64.": "GNOME 46–51 di Linux, x86_64.",
  "Install with one command": "Pasang dengan satu perintah",
@@ -1737,7 +1743,7 @@ fit(); addEventListener("resize", fit);
  "Not yet. notchfolk-bin is prepared, but AUR registration is paused, so it isn't published. The install command above is the way to install for now.": "Belum. notchfolk-bin sudah disiapkan, tapi pendaftaran AUR sedang dijeda, jadi belum diterbitkan. Perintah instalasi di atas adalah cara memasang untuk saat ini.",
  "Privacy": "Privasi",
  "Notchfolk doesn't collect personal data and has no analytics. Your tasks, reminders, files, clipboard history, and settings are saved only on your computer, in ~/.local/share/notchfolk and ~/.config/notchfolk.": "Notchfolk tidak mengumpulkan data pribadi dan tidak memakai analitik. Tugas, pengingat, file, riwayat Clipboard, dan pengaturanmu hanya tersimpan di komputermu, di ~/.local/share/notchfolk dan ~/.config/notchfolk.",
- "Prayer times are calculated on your computer from the city you choose. Voice is transcribed on your device with Whisper — nothing you say leaves your computer.": "Jadwal sholat dihitung di komputermu berdasarkan kota yang kamu pilih. Suara ditranskripsi di perangkatmu dengan Whisper — tidak ada yang kamu katakan keluar dari komputermu.",
+ "Prayer times are calculated on your computer from the city you choose. Voice is transcribed by local Whisper on your device, or by the speech router you configure yourself — nothing is sent anywhere you have not set up.": "Jadwal sholat dihitung di komputermu berdasarkan kota yang kamu pilih. Suara ditranskripsi oleh local Whisper di perangkatmu, atau oleh speech router yang kamu atur sendiri — tidak ada yang dikirim ke mana pun yang belum kamu atur.",
  "When you use synced lyrics, Notchfolk sends the song title, artist, and length to LRCLIB (lrclib.net) to find matching lyrics.": "Saat kamu memakai lirik tersinkron, Notchfolk mengirim judul lagu, nama artis, dan durasinya ke LRCLIB (lrclib.net) untuk mencari lirik yang cocok.",
  "When you use an AI provider, your request goes to that provider, as you chose in Settings. The MCP server runs on your computer (localhost); if you expose it with a tunnel, only the people and tools you give the address to can reach it.": "Saat kamu memakai penyedia AI, permintaanmu diteruskan ke penyedia itu, sesuai yang kamu pilih di Settings. Server MCP berjalan di komputermu (localhost); kalau kamu membukanya lewat tunnel, hanya orang dan tool yang kamu beri alamatnya yang bisa mengaksesnya.",
  "© 2026 Notchfolk. Synced lyrics by LRCLIB. GPL-3.0.": "© 2026 Notchfolk. Lirik disediakan oleh LRCLIB. GPL-3.0.",
