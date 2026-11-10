@@ -53,6 +53,12 @@ spec's; every task names the ones it must prove.
   running the daemon and a client before and after.
 - [ ] A backend-down domain answers as a normal, isolated error — local tools
   unaffected, no secret in the message. **AC-5.**
+- [ ] Settings follows the scopes: the MCP page's "Access scopes" picker and
+  its `scopeLabel` learn the new scopes as the domain phases land them,
+  grouped by value (system, browser, office, skills, memory, notes,
+  composio), offering only the domains present on the machine. A key made
+  in Settings with a new scope authorises exactly that scope's tools —
+  verified against the server, not just the file.
 
 ### 2. System MCP — the ground it stands on
 
