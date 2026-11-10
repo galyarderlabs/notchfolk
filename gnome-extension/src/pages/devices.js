@@ -25,6 +25,11 @@ const ROWS_SHOWN = 3;
 
 /** A card's height (CSS px); three rows to the page take a little less, the same card a touch denser. */
 const CARD_HEIGHT = 52;
+/** What a USB device is, as notchfolkd reads its interfaces' classes, and the icon and label each shows. */
+const USB_KINDS = {drive: 'Drive', keyboard: 'Keyboard', mouse: 'Mouse', audio: 'Headset',
+    camera: 'Camera', phone: 'Phone', usb: 'USB device'};
+const USB_ICONS = {drive: 'drive-harddisk-symbolic', keyboard: 'input-keyboard-symbolic', mouse: 'input-mouse-symbolic',
+    audio: 'notchfolk-headphones-symbolic', camera: 'camera-web-symbolic', phone: 'phone-symbolic'};
 /** How many cards a row holds for `count`: one each up to three, then two side by side. */
 function columnsFor(count) {
     return count <= 3 ? 1 : 2;
@@ -159,8 +164,18 @@ class DeviceCard extends St.BoxLayout {
         this._percent = undefined;
     }
 
-    /** Shows `device` ({name, icon, battery}) as it is now; a new level only moves the fill and the number. */
+    /** Shows `device` as it is now: a Bluetooth one ({name, icon, battery}) with its battery, or a USB one
+     * ({name, kind}) with what it is and no battery to read. A new level only moves the fill and the number. */
     update(device) {
+        if (device.kind) {
+            this._icon.gicon = icon(USB_ICONS[device.kind] ?? 'drive-removable-media-symbolic');
+            this._name.text = device.name;
+            this._percent = null;
+            this._battery.visible = this._level.visible = this._none.visible = false;
+            this._status.text = USB_KINDS[device.kind] ?? 'USB device';
+            this.remove_style_class_name('low');
+            return;
+        }
         this._icon.gicon = icon(deviceIcon(device.icon));
         this._name.text = device.name;
         const percent = device.battery ?? null;
@@ -193,7 +208,7 @@ class DevicesPage extends Page {
             height,
         });
         this.name = 'devices';
-        /** Cards by the device's BlueZ path, in the order notchfolkd lists them. */
+        /** Cards by the device's path (BlueZ's or sysfs), in the order notchfolkd lists them. */
         this._cards = new Map();
         this._dense = false;
 
@@ -227,7 +242,9 @@ class DevicesPage extends Page {
     /** A card per connected device, kept and updated in place as their batteries change; laid out anew only when
      * how many there are changes. */
     _update() {
-        const devices = this.daemon.state.system?.bluetooth ?? [];
+        const system = this.daemon.state.system;
+        // Bluetooth with its batteries first, then the USB devices on the bus (hubs apart).
+        const devices = [...(system?.bluetooth ?? []), ...(system?.usb ?? [])];
         const had = this._cards.size > 0;
         const paths = new Set(devices.map(device => device.path));
         for (const [path, card] of this._cards) {

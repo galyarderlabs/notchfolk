@@ -11,6 +11,7 @@ mod gsconnect;
 mod network;
 mod power;
 pub mod sleep;
+mod usb;
 
 use std::time::Duration;
 
@@ -45,6 +46,8 @@ pub struct SystemState {
     pub camera_in_use: bool,
     /// GSConnect's connected devices (a phone, a tablet), with their batteries.
     pub devices: Vec<Device>,
+    /// The USB devices on the bus (hubs apart), for the Devices page.
+    pub usb: Vec<UsbDevice>,
 }
 
 /// The laptop's own battery, from UPower's display device.
@@ -78,6 +81,19 @@ pub struct Device {
     pub kind: String,
     pub battery: Option<u8>,
     pub charging: bool,
+}
+
+/// A USB device on the bus (hubs apart): its name and what it is. USB carries no battery to read,
+/// so the page shows the kind where Bluetooth's shows its battery.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct UsbDevice {
+    /// The sysfs path, unique while the device is plugged in.
+    pub path: String,
+    pub name: String,
+    /// The vendor, as udev's hardware database spells it.
+    pub vendor: Option<String>,
+    /// What the device is, by its interfaces' classes: drive, keyboard, mouse, audio, camera, phone, or usb.
+    pub kind: String,
 }
 
 /// A connected Bluetooth device; `path` is its BlueZ object.
@@ -172,6 +188,8 @@ pub fn spawn_watchers(system: Connection, iface: InterfaceRef<SystemService>) {
     supervise("bluetooth", on_bus(BLUEZ), move || {
         bluetooth::watch(bus.clone(), state.clone())
     });
+    let usb_iface = iface.clone();
+    supervise("usb", None, move || usb::watch(usb_iface.clone()));
     supervise("camera", None, move || camera::watch(iface.clone()));
 }
 
