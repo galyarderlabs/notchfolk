@@ -68,7 +68,7 @@ PROTECTED_NAMES = {"notchfolkd", *{name.strip() for name in
 TOOLCHAINS = ("flatpak", "uv", "npm", "bun")
 # The big distros only (the spec's rule): an unknown distro is unsupported.
 DISTRO_PACKAGES = {"arch": "pacman", "debian": "apt", "ubuntu": "apt", "fedora": "dnf",
-                   "rhel": "dnf", "opensuse": "zypher".replace("zypher", "zypper")}
+                   "rhel": "dnf", "opensuse": "zypper"}
 
 
 def guard_command(command: str):
@@ -85,11 +85,8 @@ def resolve(path: str, roots) -> str:
     """The real path of `path`, which must live under one of `roots`."""
     real = os.path.realpath(os.path.expanduser(path))
     for root in roots:
-        try:
-            real.removeprefix(os.path.realpath(root))
-        except AttributeError:
-            pass
-        if os.path.commonpath([os.path.realpath(root), real]) == os.path.realpath(root):
+        root = os.path.realpath(root)
+        if os.path.commonpath([root, real]) == root:
             return real
     raise RuntimeError(f"{path} is outside the allowed roots")
 
@@ -123,7 +120,7 @@ def run(command, timeout=120):
     if isinstance(command, str):
         guard_command(command)
     result = subprocess.run(command, shell=isinstance(command, str), capture_output=True,
-                             text=True, timeout=timeout, env={**os.environ, "HOME": HOME})
+                             text=True, timeout=timeout)
     return {"ok": result.returncode == 0, "exit_code": result.returncode,
             "stdout": result.stdout[:STDOUT_LIMIT], "stderr": result.stderr[:STDERR_LIMIT],
             "command": command if isinstance(command, str) else " ".join(command)}
@@ -186,12 +183,23 @@ def register(mcp, authorize, write):
 
     @mcp.tool
     async def system_search_files(pattern: str, path: str = "~", glob: str = "*",
-                                   limit: int = 50) -> dict:
-        """Lines matching `pattern` under `path` (grep -R -n), only in files named `glob`."""
+                                   limit: int = 50, by: str = "content") -> dict:
+        """Finds `pattern` under `path`: by=\"content\" matches lines (grep -R -n,
+        only in files named `glob`); by=\"name\" matches file names."""
         await authorize("system_search_files")
+        real = resolve(path, READ_ROOTS)
+        if by == "name":
+            found = []
+            for current, directories, files in os.walk(real):
+                directories[:] = [d for d in directories if not d.startswith(".")]
+                for name in files:
+                    if re.search(pattern, name, re.IGNORECASE):
+                        found.append(os.path.join(current, name))
+                        if len(found) >= max(1, min(int(limit), 200)):
+                            return {"ok": True, "matches": found, "count": len(found)}
+            return {"ok": True, "matches": found, "count": len(found)}
         if not shutil.which("grep"):
             raise RuntimeError("grep is not available on this machine")
-        real = resolve(path, READ_ROOTS)
         result = run(["grep", "-R", "-n", f"--include={glob}", "-E", pattern, real], timeout=120)
         matches = result["stdout"].splitlines()[:max(1, min(int(limit), 200))]
         return {"ok": True, "matches": matches, "count": len(matches)}
@@ -234,13 +242,13 @@ def register(mcp, authorize, write):
         """Runs a shell command and reports its output; the blocked fragments and
         patterns are refused (the reference's guard list)."""
         await write("system_exec")
+        guard_command(command)
         if not os.path.isdir(os.path.expanduser(workdir)):
             raise RuntimeError(f"{workdir} is not a directory")
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True,
                                      timeout=max(1, min(int(timeout), 120)),
-                                     cwd=os.path.expanduser(workdir),
-                                     env={**os.environ, "HOME": HOME})
+                                     cwd=os.path.expanduser(workdir))
         except subprocess.TimeoutExpired:
             return {"ok": False, "error": f"timeout after {timeout}s", "command": command}
         return {"ok": result.returncode == 0, "exit_code": result.returncode,
@@ -381,7 +389,8 @@ def register(mcp, authorize, write):
         elif domain in TOOLCHAINS:
             if not shutil.which(domain):
                 return {"ok": True, "unavailable": domain}
-            check = [domain, "outdated" if domain == "npm" else "--version"]
+            check = {"npm": ["npm", "outdated", "-g"], "bun": ["bun", "outdated", "-g"],
+                    "uv": ["uv", "tool", "list", "--outdated"]}.get(domain, [domain, "--version"])
             command = [domain, "update", *(["-g"] if domain == "npm" else [])]
         elif domain == "local":
             found = [script for script in ("~/.local/bin/update", "~/.local/bin/upgrade")
@@ -389,7 +398,7 @@ def register(mcp, authorize, write):
             if not found:
                 return {"ok": True, "unavailable": "local"}
             script = found[0]
-            check = [os.path.expanduser(script), "--check"]
+            check = ["echo", f"will run {script}"]
             command = [os.path.expanduser(script)]
         else:
             raise RuntimeError(f"unknown domain {domain}: system, flatpak, uv, npm, bun or local")
