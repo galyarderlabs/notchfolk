@@ -123,6 +123,18 @@ async def main():
         result = await admin.call_tool("system_exec", {"command": "echo notchfolk"})
         result = result.data if hasattr(result, "data") else result
         check("AC-2 system_exec on a scoped key", result["ok"] and "notchfolk" in result["stdout"], str(result))
+        # The critical guard: system_exec refuses the blocked fragments.
+        try:
+            await admin.call_tool("system_exec", {"command": "rm -rf /"})
+            check("guard: system_exec refuses rm -rf /", False, "the command was allowed")
+        except Exception:
+            check("guard: system_exec refuses rm -rf /", True)
+        # The spec's by-name search, beside the reference's content search.
+        named = await admin.call_tool("system_search_files",
+                                      {"pattern": "probe", "by": "name", "path": "~/notchfolk-mcp-test"})
+        named = named.data if hasattr(named, "data") else named
+        check("AC-2 system_search_files by name",
+              named.get("ok") and any("probe.txt" in m for m in named["matches"]), str(named))
 
         # The reference's confirmation rule: update refuses without confirm.
         refused = await admin.call_tool("system_update", {"domain": "flatpak", "action": "update"})
