@@ -6,6 +6,27 @@ All notable changes to Notchfolk are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.2.10] - 2026-11-10
+
+### Added
+
+- **The closed island shows less, by choice.** Settings → Island has a switch each for the
+  timer, calls, the unread bell, weather, the paired phone and the AI router. The default is the
+  quiet layout: the assistant in the middle, the clock to its left, the weather to its right, the
+  cover in the left corner and the bars in the right corner while a song plays. The recording dot
+  and a service failure always show.
+- **A Devices page of connected Bluetooth devices**, a card each with its battery and level, from
+  the daemon's BlueZ watcher. Off until turned on; its tab shows only while a device is connected.
+- **The USB devices on the bus, on the same page**: notchfolkd reads them from udev and follows its
+  monitor, and each shows its name, what it is (a drive, a keyboard, a mouse, a headset, a camera,
+  a phone) and an icon to match. USB carries no battery to read, so a card shows its kind where a
+  Bluetooth one shows its level.
+
+### Changed
+
+- **The GSConnect page is now Phone**, as it always was a phone's page: its battery, a ring to find
+  it, the clipboard sent over. Its tab, switch and shortcut follow the name.
+
 ## [1.2.9] - 2026-11-10
 
 ### Fixed

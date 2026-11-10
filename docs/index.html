@@ -754,7 +754,7 @@ footer a:hover { color: var(--ink); }
           Star on GitHub
         </a>
       </div>
-      <small>Version <span class="js-ver">1.2.9</span> · GPL-3.0 · GNOME 46–51</small>
+      <small>Version <span class="js-ver">1.2.10</span> · GPL-3.0 · GNOME 46–51</small>
       <span class="dl-count js-dlcount"></span>
     </div>
   </div>
@@ -1103,20 +1103,24 @@ footer a:hover { color: var(--ink); }
   </section>
 
     <section id="new" class="wrap">
-    <h2 class="sec-title">New in Notchfolk 1.2.9.</h2>
-    <p class="sec-lede">Settings opens again, whole &mdash; and 1.2.8 brought the pill shape, a shortcut for every page and a larger island.</p>
+    <h2 class="sec-title">New in Notchfolk 1.2.10.</h2>
+    <p class="sec-lede">A quieter closed island you choose yourself, and a Devices page that knows what is plugged in.</p>
     <div class="news">
       <div>
         <h3>What&apos;s new</h3>
         <ul>
-          <li><b>Settings opens again</b><span>The Shortcuts group asked for a key the schema did not carry on Notchfolk's own Calories, Water and Prayer pages, and opening Settings answered with an error. The keys are in the schema now, and a shortcut set for one of those pages opens it.</span></li>
+          <li><b>The closed island, by choice</b><span>Settings &rarr; Island has a switch each for the timer, calls, the unread bell, weather, the paired phone and the AI router. The default is the quiet layout &mdash; the assistant, the clock, the weather and the music &mdash; and the recording dot and a service failure always show.</span></li>
+          <li><b>Devices: Bluetooth and USB</b><span>A card per connected device on the new Devices page: Bluetooth ones with their battery, USB ones (a drive, a keyboard, a headset, a camera, a phone) with what they are. Off until turned on in Settings; the tab shows only while something is connected.</span></li>
         </ul>
       </div>
       <div>
+        <h3>Changed</h3>
+        <ul>
+          <li><b>GSConnect's page is now Phone</b><span>It always was a phone's page: its battery, a ring to find it, the clipboard sent over. Its tab, switch and shortcut follow the name.</span></li>
+        </ul>
         <div class="news-note">
           <h3>Good to know</h3>
-          <p>1.2.8 brought the pill shape, a shortcut for every page, Size: Large, the island on all displays, and Bluetooth low-battery alerts.</p>
-          <p>Version 1.2.9 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
+          <p>Version 1.2.10 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
         </div>
       </div>
     </div>
@@ -1225,7 +1229,7 @@ addEventListener("scroll", barSync, { passive: true });
 // ---- Download ------------------------------------------------------------------------
 // Setiap rilis baru: ubah VERSION, dan SHA256 sesuai installer yang di-upload ke GitHub.
 const DOWNLOAD_URL = "https://github.com/galyarderlabs/notchfolk/releases";
-const VERSION = "1.2.9";
+const VERSION = "1.2.10";
 document.querySelectorAll(".js-dl").forEach(a => { if (a.closest("#download")) a.href = DOWNLOAD_URL; });
 document.querySelectorAll(".js-ver").forEach(e => e.textContent = VERSION);
 
@@ -1713,13 +1717,17 @@ fit(); addEventListener("resize", fit);
  "Standard or Large": "Standar atau Large",
  "The open island 600 or 720 px wide, its pages taller at Large, each laying itself out for the room.": "Island terbuka selebar 600 atau 720 px, halamannya lebih tinggi di Large, masing-masing menata dirinya sesuai ruangnya.",
  "Settings → Appearance → Island": "Settings → Appearance → Island",
- "New in Notchfolk 1.2.9.": "Yang baru di Notchfolk 1.2.9.",
- "Settings opens again, whole — and 1.2.8 brought the pill shape, a shortcut for every page and a larger island.": "Settings terbuka lagi dengan utuh — dan 1.2.8 membawa bentuk kapsul, pintasan untuk tiap halaman, dan island yang lebih besar.",
- "Settings opens again": "Settings terbuka lagi",
- "The Shortcuts group asked for a key the schema did not carry on Notchfolk's own Calories, Water and Prayer pages, and opening Settings answered with an error. The keys are in the schema now, and a shortcut set for one of those pages opens it.": "Grup Shortcuts meminta key yang belum ada di schema untuk halaman Calories, Water, dan Prayer milik Notchfolk, sampai membuka Settings berakhir dengan error. Key-nya sekarang ada, dan pintasan yang diatur untuk halaman itu membukanya.",
+ "New in Notchfolk 1.2.10.": "Yang baru di Notchfolk 1.2.10.",
+ "A quieter closed island you choose yourself, and a Devices page that knows what is plugged in.": "Island tertutup yang lebih tenang, kamu yang memilih isinya — dan halaman Devices yang tahu apa yang terpasang.",
+ "The closed island, by choice": "Island tertutup, sesuai pilihanmu",
+ "Settings → Island has a switch each for the timer, calls, the unread bell, weather, the paired phone and the AI router. The default is the quiet layout — the assistant, the clock, the weather and the music — and the recording dot and a service failure always show.": "Settings → Island punya switch untuk timer, panggilan, bel notifikasi, cuaca, HP yang dipasangkan, dan router AI. Default-nya layout yang tenang — assistant, jam, cuaca, dan musik — sementara titik recording dan kegagalan service selalu tampil.",
+ "Devices: Bluetooth and USB": "Devices: Bluetooth dan USB",
+ "A card per connected device on the new Devices page: Bluetooth ones with their battery, USB ones (a drive, a keyboard, a headset, a camera, a phone) with what they are. Off until turned on in Settings; the tab shows only while something is connected.": "Satu kartu untuk tiap perangkat yang terhubung di halaman Devices yang baru: perangkat Bluetooth dengan baterainya, perangkat USB (flashdisk, keyboard, headset, kamera, HP) dengan jenisnya. Mati sampai dinyalakan di Settings; tab-nya hanya tampil saat ada yang terhubung.",
+ "Changed": "Berubah",
+ "GSConnect's page is now Phone": "Halaman GSConnect sekarang Phone",
+ "It always was a phone's page: its battery, a ring to find it, the clipboard sent over. Its tab, switch and shortcut follow the name.": "Memang dari awal halamannya tentang HP: baterainya, ring untuk mencarinya, clipboard yang dikirim. Tab, switch, dan pintasannya ikut berganti nama.",
  "Good to know": "Perlu diketahui",
- "1.2.8 brought the pill shape, a shortcut for every page, Size: Large, the island on all displays, and Bluetooth low-battery alerts.": "1.2.8 membawa bentuk kapsul, pintasan untuk tiap halaman, Size: Large, island di semua layar, dan peringatan baterai Bluetooth.",
- "Version 1.2.9 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.2.9 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
+ "Version 1.2.10 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.2.10 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
  "Get Notchfolk for GNOME": "Dapatkan Notchfolk untuk GNOME",
  "GNOME 46–51 on Linux, x86_64.": "GNOME 46–51 di Linux, x86_64.",
  "Install with one command": "Pasang dengan satu perintah",
