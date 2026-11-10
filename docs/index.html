@@ -672,9 +672,13 @@ footer a:hover { color: var(--ink); }
   width: 150px; height: 30px; background: #000; border-radius: 0 0 14px 14px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   color: #fff; font-family: var(--ui); font-size: 13px; font-weight: 600;
-  transition: background .3s, box-shadow .3s; }
+  transition: background .3s, box-shadow .3s, border-radius .45s var(--spring), top .45s var(--spring); }
 .mini-island.glass { background: rgba(10,12,20,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   box-shadow: inset 0 0 0 1px rgba(125,216,174,.55), inset 0 0 0 1px rgba(255,200,144,.25), 0 0 18px rgba(142,205,240,.35); }
+.mini-island.pill { top: 14px; border-radius: 999px; }
+.mini-island.pill:not(.glass) { box-shadow: 0 10px 24px -12px rgba(26,34,51,.45); }
+.mini-island.pill.glass { box-shadow: inset 0 0 0 1px rgba(125,216,174,.55), inset 0 0 0 1px rgba(255,200,144,.25),
+  0 10px 24px -12px rgba(142,205,240,.5); }
 .mini-island .mi-ring { width: 12px; height: 12px; border-radius: 50%;
   background: conic-gradient(#33e07a 0 72%, rgba(51,224,122,.28) 0);
   -webkit-mask: radial-gradient(circle, transparent 3.6px, #000 4px); mask: radial-gradient(circle, transparent 3.6px, #000 4px); }
@@ -1079,12 +1083,18 @@ footer a:hover { color: var(--ink); }
             <button type="button" data-island="black" aria-pressed="true">Black</button>
             <button type="button" data-island="glass" aria-pressed="false">Glass</button>
           </span>
+          <span class="seg" role="group" aria-label="Island shape">
+            <button type="button" data-shape="notch" aria-pressed="true">Notch</button>
+            <button type="button" data-shape="pill" aria-pressed="false">Pill</button>
+          </span>
           <label>Glass tint <input type="range" id="tintRange" min="0" max="100" value="55" aria-label="Glass tint"></label>
         </div>
         <p class="set-hint"><img src="images/icon.png" alt="">Settings &rarr; Appearance &rarr; Island</p>
       </div>
       <div class="opts">
         <div class="opt"><h3>Black or Glass island</h3><p>Notchfolk&apos;s own black island, or clear dark glass over what is behind it, blurred, with a lit rim. The slider sets how dark the glass is.</p></div>
+        <div class="opt"><h3>Notch or pill shape</h3><p>Joined to the top of the screen, or a round pill floating just below it &mdash; the same island either way.</p></div>
+        <div class="opt"><h3>Standard or Large</h3><p>The open island 600 or 720 px wide, its pages taller at Large, each laying itself out for the room.</p></div>
         <div class="opt"><h3>Your clock, your format</h3><p>24-hour or 12-hour, following your GNOME clock. The island&apos;s clock always matches.</p></div>
         <div class="opt"><h3>Notch size</h3><p>Adjust it yourself. It&apos;s automatically larger on wide monitors.</p></div>
         <div class="opt"><h3>Follows GNOME</h3><p>Accent colour and text size come from your GNOME settings &mdash; change them there and the island restyles itself.</p></div>
@@ -1299,6 +1309,10 @@ if (copyBtn) copyBtn.addEventListener("click", async () => {
     isl.classList.toggle("glass", glass);
     document.querySelectorAll("[data-island]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
     if (glass) applyTint(); else isl.style.background = "";
+  }));
+  document.querySelectorAll("[data-shape]").forEach(b => b.addEventListener("click", () => {
+    isl.classList.toggle("pill", b.dataset.shape === "pill");
+    document.querySelectorAll("[data-shape]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
   }));
   if (tint) tint.addEventListener("input", applyTint);
 })();
@@ -1696,6 +1710,14 @@ fit(); addEventListener("resize", fit);
  "Glass tint": "Kegelapan kaca",
  "Black": "Hitam",
  "Glass": "Kaca",
+ "Island look": "Tampilan island",
+ "Island shape": "Bentuk island",
+ "Notch": "Notch",
+ "Pill": "Kapsul",
+ "Notch or pill shape": "Bentuk notch atau kapsul",
+ "Joined to the top of the screen, or a round pill floating just below it — the same island either way.": "Menempel di atas layar, atau kapsul bulat yang melayang sedikit di bawahnya — island yang sama keduanya.",
+ "Standard or Large": "Standar atau Large",
+ "The open island 600 or 720 px wide, its pages taller at Large, each laying itself out for the room.": "Island terbuka selebar 600 atau 720 px, halamannya lebih tinggi di Large, masing-masing menata dirinya sesuai ruangnya.",
  "Settings → Appearance → Island": "Settings → Appearance → Island",
  "New in Notchfolk 1.2.7.": "Yang baru di Notchfolk 1.2.7.",
  "Speech on an OpenAI-compatible router, replies that can be spoken, and a microphone that is finally heard.": "Speech lewat router yang kompatibel OpenAI, jawaban yang bisa diucapkan, dan mikrofon yang akhirnya terdengar.",
