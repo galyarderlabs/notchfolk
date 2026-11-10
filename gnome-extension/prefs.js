@@ -1646,8 +1646,8 @@ const PAGES = [
 
 /** The pages a shortcut of their own may open from anywhere, as the controller's SHORTCUT_PAGES, with their names. */
 const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, iconName]),
-    ['apps', 'Apps', 'view-app-grid-symbolic'], ['devices', 'Devices', 'bluetooth-active-symbolic'],
-    ['usage', 'AI Usage', 'power-profile-performance-symbolic']];
+    ['phone', 'Phone', 'phone-symbolic'], ['apps', 'Apps', 'view-app-grid-symbolic'],
+    ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic']];
 
 /** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
 function shortcutsGroup(settings) {
@@ -1782,9 +1782,13 @@ function pagesGroup(settings, window) {
     apps.add_prefix(new Gtk.Image({icon_name: 'view-app-grid-symbolic'}));
     group.add(apps);
     const devices = switchRow(settings, 'devices-page', 'Devices',
-        'A phone or tablet paired through GSConnect: its battery, a ring to find it, and the clipboard sent over. Its tab shows while one is connected');
-    devices.add_prefix(new Gtk.Image({icon_name: 'phone-symbolic'}));
+        'Connected Bluetooth devices and their battery; its tab shows while one is connected');
+    devices.add_prefix(new Gtk.Image({icon_name: 'bluetooth-active-symbolic'}));
     group.add(devices);
+    const phone = switchRow(settings, 'phone-page', 'Phone',
+        'A phone or tablet paired through GSConnect: its battery, a ring to find it, and the clipboard sent over. Its tab shows while one is connected');
+    phone.add_prefix(new Gtk.Image({icon_name: 'phone-symbolic'}));
+    group.add(phone);
     const usage = switchRow(settings, 'usage-enabled', 'AI Usage', 'Your AI plans’ limits, and warnings as one nears its end');
     usage.add_prefix(new Gtk.Image({icon_name: 'power-profile-performance-symbolic'}));
     if (!usageProviders().length) {

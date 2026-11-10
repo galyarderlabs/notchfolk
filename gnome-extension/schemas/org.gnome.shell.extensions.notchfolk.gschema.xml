@@ -254,6 +254,11 @@
       <summary>The Devices page</summary>
       <description>Shows the Devices page: each connected Bluetooth device with its battery. Its tab shows only while a device is connected. Off until you turn it on.</description>
     </key>
+    <key name="phone-page" type="b">
+      <default>true</default>
+      <summary>The Phone page</summary>
+      <description>Shows the Phone page: a phone or tablet paired through GSConnect — its battery, a ring to find it, and the clipboard sent over. Its tab shows only while it is connected.</description>
+    </key>
     <key name="app-usage-clear" type="b">
       <default>false</default>
       <summary>Clear app usage once</summary>
@@ -346,6 +351,11 @@
       <default>[]</default>
       <summary>Shortcut to the Notifications page</summary>
       <description>Opens the island on the Notifications page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
+    </key>
+    <key name="shortcut-phone" type="as">
+      <default>[]</default>
+      <summary>Shortcut to the Phone page</summary>
+      <description>Opens the island on the Phone page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
     </key>
     <key name="shortcut-focus" type="as">
       <default>[]</default>

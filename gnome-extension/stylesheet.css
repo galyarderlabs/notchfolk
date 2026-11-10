@@ -1842,41 +1842,82 @@
 #notchfolkIsland.notchfolk-accent-system .notchfolk-entry:focus { box-shadow: inset 0 0 0 2px st-transparentize(-st-accent-color, 0.4) !important; }
 
 /* Devices page: a compact device card with its status and actions grouped together. */
-.notchfolk-devices-list { spacing: 12px; }
-.notchfolk-devices-card {
+/* A card per connected device, every one alike, a shade lighter than the island: the device's icon in white on a
+ * grey tile, its name in white and "Connected" in grey under it (a green dot first; "Low battery" in red), then its
+ * battery on its side, filled from the left to the level in green, and the level, right-aligned in a fixed width so
+ * the batteries line up; both red when low. The battery and the level keep their width, the name gives way. 52 px
+ * tall, the tile 10 px from the card's edge (its 8 px corners within the card's 12); three rows to the page take
+ * 42 px, a touch denser (`notchfolk-devices-dense`). How the cards sit is devices.js's. */
+.notchfolk-device-card { spacing: 12px; padding: 0 14px 0 10px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.07); }
+.notchfolk-device-tile { width: 32px; height: 32px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.14); }
+.notchfolk-device-icon { icon-size: 16px; color: #ffffff; }
+.notchfolk-device-texts { spacing: 2px; }
+.notchfolk-device-name { font-size: 14px; font-weight: 600; color: #ffffff; }
+.notchfolk-device-status { spacing: 6px; font-size: 12px; }
+.notchfolk-device-dot { width: 6px; height: 6px; border-radius: 3px; background-color: #30d158; }
+.notchfolk-device-connected, .notchfolk-device-none { color: rgba(255, 255, 255, 0.55); }
+.notchfolk-device-none { font-size: 12px; }
+.notchfolk-device-power { spacing: 8px; }
+.notchfolk-device-battery { spacing: 1px; }
+.notchfolk-device-battery-body {
+  width: 22px;
+  height: 11px;
+  padding: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 4px;
+}
+.notchfolk-device-battery-fill { border-radius: 2px; background-color: #30d158; }
+.notchfolk-device-battery-nub { width: 2px; height: 4px; border-radius: 0 1px 1px 0; background-color: rgba(255, 255, 255, 0.45); }
+.notchfolk-device-level { min-width: 34px; font-size: 13px; font-weight: 600; color: #ffffff; text-align: right; font-feature-settings: "tnum"; }
+.notchfolk-device-card.low .notchfolk-device-battery-fill,
+.notchfolk-device-card.low .notchfolk-device-dot { background-color: #ff453a; }
+.notchfolk-device-card.low .notchfolk-device-level,
+.notchfolk-device-card.low .notchfolk-device-connected { color: #ff453a; }
+
+/* Three rows to the page: 42 px cards, the tile 7 px from the edge. */
+.notchfolk-devices-dense .notchfolk-device-card { spacing: 10px; padding: 0 12px 0 7px; }
+.notchfolk-devices-dense .notchfolk-device-tile { width: 28px; height: 28px; border-radius: 7px; }
+.notchfolk-devices-dense .notchfolk-device-icon { icon-size: 14px; }
+.notchfolk-devices-dense .notchfolk-device-texts { spacing: 0; }
+.notchfolk-devices-dense .notchfolk-device-name { font-size: 13px; }
+.notchfolk-devices-dense .notchfolk-device-status, .notchfolk-devices-dense .notchfolk-device-none { font-size: 11px; }
+.notchfolk-devices-dense .notchfolk-device-level { min-width: 32px; font-size: 12px; }
+.notchfolk-devices-scroll { -st-vfade-offset: 16px; }
+.notchfolk-phone-page-list { spacing: 12px; }
+.notchfolk-phone-page-card {
   spacing: 12px;
   padding: 14px 16px;
   border-radius: 18px;
   background-color: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.notchfolk-devices-header { spacing: 14px; min-height: 42px; }
-.notchfolk-devices-icon-well {
+.notchfolk-phone-page-header { spacing: 14px; min-height: 42px; }
+.notchfolk-phone-page-icon-well {
   width: 42px;
   height: 42px;
   border-radius: 13px;
   background-color: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.92);
 }
-.notchfolk-devices-identity { spacing: 3px; }
-.notchfolk-devices-name { font-size: 16px; font-weight: 700; }
-.notchfolk-devices-connection { font-size: 11px; color: rgba(255, 255, 255, 0.58); }
-.notchfolk-devices-battery { spacing: 10px; }
-.notchfolk-devices-battery-info { spacing: 2px; }
-.notchfolk-devices-battery-caption { font-size: 10px; color: rgba(255, 255, 255, 0.55); }
-.notchfolk-devices-charge { font-size: 12px; font-weight: 600; }
-.notchfolk-devices-figure { font-size: 10px; font-weight: 700; font-feature-settings: "tnum"; }
-.notchfolk-devices-divider { height: 1px; background-color: rgba(255, 255, 255, 0.1); }
-.notchfolk-devices-actions { spacing: 8px; }
-.notchfolk-devices-action {
+.notchfolk-phone-page-identity { spacing: 3px; }
+.notchfolk-phone-page-name { font-size: 16px; font-weight: 700; }
+.notchfolk-phone-page-connection { font-size: 11px; color: rgba(255, 255, 255, 0.58); }
+.notchfolk-phone-page-battery { spacing: 10px; }
+.notchfolk-phone-page-battery-info { spacing: 2px; }
+.notchfolk-phone-page-battery-caption { font-size: 10px; color: rgba(255, 255, 255, 0.55); }
+.notchfolk-phone-page-charge { font-size: 12px; font-weight: 600; }
+.notchfolk-phone-page-figure { font-size: 10px; font-weight: 700; font-feature-settings: "tnum"; }
+.notchfolk-phone-page-divider { height: 1px; background-color: rgba(255, 255, 255, 0.1); }
+.notchfolk-phone-page-actions { spacing: 8px; }
+.notchfolk-phone-page-action {
   padding: 9px 12px;
   border-radius: 999px;
   background-color: rgba(255, 255, 255, 0.09);
 }
-.notchfolk-devices-action:hover { background-color: rgba(255, 255, 255, 0.16); }
-.notchfolk-devices-action:active { background-color: rgba(255, 255, 255, 0.22); }
-.notchfolk-devices-action-content { spacing: 8px; }
-.notchfolk-devices-action-label { font-size: 12px; font-weight: 600; }
+.notchfolk-phone-page-action:hover { background-color: rgba(255, 255, 255, 0.16); }
+.notchfolk-phone-page-action:active { background-color: rgba(255, 255, 255, 0.22); }
+.notchfolk-phone-page-action-content { spacing: 8px; }
+.notchfolk-phone-page-action-label { font-size: 12px; font-weight: 600; }
 
 /* History and Close share one aligned toolbar beside the composer. */
 .notchfolk-voice-toolbar { spacing: 6px; }
