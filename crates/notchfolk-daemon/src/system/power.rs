@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use futures_util::StreamExt;
-use isle_core::battery::low_level;
+use notchfolk_core::battery::low_level;
 use tokio::time::Instant;
 
 use zbus::Connection;

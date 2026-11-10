@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use futures_util::StreamExt;
-use isle_core::battery::DeviceBatteries;
+use notchfolk_core::battery::DeviceBatteries;
 use zbus::fdo::{ObjectManagerProxy, PropertiesProxy};
 use zbus::message::Type as MessageType;
 use zbus::names::InterfaceName;
