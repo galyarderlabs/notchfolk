@@ -3,3 +3,4 @@ gnome-extension/schemas/gschemas.compiled
 /dist
 /node_modules
 *.pkg.tar*
+__pycache__/

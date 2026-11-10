@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
 from fastmcp.server.dependencies import get_access_token
+from fastmcp.server.middleware import Middleware
 from dbus_next import BusType, Message
 from dbus_next.aio import MessageBus
 from notchfolk_oauth import NotchfolkOAuthProvider
@@ -132,6 +133,11 @@ def public_mcp_url() -> str | None:
     return f"https://{hostname}"
 
 
+from tools import register as register_domains, scopes as domain_scopes
+DOMAIN_READ_SCOPES, DOMAIN_WRITE_SCOPES = domain_scopes()
+READ_SCOPES.update(DOMAIN_READ_SCOPES)
+WRITE_SCOPES.update(DOMAIN_WRITE_SCOPES)
+
 OAUTH_SCOPES = sorted({"*:read", *READ_SCOPES.values(), *WRITE_SCOPES.values()})
 PUBLIC_MCP_URL = public_mcp_url()
 if PUBLIC_MCP_URL:
@@ -145,6 +151,25 @@ if PUBLIC_MCP_URL:
 else:
     auth = StaticTokenVerifier(tokens=TOKENS) if TOKENS else None
 mcp = FastMCP("Notchfolk", auth=auth)
+
+
+class ScopedListing(Middleware):
+    """A restricted tool is not visible as callable to a key without its scope (the
+    spec's AC-4): tools/list answers with only what the calling key may call."""
+
+    async def on_list_tools(self, context, call_next):
+        tools = await call_next(context)
+        token = get_access_token() if auth else None
+        if not auth or token is None:
+            return tools
+        scopes = set(token.scopes)
+        def visible(tool):
+            scope = WRITE_SCOPES.get(tool.name)
+            return scope is None or scope in scopes
+        return [tool for tool in tools if visible(tool)]
+
+
+mcp.add_middleware(ScopedListing())
 
 
 async def authorize(tool: str, *, write_access: bool = False):
@@ -209,6 +234,9 @@ async def write(tool: str):
         LOG.warning("MCP write denied: client=loopback tool=%s", tool)
         raise PermissionError(f"{tool} is disabled; add it to NOTCHFOLK_MCP_WRITE_TOOLS to allow it")
     LOG.info("MCP write tool called: client=%s tool=%s", token.client_id if token else "loopback", tool)
+
+
+register_domains(mcp, authorize, write)
 
 
 @mcp.tool
