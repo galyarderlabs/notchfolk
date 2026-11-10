@@ -165,13 +165,12 @@ pub async fn watch(iface: InterfaceRef<SystemService>) -> anyhow::Result<()> {
         // Several events come with one plug; the list is read once per event, and publishing an
         // unchanged list changes nothing (see `publish`).
         for event in socket.iter() {
-            match event.action().and_then(|action| action.to_str()) {
-                Some("add") | Some("remove") => {
-                    if !send(list()) {
-                        return;
-                    }
-                }
-                _ => {}
+            let changed = event
+                .action()
+                .and_then(|action| action.to_str())
+                .is_some_and(|action| action == "add" || action == "remove");
+            if changed && !send(list()) {
+                return;
             }
         }
     });
