@@ -22,9 +22,10 @@ const SHAPE = ['width', 'height', 'bottom', 'left', 'right', 'radius', 'shoulder
 // How the blur is toned, in the same pass: its lightness mapped into a band (bright backdrops held `deep`er), its
 // colour scaled, a sheen and a glow inside the body's edge, `reach` deep (see theme.js).
 const TONE = ['saturation', 'lo', 'span', 'gamma', 'deep', 'sheen', 'glow'];
-// And: from how light (`knee`, 0..1) a backdrop is held deeper; near the edge, `band` px deep, what is behind bent in
-// by up to `lens` px, its red and blue `spread` apart (a thin rainbow where it bends most); the edge lit by `rim`, over
-// about `rimWidth` px. No lens, no rim: none of that is done.
+// And: from how light (`knee`, 0..1) a backdrop is held deeper; a dome over the face — what is behind bent in by up
+// to `lens` px, most at the rim and flat at the centre, rising over `band` px along the edge but never past half the
+// island's smaller side (a small glass gets a smaller dome); its red and blue `spread` apart (a thin rainbow where it
+// bends most); the edge lit by `rim`, over about `rimWidth` px. No lens, no rim: none of that is done.
 const LENS = ['knee', 'lens', 'band', 'spread', 'rim', 'rimWidth'];
 
 // How far `p` is inside the body's edge: its sides, bottom and corners, and its top where that is free (a pill's).
@@ -78,11 +79,19 @@ if (shoulder > 0.0 && p.y < shoulder) {
 }
 if (lens > 0.0) {
     float edgeIn = isleInner(p);
-    if (edgeIn >= 0.0 && edgeIn < band) {
+    // A dome, not a rim bend: the backdrop is pulled in across the face, most at the rim and flat at the centre, as
+    // thick glass. It rises over band along the edge, but never past half the island's smaller side — a glass too
+    // small to hold the band gets a smaller dome, its height and its bend scaled down together, so the surface keeps
+    // its slopes (the repo's liquid glass: lensBandFor, lensScaleFor). The bend builds towards the rim with the
+    // repo's falloff, 2.4.
+    float halfMin = 0.5 * min(width, height);
+    float bandEff = max(min(band, halfMin), 1.0);
+    float scale = bandEff / max(band, 1.0);
+    if (edgeIn >= 0.0 && edgeIn < bandEff) {
         // Inwards across the edge, most at the rim: there it shows what lies a little further in, as thick glass. Read
         // anew, so times the paint's own colour as Clutter's was (its opacity: the island fading as it hides).
         vec2 n = isleNormal(p);
-        vec2 shift = n * lens * pow(1.0 - edgeIn / band, 2.0) / (vec2(width, height) + 3.0);
+        vec2 shift = n * lens * scale * pow(1.0 - edgeIn / bandEff, 2.4) / (vec2(width, height) + 3.0);
         vec2 uv = cogl_tex_coord_in[0].xy;
         vec4 bent = texture2D(cogl_sampler0, uv + shift);
         cogl_color_out = vec4(texture2D(cogl_sampler0, uv + shift * (1.0 + spread)).r, bent.g,

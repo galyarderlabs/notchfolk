@@ -11,13 +11,14 @@ const LOOKS = {
     black: {fill: [0, 0, 0, 1], solid: [0, 0, 0], edge: null, blur: null},
     // Brighter glass variant (branch vibe/glass-bright-variant): towards the MacOs-CC liquid-glass look — a light
     // milky glass instead of the dark one. What is behind it is blurred harder, its colours kept and lifted, its
-    // lightness held in a wider, brighter band (a white page ends a mid grey now, not a dark one); the edge bends what
-    // is behind it further, its colours parting wider, and catches the light harder. Trade-off, by design: white text
-    // reads less well over bright backdrops than on the dark glass (that was the dark glass's whole point).
+    // lightness held in a wider, brighter band (a white page ends a mid grey now, not a dark one); a dome bends what
+    // is behind it across the face (most at the rim, flat at the centre), its colours parting wider, and the edge
+    // catches the light harder. Trade-off, by design: white text reads less well over bright backdrops than on the
+    // dark glass (that was the dark glass's whole point).
     glass: {fill: [0.35, 0.38, 0.45, 0.30], solid: [0.30, 0.33, 0.40],
         edge: {color: [1, 1, 1], top: 0.38, bottom: 0.24},
         blur: {radius: 22, brightness: 1, small: 1.2, large: 1.45, lo: 0.08, span: 0.78, gamma: 1, deep: 0.30,
-            knee: 0.35, sheen: 0.14, glow: 0.12, lens: 44, band: 32, spread: 1.0, rim: 0.85, rimWidth: 1.5}},
+            knee: 0.35, sheen: 0.14, glow: 0.12, lens: 64, band: 32, spread: 1.0, rim: 0.85, rimWidth: 1.5}},
 };
 
 // Glass at its darkest (Settings' tint at 100): dark smoked glass, as GNOME's blurred menus look: what is behind
