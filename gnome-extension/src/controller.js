@@ -494,6 +494,7 @@ export class Controller {
             () => page('./pages/calories.js', 'CaloriesPage', [this._daemon, this._settings, size]),
             () => page('./pages/water.js', 'WaterPage', [this._daemon, this._settings, size]),
             () => page('./pages/prayer.js', 'PrayerPage', [this._daemon, size]),
+            () => page('./pages/weather.js', 'WeatherPage', [this._daemon, this._settings, size]),
             () => page('./pages/usage.js', 'UsagePage', [this._daemon, size]),
             () => page('./pages/router.js', 'RouterPage', [this._daemon, this._settings, size]),
             () => page('./pages/apps.js', 'AppsPage', [this._daemon, this._appUsage, size]),
@@ -651,7 +652,7 @@ export class Controller {
             this._settingsChanged.push(this._settings.connect(`changed::${key}`, () => this._syncRouter()));
         for (const key of ['event-alerts', 'event-alert-minutes'])
             this._settingsChanged.push(this._settings.connect(`changed::${key}`, () => this._syncEventAlerts()));
-        for (const key of ['hidden-pages', 'world-clocks', 'app-usage', 'devices-page', 'phone-page', 'open-size'])
+        for (const key of ['hidden-pages', 'world-clocks', 'app-usage', 'devices-page', 'phone-page', 'weather-enabled', 'open-size'])
             this._settingsChanged.push(this._settings.connect(`changed::${key}`, () => this._syncPages()));
         this._settingsChanged.push(this._settings.connect('changed::app-usage-clear', () => this._syncAppUsage()));
         for (const key of ['island-theme', 'glass-tint'])
@@ -1293,6 +1294,9 @@ export class Controller {
                 page.hidden = !this._settings.get_boolean('phone-page');
             else if (page.name === 'devices')
                 page.hidden = !this._settings.get_boolean('devices-page');
+            // The weather is a page of its own now, with its own switch beside the pages'.
+            else if (page.name === 'weather')
+                page.hidden = !this._settings.get_boolean('weather-enabled');
             else if (page.name !== 'call' && page.name !== 'usage' && page.name !== 'router')
                 page.hidden = hidden.includes(page.name);
         }

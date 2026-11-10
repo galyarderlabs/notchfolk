@@ -1776,12 +1776,6 @@ function pagesGroup(settings, window) {
         group.add(row);
         return [name, row];
     });
-    // Weather is its own feature of the notch, not a page: its switch lives with the
-    // pages' own switches, so every feature of the island is in one place.
-    const weather = switchRow(settings, 'compact-weather', 'Weather',
-        'Today\u2019s temperature beside the clock in the closed island');
-    weather.add_prefix(new Gtk.Image({icon_name: 'weather-clear-symbolic'}));
-    group.add(weather);
     // The Apps, Devices and Usage pages' own switches, here too, so every tab is in one place.
     const apps = switchRow(settings, 'app-usage', 'Apps', 'Time spent in each app, kept on this computer for 30 days');
     apps.add_prefix(new Gtk.Image({icon_name: 'view-app-grid-symbolic'}));
@@ -1932,9 +1926,9 @@ function worldClocksGroup(settings, window) {
 function weatherGroup(settings, window) {
     const group = new Adw.PreferencesGroup({
         title: 'Weather',
-        description: 'Current temperature in the compact island. Refreshes every 30 minutes while it is on screen.',
+        description: 'A page of its own: the location, the current conditions, and the next hours. Refreshes every 30 minutes while the page is open.',
     });
-    group.add(switchRow(settings, 'weather-enabled', 'Show current weather', 'An icon and temperature in the notch'));
+    group.add(switchRow(settings, 'weather-enabled', 'Weather page', 'The Weather page, with its tab in the open island'));
 
     const city = new Adw.ActionRow({title: 'Weather location', activatable: true});
     city.add_prefix(new Gtk.Image({icon_name: 'weather-clear-symbolic'}));

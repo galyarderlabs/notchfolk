@@ -27,7 +27,7 @@ export const WeatherWatcher = GObject.registerClass({
         this._info = null;
         this._updated = 0;
         this._refreshTimer = 0;
-        this.state = {temperature: '', iconName: '', summary: '', locationName: ''};
+        this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: []};
         this._settingsIds = [
             settings.connect('changed::weather-enabled', () => this._configure()),
             settings.connect('changed::weather-location', () => this._configure()),
@@ -56,6 +56,23 @@ export const WeatherWatcher = GObject.registerClass({
         }
     }
 
+    /** The next hours as the page shows them, from GWeather's own forecast list; a GWeather
+     * without one answers an empty list, and the page shows only the current conditions. */
+    _forecast(info) {
+        try {
+            return (info.get_forecast_list() ?? []).slice(1, 6).map(slice => {
+                const temperature = slice.get_temp?.() ?? '';
+                const iconName = slice.get_icon_name?.() ?? '';
+                const timestamp = slice.get_timestamp?.() ?? 0;
+                const hour = timestamp
+                    ? GLib.DateTime.new_from_unix_local(timestamp).format('%H') : '';
+                return {temperature, iconName, hour};
+            }).filter(slice => slice.temperature);
+        } catch {
+            return [];
+        }
+    }
+
     /** Drops old city data and creates an async GWeather request for the current setting. */
     _configure() {
         this._cancelRefresh();
@@ -66,7 +83,7 @@ export const WeatherWatcher = GObject.registerClass({
         }
         this._info = null;
         this._updated = 0;
-        this.state = {temperature: '', iconName: '', summary: '', locationName: ''};
+        this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: []};
 
         const location = this._settings.get_boolean('weather-enabled')
             ? WorldClocks.weatherLocation(this._settings, this._clocks) : null;
@@ -116,6 +133,7 @@ export const WeatherWatcher = GObject.registerClass({
         if (!temperature)
             return;
         this.state = {
+            forecast: this._forecast(info),
             temperature,
             iconName: info.get_symbolic_icon_name() || 'weather-clear-symbolic',
             summary: info.get_weather_summary() || '',

@@ -16,7 +16,6 @@ import {onUiScale, px} from './compat.js';
 import * as Format from './format.js';
 import * as Palette from './palette.js';
 import * as Playback from './playback.js';
-import {WeatherWatcher} from './weather.js';
 import {watchClock} from './wallClock.js';
 import {Art, Bars, PrivacyDots, RecordingDot, Ring, icon, restsAt, label} from './widgets.js';
 
@@ -25,8 +24,8 @@ const ASSISTANT_SIZE = 26;
 
 /** Icon and assistant sizes, in CSS pixels. */
 const SIZES = {
-    hanging: {center: 34, ring: 20, bars: 16, moon: 14, call: 15, weather: 16, music: 24},
-    inBar: {center: 30, ring: 18, bars: 14, moon: 13, call: 14, weather: 14, music: 20},
+    hanging: {center: 34, ring: 20, bars: 16, moon: 14, call: 15, phone: 16, music: 24},
+    inBar: {center: 30, ring: 18, bars: 14, moon: 13, call: 14, phone: 14, music: 20},
 };
 /** The pointer still for this long no longer holds the eyes (as voice.js's POINTER_REST_S). */
 const POINTER_REST_MS = 2500;
@@ -34,7 +33,7 @@ const POINTER_REST_MS = 2500;
 const POINTER_POLL_MS = 33;
 /** The live statuses Settings can take off the closed island (`compact-<kind>`); the recording dot and the
  * service-down warning always show, whatever the switches say. */
-const COMPACT_STATUSES = ['timer', 'calls', 'notifications', 'weather', 'phone', 'router'];
+const COMPACT_STATUSES = ['timer', 'calls', 'notifications', 'phone', 'router'];
 /** The music bars' opacity while the song is paused. */
 const PAUSED_OPACITY = 110;
 /** How often the focus ring is redrawn; it moves too slowly to need more. */
@@ -119,13 +118,6 @@ export const CompactView = GObject.registerClass({
         this._notificationStatus = new St.BoxLayout({style_class: 'notchfolk-compact-status-item', y_align: Clutter.ActorAlign.CENTER});
         this._notificationStatus.add_child(this._notificationIcon);
         this._notificationStatus.add_child(this._notificationCount);
-        this._weatherIcon = new St.Icon({icon_name: 'weather-clear-symbolic', icon_size: 16,
-            y_align: Clutter.ActorAlign.CENTER});
-        this._weatherTemperature = label('', 'notchfolk-compact-status-time');
-        this._weatherStatus = new St.BoxLayout({style_class: 'notchfolk-compact-status-item', y_align: Clutter.ActorAlign.CENTER,
-            visible: false});
-        this._weatherStatus.add_child(this._weatherIcon);
-        this._weatherStatus.add_child(this._weatherTemperature);
         // The first connected GSConnect device's battery, as a phone chip beside the weather.
         this._phoneIcon = new St.Icon({gicon: icon('notchfolk-phone-symbolic'), icon_size: 16,
             y_align: Clutter.ActorAlign.CENTER});
@@ -169,7 +161,7 @@ export const CompactView = GObject.registerClass({
         this._botLookChanged = ['bot-shape', 'bot-color', 'bot-glow'].map(key =>
             settings.connect(`changed::${key}`, () => (this._assistant.look = this._botLook())));
         this._statusItems = [this._serviceDown, this._timerStatus, this._recordingStatus,
-            this._callStatus, this._notificationStatus, this._weatherStatus, this._phoneStatus,
+            this._callStatus, this._notificationStatus, this._phoneStatus,
             this._routerStatus];
         this._leftStatuses = new St.BoxLayout({style_class: 'notchfolk-compact-status',
             y_align: Clutter.ActorAlign.CENTER});
@@ -192,12 +184,6 @@ export const CompactView = GObject.registerClass({
         // spread across the two sides by width, so the assistant stays in the notch's middle.
 
 
-        this._weather = new WeatherWatcher(settings);
-        this._weatherChanged = this._weather.connect('changed', () => {
-            this._syncWeather();
-            this._refresh();
-        });
-        this._syncWeather();
 
         row.add_child(this._rowPad);
         row.add_child(this._left);
@@ -218,7 +204,6 @@ export const CompactView = GObject.registerClass({
         this._privacyChanged = privacy.connect('changed', () => this._refresh());
         this._callChanged = call.connect('changed', () => this._refresh());
         this.connect('notify::mapped', () => {
-            this._weather.active = this.mapped;
             this._assistant.alive = this.mapped && !this._idle;
             if (this.mapped && !this._idle)
                 this._startAssistantPointerTracking();
@@ -233,7 +218,6 @@ export const CompactView = GObject.registerClass({
         });
         this._tickClock();
         this._stopClock = watchClock(() => this._tickClock());
-        this._weather.active = this.mapped;
         this._refresh();
         // Another scale: the signs sized for it first (their own updates may come after this one), then measured.
         onUiScale(this, () => {
@@ -376,15 +360,6 @@ export const CompactView = GObject.registerClass({
     /** Privacy dots are on in Settings and something is using the camera, microphone or screen. */
     _showingPrivacy() {
         return this._settings.get_boolean('privacy-indicators') && this._privacy.any;
-    }
-
-    /** Updates the weather chip and its screen-reader name from the last successful reading. */
-    _syncWeather() {
-        const {temperature, iconName, summary, locationName} = this._weather.state;
-        this._weatherIcon.icon_name = iconName || 'weather-clear-symbolic';
-        this._weatherTemperature.text = temperature;
-        this._weatherStatus.visible = Boolean(temperature);
-        this._weatherStatus.accessible_name = [locationName, summary, temperature].filter(Boolean).join(', ');
     }
 
     /** Updates the Router chip from the daemon's last reading. It remains visible while enabled,
@@ -530,8 +505,7 @@ export const CompactView = GObject.registerClass({
         this._bars.maxHeight = size.bars;
         this._moon.icon_size = size.moon;
         this._callIcon.icon_size = this._micOff.icon_size = size.call;
-        this._weatherIcon.icon_size = size.weather;
-        this._phoneIcon.icon_size = size.weather;
+        this._phoneIcon.icon_size = size.phone;
         this._assistantButton.set_size(px(size.center), px(size.center));
     }
 
@@ -581,7 +555,6 @@ export const CompactView = GObject.registerClass({
             recording && this._recordingStatus,
             onCall && shows('calls') && this._callStatus,
             shows('notifications') && this._notificationStatus,
-            shows('weather') && this._weather.state.temperature && this._weatherStatus,
             phone && shows('phone') && this._phoneStatus,
             router && shows('router') && this._routerStatus,
         ].filter(Boolean);
@@ -809,7 +782,5 @@ export const CompactView = GObject.registerClass({
             this._settings.disconnect(id);
         this._privacy.disconnect(this._privacyChanged);
         this._call.disconnect(this._callChanged);
-        this._weather.disconnect(this._weatherChanged);
-        this._weather.destroy();
     }
 });
