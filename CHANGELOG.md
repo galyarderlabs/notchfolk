@@ -6,6 +6,15 @@ All notable changes to Notchfolk are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.2.9] - 2026-11-10
+
+### Fixed
+
+- **Settings opens again.** The Shortcuts group listed a shortcut for every page, including Notchfolk's own
+  Calories, Water and Prayer pages, whose keys the schema did not carry: opening Settings answered
+  "GSettings key shortcut-calories not found". The three keys are in the schema, and a shortcut set for
+  one of those pages now opens it.
+
 ## [1.2.8] - 2026-11-10
 
 ### Added
