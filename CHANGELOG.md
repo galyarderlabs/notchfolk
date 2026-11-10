@@ -6,6 +6,28 @@ All notable changes to Notchfolk are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.2.8] - 2026-11-10
+
+### Added
+
+- **Pill shape.** Settings → Shape: the island as a round pill floating just below the top bar, on every
+  display, or the notch joined to the top as before — the same island either way, black or glass.
+- **A shortcut per page.** Settings → Shortcuts: every page can be opened from anywhere with a shortcut
+  of its own, recorded in Settings. Super+V opens the page Settings says — the clipboard history by
+  default, as before.
+- **Size: Large.** Settings → Size: the open island 720 px wide instead of 600, every page taller,
+  each laying itself out for the room — a larger cover, timer ring and month, more rows and cards.
+- **The island on all displays.** A mirror of the island on every monitor, not only the main one.
+- **Bluetooth devices' low battery** warns in the island (20, 10, 5%, once per level on the way down),
+  beside the GSConnect device alerts.
+
+### Fixed
+
+- **The installer asks GitHub again** when it times out or is busy for a moment (a 408, 429 or 5xx),
+  instead of failing the one-line install.
+- **opencode 2: deleting a session** runs with `--standalone`, so it no longer starts a background
+  service on a port the user's own may hold.
+
 ## [1.2.7] - 2026-11-08
 
 ### Fixed
