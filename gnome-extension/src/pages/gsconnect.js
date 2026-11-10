@@ -28,7 +28,7 @@ class PhonePage extends Page {
             height,
             reactive: true,
         });
-        this.name = 'devices';
+        this.name = 'phone';
         this._botGlow = botGlow;
 
         this._box = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-phone-page-list',

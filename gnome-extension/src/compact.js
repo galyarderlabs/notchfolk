@@ -215,7 +215,6 @@ export const CompactView = GObject.registerClass({
         this._compactChanged = COMPACT_STATUSES.map(kind =>
             settings.connect(`changed::compact-${kind}`, () => this._refresh()));
         this._pagesChanged = settings.connect('changed::hidden-pages', () => this._refresh());
-        this._pagesChanged = settings.connect('changed::hidden-pages', () => this._refresh());
         this._privacyChanged = privacy.connect('changed', () => this._refresh());
         this._callChanged = call.connect('changed', () => this._refresh());
         this.connect('notify::mapped', () => {
