@@ -21,7 +21,9 @@ const SHELF_INTERFACE: &str = "io.galyarderlabs.notchfolk.Shelf1";
 /// The island's own shelf icon, so the empty shelf looks the same in both, whatever the icon theme.
 const SHELF_ICON: &[u8] = include_bytes!("../../../gnome-extension/icons/notchfolk-shelf.svg");
 /// notchfolkd keeps this many files; a full shelf turns drops away.
-const CAPACITY: usize = 6;
+const CAPACITY: usize = 12;
+/// Tiles in a row; two rows hold the shelf.
+const ROW_SIZE: usize = 6;
 /// Hidden this long, the helper quits, its memory freed; the extension's next Show starts it again.
 const IDLE_QUIT_SECS: u32 = 20;
 /// Files dropped this recently (µs) are new on the shelf: their tiles pop in as they land.
@@ -52,6 +54,8 @@ struct Inner {
     window: gtk::Window,
     stack: gtk::Stack,
     tiles: gtk::Box,
+    /// The rows the tiles sit in, made and taken away as the count needs them.
+    rows: RefCell<Vec<gtk::Box>>,
     empty_title: gtk::Label,
     empty_hint: gtk::Label,
     daemon: RefCell<Option<gio::DBusProxy>>,
@@ -93,11 +97,12 @@ impl ShelfWindow {
             }
         });
 
-        // From the left at their own width, as in the island: the row never stretches a tile.
+        // Rows of ROW_SIZE tiles, each row centred, as in the island: a short row sits in the middle, not
+        // against the left edge, and no row ever stretches a tile.
         let tiles = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
+            .orientation(gtk::Orientation::Vertical)
             .spacing(6)
-            .halign(gtk::Align::Start)
+            .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
             .build();
         let scroller = gtk::ScrolledWindow::builder()
@@ -122,6 +127,7 @@ impl ShelfWindow {
             window,
             stack,
             tiles,
+            rows: RefCell::new(Vec::new()),
             empty_title,
             empty_hint,
             daemon: RefCell::default(),
@@ -494,7 +500,7 @@ impl ShelfWindow {
                 "Links and files online can't be kept",
             )
         } else if inner.over.get() && refusal.is_some() {
-            ("Too many files", "The shelf holds six at a time")
+            ("Too many files", "The shelf holds twelve at a time")
         } else if inner.over.get() {
             (
                 "Release to add it",
@@ -525,20 +531,40 @@ impl ShelfWindow {
                 .tile_cache
                 .take()
                 .into_values()
-                .for_each(|old| self.0.tiles.remove(&old));
+                .for_each(|old| unparent(&old));
             self.render_tiles(false);
         }
     }
 
-    /// Lays out a tile per file, newest first. A file already shown keeps its tile where it is, or moves it;
-    /// only new files get tiles (fading in with `mark_new`) and only gone ones lose theirs, so nothing else
-    /// is taken down and put back, nor replays its arrival.
+    /// Lays out a tile per file, newest first, in rows of ROW_SIZE, each row centred — as the island's
+    /// (files.js) are. A file already shown keeps its tile where it is, or moves it; only new files get tiles
+    /// (fading in with `mark_new`) and only gone ones lose theirs, so nothing else is taken down and put back,
+    /// nor replays its arrival.
     fn render_tiles(&self, mark_new: bool) {
         let inner = &self.0;
         let mut old = inner.tile_cache.take();
         let mut cache = HashMap::new();
+        let items = inner.items.borrow();
+        let rows_needed = items.len().div_ceil(ROW_SIZE);
+        let mut rows = inner.rows.borrow_mut();
+        while rows.len() < rows_needed {
+            let row = gtk::Box::builder()
+                .orientation(gtk::Orientation::Horizontal)
+                .spacing(6)
+                .halign(gtk::Align::Center)
+                .build();
+            inner.tiles.append(&row);
+            rows.push(row);
+        }
         let mut previous: Option<gtk::Widget> = None;
-        for item in inner.items.borrow().iter() {
+        let mut current_row = usize::MAX;
+        for (index, item) in items.iter().enumerate() {
+            let row_index = index / ROW_SIZE;
+            if row_index != current_row {
+                current_row = row_index;
+                previous = None;
+            }
+            let row = &rows[row_index];
             let tile = old.remove(&item.uri).unwrap_or_else(|| {
                 let weak = Rc::downgrade(&self.0);
                 tile::new(item, mark_new, move |uri| {
@@ -547,18 +573,35 @@ impl ShelfWindow {
                     }
                 })
             });
-            if tile.parent().is_none() {
-                inner.tiles.insert_child_after(&tile, previous.as_ref());
-            } else if tile.prev_sibling() != previous {
-                inner.tiles.reorder_child_after(&tile, previous.as_ref());
+            // In its row already, in the right place: leave it. Elsewhere, or in no row: move it there.
+            let in_place = tile
+                .parent()
+                .is_some_and(|parent| parent.as_ptr() == row.as_ptr())
+                && tile.prev_sibling() == previous;
+            if !in_place {
+                unparent(&tile);
+                row.insert_child_after(&tile, previous.as_ref());
             }
             previous = Some(tile.clone());
             cache.insert(item.uri.clone(), tile);
         }
         for gone in old.into_values() {
-            inner.tiles.remove(&gone);
+            unparent(&gone);
+        }
+        // Rows past the last one are empty now: every tile left sits in a row before them.
+        while rows.len() > rows_needed {
+            if let Some(row) = rows.pop() {
+                inner.tiles.remove(&row);
+            }
         }
         inner.tile_cache.replace(cache);
+    }
+}
+
+/// Takes `widget` out of whatever box holds it, if any; nothing when it has no parent.
+fn unparent(widget: &gtk::Widget) {
+    if let Some(parent) = widget.parent().and_then(|p| p.downcast::<gtk::Box>().ok()) {
+        parent.remove(widget);
     }
 }
 

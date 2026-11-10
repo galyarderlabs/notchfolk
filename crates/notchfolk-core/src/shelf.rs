@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// The shelf holds this many files, all in view at once; to add another,
 /// one must be removed first.
-pub const CAPACITY: usize = 6;
+pub const CAPACITY: usize = 12;
 
 /// One file parked on the shelf.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
