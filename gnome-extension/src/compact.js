@@ -713,7 +713,7 @@ export const CompactView = GObject.registerClass({
     /** Sets the clock's text; `watchClock` calls it again as the minute changes. */
     _tickClock() {
         this._clock.text = Format.timeOfDay(GLib.DateTime.new_now_local());
-        const date = Format.longDate();
+        const date = Format.numericDate();
         if (date !== this._restDate.text) {
             this._restDate.text = date;
             if (this.mapped) {

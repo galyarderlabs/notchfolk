@@ -15,6 +15,8 @@ Isle's changelog from before the fork, kept for reference.
   uneven, the island growing longer on the left. The default is now just the assistant, the clock
   and the music; the weather is off, and its switch has moved to Settings's own feature switches
   (beside the pages'), where a feature of the notch belongs.
+- **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" — the day
+  before the month, as the island's room asks; the pages keep their words.
 
 ## [1.2.10] - 2026-11-10
 
