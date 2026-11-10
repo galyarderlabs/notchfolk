@@ -36,6 +36,7 @@ subtle.workspace = true
 tokio.workspace = true
 toml_edit.workspace = true
 ureq.workspace = true
+udev.workspace = true
 zbus.workspace = true
 
 [dev-dependencies]

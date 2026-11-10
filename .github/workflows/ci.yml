@@ -27,7 +27,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -54,7 +54,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
       - name: Read rust-version
         id: msrv
         run: |
@@ -151,7 +151,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev pkg-config rpm file cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config rpm file cmake g++ clang libclang-dev libvulkan-dev glslc
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Package
