@@ -6,6 +6,7 @@
 //! what the island shows can be unit tested in isolation.
 
 pub mod app_usage;
+pub mod battery;
 pub mod calendar;
 pub mod calories;
 pub mod clipboard;

@@ -236,6 +236,12 @@ export const ShelfPage = GObject.registerClass({
         this._phoneControls = new St.BoxLayout({style_class: 'notchfolk-shelf-controls', x_expand: true, x_align: Clutter.ActorAlign.END});
         this._phoneControls.add_child(pillButton('Stop', 'notchfolk-pill-small', () => this.daemon.call('share', 'Stop')));
         bar.add_child(this._phoneControls);
+        // Each at its own height, centred on the row: none stretches to the tallest (the search field opened with
+        // Super+V made the tabs and filters taller with it, and the cards shorter).
+        for (const box of [bar, this._clipboardControls]) {
+            for (const child of box.get_children())
+                child.y_align = Clutter.ActorAlign.CENTER;
+        }
         return bar;
     }
 
@@ -400,19 +406,9 @@ export const ShelfPage = GObject.registerClass({
         return this._tab === 'files' ? this._files : null;
     }
 
-    /** Set while the drag-and-drop helper's window covers the Files tab, which then draws nothing. */
+    /** Set while the drag-and-drop helper's window covers the Files tab, which then draws only the names. */
     set helperActive(active) {
         this._files.helperActive = active;
-    }
-
-    /** The helper's window fading in over the Files tab: its tiles fade out with it (see FilesView.handOver). */
-    handOver(duration) {
-        this._files.handOver(duration);
-    }
-
-    /** The helper's window went before it was in: the tiles show again. */
-    handBack() {
-        this._files.handBack();
     }
 
     /** Whether the drag-and-drop helper is installed. */
@@ -464,7 +460,6 @@ export const ShelfPage = GObject.registerClass({
         this._files.refusal = dropping ? this._refusal : null;
         this._updateFilesHint();
     }
-
 
     /** The file is right over the drop zone. */
     set dropOver(over) {

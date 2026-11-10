@@ -58,6 +58,9 @@ export const CompactView = GObject.registerClass({
         this._call = call;
         this._idle = false;
         this._inBar = false;
+        /** In a pill (Settings → Shape): its ends as round as half its height (see `_fit`). */
+        this._pill = false;
+        this._pillHeight = 0;
         this._voiceEnabled = false;
         this._timeouts = {};
         this._assistantPointerTimeline = 0;
@@ -478,6 +481,23 @@ export const CompactView = GObject.registerClass({
             actor = actor.get_parent();
         }
         return false;
+    }
+
+    /** In a pill (Settings → Shape): its ends round as half its height; the row keeps its own width. */
+    set pill(pill) {
+        if (pill === this._pill)
+            return;
+        this._pill = pill;
+        this._sizeSigns();
+    }
+
+    /** The island's height where the signs sit, in stage pixels, as the controller shapes it: known before it is laid
+     * out, so its first frame has the width its next one would. */
+    set bodyHeight(height) {
+        if (Math.abs(height - (this._pillHeight || 0)) < 0.5)
+            return;
+        this._pillHeight = height;
+        this._sizeSigns();
     }
 
     /** Fits the view inside the top bar, like a notch, or below it. */
