@@ -112,6 +112,14 @@ spec's; every task names the ones it must prove.
   local tools unaffected. **AC-5.**
 - [ ] Verified against a live Camoufox server: navigate, snapshot and
   screenshot of a known page, a click and a type on it.
+- [ ] The CDP backend, opt-in in Settings: the same ten tools over the
+  Chrome DevTools Protocol against a Chromium-family browser the user
+  points at (its debug port the user's own configuration; Chrome 136+
+  needs a --user-data-dir away from the default profile). The opt-in
+  carries the security note: an open debugging port is reachable by any
+  local process. **AC-1, AC-2, AC-3, AC-4, AC-5.**
+- [ ] Verified against a live Chromium browser over CDP: the same
+  navigate, snapshot, click and type as Camoufox.
 
 ### 4. Skills and Office
 

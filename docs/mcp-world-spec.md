@@ -50,6 +50,8 @@ A toolchain domain is offered only when its binary is present on the machine; wh
 
 Value: the world can see and use the web through a real browser, driven over plain REST HTTP to the Camoufox server (localhost:9377 by the package's own default). The REST server drives the browser through Playwright: it launches Camoufox (anti-detection Firefox) via Playwright's `firefox.launch` with camoufox-js options. (Verified from the REST server's launch code and its cookie handling, which uses Playwright's `context.addCookies()`.)
 
+**Camoufox is the default backend.** A second, opt-in backend attaches over **CDP** to a Chromium-family browser of the user's own (Chrome 136 and later require a `--user-data-dir` away from the default profile, so the attached browser is a dedicated profile, not the daily one): the same ten tools, whichever backend is configured. CDP reaches only the Chromium family — Firefox removed its CDP support — and an open debugging port is reachable by any local process, so the opt-in says so in Settings and the port is the user's own configuration. When neither backend is present, the domain is not offered.
+
 | Tool | What it does | Access |
 |---|---|---|
 | `browser_navigate` | Opens a URL in the browser | Read-only |
