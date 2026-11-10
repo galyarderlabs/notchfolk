@@ -44,7 +44,8 @@ const TABS = {
     prayer: {icon: 'notchfolk-prayer', label: 'Prayer'},
     apps: {icon: 'notchfolk-apps', label: 'Apps'},
     usage: {icon: 'notchfolk-gauge', label: 'Usage'},
-    devices: {icon: 'notchfolk-devices', label: 'Devices'},
+    phone: {icon: 'notchfolk-devices', label: 'Phone'},
+    devices: {icon: 'notchfolk-headphones', label: 'Devices'},
     router: {icon: 'notchfolk-router', label: 'Router'},
 };
 /** How bright a tab's icon is: open, under the pointer, otherwise. */

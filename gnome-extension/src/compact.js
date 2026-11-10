@@ -32,6 +32,9 @@ const SIZES = {
 const POINTER_REST_MS = 2500;
 /** How often the resting face reads the pointer: often enough to follow it, rarely enough to cost nothing. */
 const POINTER_POLL_MS = 33;
+/** The live statuses Settings can take off the closed island (`compact-<kind>`); the recording dot and the
+ * service-down warning always show, whatever the switches say. */
+const COMPACT_STATUSES = ['timer', 'calls', 'notifications', 'weather', 'phone', 'router'];
 /** The music bars' opacity while the song is paused. */
 const PAUSED_OPACITY = 110;
 /** How often the focus ring is redrawn; it moves too slowly to need more. */
@@ -207,6 +210,10 @@ export const CompactView = GObject.registerClass({
                 this._refresh();
         });
         this._settingsChanged = settings.connect('changed::privacy-indicators', () => this._refresh());
+        // Which live statuses the closed island shows (Settings → Island): off, the status leaves the
+        // sides; the recording dot and the service-down warning stay whatever the switches say.
+        this._compactChanged = COMPACT_STATUSES.map(kind =>
+            settings.connect(`changed::compact-${kind}`, () => this._refresh()));
         this._pagesChanged = settings.connect('changed::hidden-pages', () => this._refresh());
         this._privacyChanged = privacy.connect('changed', () => this._refresh());
         this._callChanged = call.connect('changed', () => this._refresh());
@@ -568,14 +575,15 @@ export const CompactView = GObject.registerClass({
         // bare; a service failure replaces the statuses with a single warning. The unseen
         // notifications always take the clock's side: the date keeps the right one heavy, and the
         // bell balances it (see the spread's `kept`).
+        const shows = kind => this._settings.get_boolean(`compact-${kind}`);
         const statuses = this._isServiceDown ? [this._serviceDown] : [
-            timerActive && this._timerStatus,
+            timerActive && shows('timer') && this._timerStatus,
             recording && this._recordingStatus,
-            onCall && this._callStatus,
-            this._notificationStatus,
-            this._weather.state.temperature && this._weatherStatus,
-            phone && this._phoneStatus,
-            router && this._routerStatus,
+            onCall && shows('calls') && this._callStatus,
+            shows('notifications') && this._notificationStatus,
+            shows('weather') && this._weather.state.temperature && this._weatherStatus,
+            phone && shows('phone') && this._phoneStatus,
+            router && shows('router') && this._routerStatus,
         ].filter(Boolean);
         this._spreadStatuses(statuses);
         // The cover sits in the left corner while the song plays; the placeholder stands while a
@@ -794,6 +802,8 @@ export const CompactView = GObject.registerClass({
         this._daemon.disconnect(this._daemonChanged);
         this._settings.disconnect(this._settingsChanged);
         this._settings.disconnect(this._openOnChanged);
+        for (const id of this._compactChanged)
+            this._settings.disconnect(id);
         this._settings.disconnect(this._pagesChanged);
         for (const id of this._botLookChanged)
             this._settings.disconnect(id);

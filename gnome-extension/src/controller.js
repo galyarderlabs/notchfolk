@@ -128,7 +128,7 @@ const PILL_HEADER_TOP = 8;
 /** The pages a shortcut of their own may open from anywhere (Settings → Shortcuts; `shortcut-<page>`, none set at
  * first: the usual ones are GNOME's). As prefs.js lists them. */
 const SHORTCUT_PAGES = ['music', 'notifications', 'focus', 'reminders', 'shelf', 'calendar', 'calories', 'water',
-    'prayer', 'apps', 'devices', 'usage'];
+    'prayer', 'phone', 'apps', 'devices', 'usage'];
 
 /** A question back is shown this long before the island listens for the reply. */
 const VOICE_LISTEN_AGAIN_MS = 900;
@@ -497,7 +497,8 @@ export class Controller {
             () => page('./pages/usage.js', 'UsagePage', [this._daemon, size]),
             () => page('./pages/router.js', 'RouterPage', [this._daemon, this._settings, size]),
             () => page('./pages/apps.js', 'AppsPage', [this._daemon, this._appUsage, size]),
-            () => page('./pages/devices.js', 'DevicesPage', [this._daemon, () => this._botLook.palette.glow, size]),
+            () => page('./pages/gsconnect.js', 'PhonePage', [this._daemon, () => this._botLook.palette.glow, size]),
+            () => page('./pages/devices.js', 'DevicesPage', [this._daemon, size]),
         ];
     }
 
@@ -650,7 +651,7 @@ export class Controller {
             this._settingsChanged.push(this._settings.connect(`changed::${key}`, () => this._syncRouter()));
         for (const key of ['event-alerts', 'event-alert-minutes'])
             this._settingsChanged.push(this._settings.connect(`changed::${key}`, () => this._syncEventAlerts()));
-        for (const key of ['hidden-pages', 'world-clocks', 'app-usage', 'devices-page', 'open-size'])
+        for (const key of ['hidden-pages', 'world-clocks', 'app-usage', 'devices-page', 'phone-page', 'open-size'])
             this._settingsChanged.push(this._settings.connect(`changed::${key}`, () => this._syncPages()));
         this._settingsChanged.push(this._settings.connect('changed::app-usage-clear', () => this._syncAppUsage()));
         for (const key of ['island-theme', 'glass-tint'])
@@ -1286,8 +1287,10 @@ export class Controller {
             // Apps has its own switch, which times the app in front too: no tab while nothing is timed.
             if (page.name === 'apps')
                 page.hidden = !this._settings.get_boolean('app-usage');
-            // Devices is off until turned on, as an app is installed: its own switch, not `hidden-pages`.
-            // Its tab still shows only while a device is connected (the page's own `available`).
+            // Phone and Devices are off until turned on, as an app is installed: their own switches, not
+            // `hidden-pages`. Their tabs still show only while a device is connected (each page's `available`).
+            else if (page.name === 'phone')
+                page.hidden = !this._settings.get_boolean('phone-page');
             else if (page.name === 'devices')
                 page.hidden = !this._settings.get_boolean('devices-page');
             else if (page.name !== 'call' && page.name !== 'usage' && page.name !== 'router')

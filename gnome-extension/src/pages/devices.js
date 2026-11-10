@@ -1,159 +1,263 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 zickrian
-// Copyright (C) 2026 Galyarder Labs
 
-// Devices: the GSConnect devices paired with this computer — their battery,
-// a ring to find them, and the clipboard sent over. No device connected, no
-// tab; see docs/gsconnect-plan.md.
+// The connected Bluetooth devices, a card each and every card alike: the device's icon on a tile, its name and
+// "Connected" (or "Low battery"), then its battery filled to the level, and the level. However many there are, the
+// cards start at the page's top: up to three, a row each across the page; from four, two side by side (an odd last
+// one across both), three rows to the page and the rest scrolling. Off until its switch in Settings is on; the tab
+// shows only while a device is connected. It changes only as notchfolkd's state does (BlueZ says when a level moves):
+// nothing is asked or timed here.
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
-import {VERTICAL} from '../compat.js';
-import {Ring, icon, label} from '../widgets.js';
+import {VERTICAL, px} from '../compat.js';
+import {LOW_BATTERY, deviceIcon, icon, label} from '../widgets.js';
 import {Page} from './page.js';
 
-/** The battery ring's size (CSS px). */
-const RING_SIZE = 38;
+/** Sizes in CSS pixels (see `px`): the room between cards, and the page's own top padding (`.notchfolk-page`). */
+const GAP = 8;
+const PAGE_TOP = 6;
+/** Rows of cards the page shows at once; more scroll. */
+const ROWS_SHOWN = 3;
 
-// The Devices page: one row per connected device.
+/** A card's height (CSS px); three rows to the page take a little less, the same card a touch denser. */
+const CARD_HEIGHT = 52;
+/** How many cards a row holds for `count`: one each up to three, then two side by side. */
+function columnsFor(count) {
+    return count <= 3 ? 1 : 2;
+}
+
+/** How many cards share the row card `index` of `count` is in: an odd last one has the row to itself. */
+function rowmates(index, count) {
+    const columns = columnsFor(count);
+    const full = Math.floor(count / columns) * columns;
+    return index < full ? columns : count - full;
+}
+
+// The cards from the page's top, rows as tall as CARD_HEIGHT (three to the page take less; the rest scroll), each
+// row's cards sharing its width. On whole pixels, so their edges stay sharp.
+const DeviceGrid = GObject.registerClass(
+class DeviceGrid extends Clutter.LayoutManager {
+    /** `height` is the page's content height, in CSS pixels. */
+    _init(height) {
+        super._init();
+        this._height = height;
+    }
+
+    /** The page's content height, in CSS pixels (Settings → Size makes it taller). */
+    set height(height) {
+        if (height === this._height)
+            return;
+        this._height = height;
+        this.layout_changed();
+    }
+
+    _rows(count) {
+        return Math.ceil(count / columnsFor(count));
+    }
+
+    /** A row's height with `rows` rows: CARD_HEIGHT, or as three share the page's height. */
+    _row(rows) {
+        if (rows < ROWS_SHOWN)
+            return px(CARD_HEIGHT);
+        return Math.min(px(CARD_HEIGHT), Math.floor((px(this._height) - px(GAP) * (ROWS_SHOWN - 1)) / ROWS_SHOWN));
+    }
+
+    vfunc_get_preferred_width(_container, _forHeight) {
+        return [0, 0];
+    }
+
+    vfunc_get_preferred_height(container, _forWidth) {
+        const rows = this._rows(container.get_n_children());
+        const height = rows * this._row(rows) + Math.max(0, rows - 1) * px(GAP);
+        return [height, height];
+    }
+
+    vfunc_allocate(container, box) {
+        const gap = px(GAP);
+        const cards = container.get_children();
+        const count = cards.length;
+        const columns = columnsFor(count);
+        const row = this._row(this._rows(count));
+        const width = box.get_width();
+        cards.forEach((card, index) => {
+            const mates = rowmates(index, count);
+            const cell = (width - gap * (mates - 1)) / mates;
+            const x = box.x1 + (index % columns) * (cell + gap);
+            const y = box.y1 + Math.floor(index / columns) * (row + gap);
+            card.allocate(Clutter.ActorBox.new(Math.round(x), y, Math.round(x + cell), y + row));
+        });
+    }
+});
+
+// A battery on its side: a rounded outline, a nub at its end, filled from the left to the level.
+const BatteryBody = GObject.registerClass(
+class BatteryBody extends St.Widget {
+    _init() {
+        super._init({style_class: 'notchfolk-device-battery-body', y_align: Clutter.ActorAlign.CENTER});
+        this._fill = new St.Widget({style_class: 'notchfolk-device-battery-fill'});
+        this.add_child(this._fill);
+        this._level = 0;
+    }
+
+    /** 0 to 1. */
+    set level(level) {
+        if (level === this._level)
+            return;
+        this._level = level;
+        this.queue_relayout();
+    }
+
+    vfunc_allocate(box) {
+        this.set_allocation(box);
+        const inside = this.get_theme_node().get_content_box(box);
+        const [width, height] = inside.get_size();
+        // A sliver at least, so a nearly flat battery still shows its red.
+        const filled = Math.max(Math.round(width / 8), Math.round(width * this._level));
+        this._fill.allocate(Clutter.ActorBox.new(inside.x1, inside.y1, inside.x1 + filled, inside.y1 + height));
+    }
+});
+
+// One device: its icon on a tile, its name and "Connected" under it ("Low battery" in red when low), then its battery
+// and level, red when low; "No battery info" for a device that reports none. The name gives way ("…"): the battery and
+// the level keep their room.
+const DeviceCard = GObject.registerClass(
+class DeviceCard extends St.BoxLayout {
+    _init() {
+        super._init({style_class: 'notchfolk-device-card'});
+        this._tile = new St.Bin({style_class: 'notchfolk-device-tile', y_align: Clutter.ActorAlign.CENTER});
+        this._icon = new St.Icon({style_class: 'notchfolk-device-icon'});
+        this._tile.set_child(this._icon);
+
+        const texts = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-device-texts', x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER});
+        this._name = label('', 'notchfolk-device-name');
+        this._name.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        const status = new St.BoxLayout({style_class: 'notchfolk-device-status'});
+        status.add_child(new St.Widget({style_class: 'notchfolk-device-dot', y_align: Clutter.ActorAlign.CENTER}));
+        this._status = label('Connected', 'notchfolk-device-connected');
+        status.add_child(this._status);
+        texts.add_child(this._name);
+        texts.add_child(status);
+
+        const power = new St.BoxLayout({style_class: 'notchfolk-device-power', y_align: Clutter.ActorAlign.CENTER});
+        this._battery = new St.BoxLayout({style_class: 'notchfolk-device-battery', y_align: Clutter.ActorAlign.CENTER});
+        this._body = new BatteryBody();
+        this._battery.add_child(this._body);
+        this._battery.add_child(new St.Widget({style_class: 'notchfolk-device-battery-nub', y_align: Clutter.ActorAlign.CENTER}));
+        this._level = label('', 'notchfolk-device-level', {y_align: Clutter.ActorAlign.CENTER});
+        this._none = label('No battery info', 'notchfolk-device-none', {y_align: Clutter.ActorAlign.CENTER});
+        for (const child of [this._battery, this._level, this._none])
+            power.add_child(child);
+
+        for (const child of [this._tile, texts, power])
+            this.add_child(child);
+        /** The level shown: null with none, undefined at first. */
+        this._percent = undefined;
+    }
+
+    /** Shows `device` ({name, icon, battery}) as it is now; a new level only moves the fill and the number. */
+    update(device) {
+        this._icon.gicon = icon(deviceIcon(device.icon));
+        this._name.text = device.name;
+        const percent = device.battery ?? null;
+        if (percent === this._percent)
+            return;
+        this._percent = percent;
+        const known = percent !== null;
+        this._battery.visible = this._level.visible = known;
+        this._none.visible = !known;
+        if (known) {
+            this._level.text = `${percent}%`;
+            this._body.level = Math.min(100, Math.max(0, percent)) / 100;
+        }
+        const low = known && percent <= LOW_BATTERY;
+        this._status.text = low ? 'Low battery' : 'Connected';
+        if (low)
+            this.add_style_class_name('low');
+        else
+            this.remove_style_class_name('low');
+    }
+});
+
 export const DevicesPage = GObject.registerClass(
 class DevicesPage extends Page {
     /** `height` is the expanded island's page height. */
-    _init(daemon, botGlow, {height}) {
+    _init(daemon, {height}) {
         super._init(daemon, {
-            style_class: 'notchfolk-page notchfolk-devices',
-            layout_manager: new Clutter.BinLayout(),
+            style_class: 'notchfolk-page notchfolk-devices-page',
+            layout_manager: new Clutter.BoxLayout({orientation: Clutter.Orientation.VERTICAL}),
             height,
-            reactive: true,
         });
         this.name = 'devices';
-        this._botGlow = botGlow;
+        /** Cards by the device's BlueZ path, in the order notchfolkd lists them. */
+        this._cards = new Map();
+        this._dense = false;
 
-        this._box = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-devices-list',
-            x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(this._box);
+        this._layout = new DeviceGrid(height - PAGE_TOP);
+        this._grid = new St.Viewport({style_class: 'notchfolk-devices', layout_manager: this._layout});
+        const scroll = new St.ScrollView({
+            style_class: 'notchfolk-devices-scroll',
+            hscrollbar_policy: St.PolicyType.NEVER,
+            // Scrolls with the wheel or touchpad; no scrollbar over the cards.
+            vscrollbar_policy: St.PolicyType.EXTERNAL,
+            x_expand: true,
+            y_expand: true,
+        });
+        scroll.set_child(this._grid);
+        this.add_child(scroll);
 
-        this.watch(['system'], () => this._sync());
-        this._sync();
+        this.watch(['system'], () => this._update());
+        this._update();
     }
 
-    /** A tab only while a device is connected; GSConnect gone, none. */
+    /** Settings → Size: the rows share the taller page. */
+    onPageHeight(height) {
+        this._layout.height = height - PAGE_TOP;
+    }
+
+    /** Only while a device is connected, and once turned on in Settings. */
     get available() {
-        return !this.hidden && this._devices().length > 0;
+        return !this.hidden && this._cards.size > 0;
     }
 
-    /** Keep the device page's glow in sync with the assistant design selected in Settings. */
-    get tint() {
-        return this._botGlow();
-    }
-
-    /** Use the assistant's moving three-colour aura, rather than a battery-colour wash. */
-    get tintStyle() {
-        return 'aura';
-    }
-
-    /** Whether anything shows. */
-    get relevant() {
-        return this.available;
-    }
-
-    /** Rebuilt on the next showing, so the tab comes and goes with the devices. */
-    markCold() {
-        super.markCold();
-        this.emit('availability-changed');
-    }
-
-    _devices() {
-        return this.daemon.state.system?.devices ?? [];
-    }
-
-    /** Rebuilds the cards if what is on changed, else just their battery status. */
-    _sync() {
-        const devices = this._devices();
-        const key = devices.map(device => device.id).join(',');
-        if (key !== this._key) {
-            this._key = key;
-            this._box.destroy_all_children();
-            for (const device of devices)
-                this._box.add_child(this._row(device));
+    /** A card per connected device, kept and updated in place as their batteries change; laid out anew only when
+     * how many there are changes. */
+    _update() {
+        const devices = this.daemon.state.system?.bluetooth ?? [];
+        const had = this._cards.size > 0;
+        const paths = new Set(devices.map(device => device.path));
+        for (const [path, card] of this._cards) {
+            if (!paths.has(path)) {
+                card.destroy();
+                this._cards.delete(path);
+            }
+        }
+        devices.forEach((device, index) => {
+            let card = this._cards.get(device.path);
+            if (!card) {
+                card = new DeviceCard();
+                this._cards.set(device.path, card);
+                this._grid.insert_child_at_index(card, index);
+            } else if (this._grid.get_child_at_index(index) !== card) {
+                this._grid.set_child_at_index(card, index);
+            }
+            card.update(device);
+        });
+        // Three rows to the page: the same cards, a touch denser.
+        const dense = Math.ceil(devices.length / columnsFor(devices.length)) >= ROWS_SHOWN;
+        if (dense !== this._dense) {
+            this._dense = dense;
+            if (dense)
+                this._grid.add_style_class_name('notchfolk-devices-dense');
+            else
+                this._grid.remove_style_class_name('notchfolk-devices-dense');
+        }
+        this._layout.layout_changed();
+        if ((this._cards.size > 0) !== had)
             this.emit('availability-changed');
-        }
-        for (const row of this._box.get_children()) {
-            const device = devices.find(device => device.id === row.deviceId);
-            if (!device)
-                continue;
-            row.battery.progress = (device.battery ?? 0) / 100;
-            const known = device.battery !== null && device.battery !== undefined;
-            row.figure.text = known ? `${device.battery}%` : '';
-            row.battery.visible = known;
-            row.batteryGroup.visible = known;
-            row.charge.text = device.charging ? 'Charging' : 'Not charging';
-            row.charge.visible = known;
-        }
-    }
-
-    /** One device card: connection details, battery state, and clearly labelled actions. */
-    _row(device) {
-        const row = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-devices-card', x_expand: true});
-        row.deviceId = device.id;
-
-        const header = new St.BoxLayout({style_class: 'notchfolk-devices-header', x_expand: true});
-        const glyphName = device.kind?.toLowerCase().includes('tablet') ? 'notchfolk-tablet-symbolic' : 'notchfolk-phone-symbolic';
-        const glyph = new St.Bin({style_class: 'notchfolk-devices-icon-well',
-            child: new St.Icon({gicon: icon(glyphName), icon_size: 20}),
-            y_align: Clutter.ActorAlign.CENTER});
-        const identity = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-devices-identity', x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER});
-        const name = label(device.name, 'notchfolk-devices-name');
-        const connection = label('Connected via GSConnect', 'notchfolk-devices-connection');
-        identity.add_child(name);
-        identity.add_child(connection);
-        header.add_child(glyph);
-        header.add_child(identity);
-
-        const figure = label('', 'notchfolk-devices-figure');
-        const battery = new Ring({size: RING_SIZE, lineWidth: 3, child: figure});
-        battery.y_align = Clutter.ActorAlign.CENTER;
-        row.battery = battery;
-        row.figure = figure;
-        row.charge = label('', 'notchfolk-devices-charge');
-        const batteryInfo = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-devices-battery-info',
-            y_align: Clutter.ActorAlign.CENTER});
-        batteryInfo.add_child(label('Battery', 'notchfolk-devices-battery-caption'));
-        batteryInfo.add_child(row.charge);
-        const batteryGroup = new St.BoxLayout({style_class: 'notchfolk-devices-battery',
-            y_align: Clutter.ActorAlign.CENTER});
-        row.batteryGroup = batteryGroup;
-        batteryGroup.add_child(batteryInfo);
-        batteryGroup.add_child(battery);
-        header.add_child(batteryGroup);
-        row.add_child(header);
-
-        row.add_child(new St.Widget({style_class: 'notchfolk-devices-divider', x_expand: true}));
-
-        const actions = new St.BoxLayout({style_class: 'notchfolk-devices-actions', x_expand: true});
-        actions.add_child(this._action('notchfolk-phone', 'Ring phone', `Ring ${device.name}`,
-            () => this.daemon.call('devices', 'Ring', device.id)));
-        actions.add_child(this._action('notchfolk-clipboard', 'Send clipboard',
-            `Send the clipboard to ${device.name}`,
-            () => this.daemon.call('devices', 'SendClipboard', device.id)));
-        row.add_child(actions);
-        return row;
-    }
-
-    _action(iconName, text, accessibleName, onClick) {
-        const content = new St.BoxLayout({style_class: 'notchfolk-devices-action-content'});
-        content.add_child(new St.Icon({gicon: icon(iconName), icon_size: 15}));
-        content.add_child(label(text, 'notchfolk-devices-action-label'));
-        const button = new St.Button({style_class: 'notchfolk-button notchfolk-devices-action', child: content,
-            can_focus: true, accessible_name: accessibleName, y_align: Clutter.ActorAlign.CENTER});
-        button.connect('clicked', onClick);
-        return button;
-    }
-
-    onActivate() {
-        this._sync();
     }
 });

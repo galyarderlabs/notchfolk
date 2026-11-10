@@ -214,6 +214,36 @@
       <summary>Pages left out of the island</summary>
       <description>Names of the open island’s pages that have no tab: music, devices, notifications, focus, reminders, shelf, calendar, calories, water, prayer. Apps, Usage and Router have their own switches (app-usage, usage-enabled, router-enabled).</description>
     </key>
+    <key name="compact-timer" type="b">
+      <default>false</default>
+      <summary>The focus timer in the closed island</summary>
+      <description>Shows the time left of a running Pomodoro round beside the clock. Off, the Timer page keeps working.</description>
+    </key>
+    <key name="compact-calls" type="b">
+      <default>false</default>
+      <summary>Calls in the closed island</summary>
+      <description>Shows a call in progress beside the clock, with its length and a way back to it.</description>
+    </key>
+    <key name="compact-notifications" type="b">
+      <default>false</default>
+      <summary>The unread bell in the closed island</summary>
+      <description>Shows a bell beside the clock while notifications wait, with how many. Alerts show either way.</description>
+    </key>
+    <key name="compact-weather" type="b">
+      <default>true</default>
+      <summary>The weather in the closed island</summary>
+      <description>Shows today&apos;s temperature beside the clock. The Weather page keeps working either way.</description>
+    </key>
+    <key name="compact-phone" type="b">
+      <default>false</default>
+      <summary>The paired phone in the closed island</summary>
+      <description>Shows a GSConnect-paired phone&apos;s battery beside the clock while it is connected.</description>
+    </key>
+    <key name="compact-router" type="b">
+      <default>false</default>
+      <summary>The AI router in the closed island</summary>
+      <description>Shows the AI gateway&apos;s health while it is connected. The Router page keeps working either way.</description>
+    </key>
     <key name="app-usage" type="b">
       <default>false</default>
       <summary>The Apps page, timing the application in front</summary>
@@ -223,6 +253,11 @@
       <default>false</default>
       <summary>The Devices page</summary>
       <description>Shows the Devices page: each connected Bluetooth device with its battery. Its tab shows only while a device is connected. Off until you turn it on.</description>
+    </key>
+    <key name="phone-page" type="b">
+      <default>true</default>
+      <summary>The Phone page</summary>
+      <description>Shows the Phone page: a phone or tablet paired through GSConnect — its battery, a ring to find it, and the clipboard sent over. Its tab shows only while it is connected.</description>
     </key>
     <key name="app-usage-clear" type="b">
       <default>false</default>
@@ -316,6 +351,11 @@
       <default>[]</default>
       <summary>Shortcut to the Notifications page</summary>
       <description>Opens the island on the Notifications page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
+    </key>
+    <key name="shortcut-phone" type="as">
+      <default>[]</default>
+      <summary>Shortcut to the Phone page</summary>
+      <description>Opens the island on the Phone page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
     </key>
     <key name="shortcut-focus" type="as">
       <default>[]</default>
