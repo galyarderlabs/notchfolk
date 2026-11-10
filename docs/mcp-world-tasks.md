@@ -53,12 +53,16 @@ spec's; every task names the ones it must prove.
   running the daemon and a client before and after.
 - [ ] A backend-down domain answers as a normal, isolated error — local tools
   unaffected, no secret in the message. **AC-5.**
-- [ ] Settings follows the scopes: the MCP page's "Access scopes" picker and
-  its `scopeLabel` learn the new scopes as the domain phases land them,
-  grouped by value (system, browser, office, skills, memory, notes,
-  composio), offering only the domains present on the machine. A key made
-  in Settings with a new scope authorises exactly that scope's tools —
-  verified against the server, not just the file.
+- [ ] Settings keeps its UX short while the scopes grow. The key builder
+  separates the two halves: **Notchfolk** — the internal data tools, the
+  existing "Read access" / "Write actions" expanders as they are — and
+  **The world** — one row per domain (System, Browser, Office, Skills,
+  Memory, Notes, Composio), only the domains present on the machine
+  offered. A domain row is one toggle: on grants that domain's read-only
+  scope; its write scope is a second switch inside the row's expander,
+  off by default — one line per domain, the read-only/restricted rule
+  intact. A key made in Settings with a domain on authorises exactly
+  that domain's tools — verified against the server, not just the file.
 
 ### 2. System MCP — the ground it stands on
 

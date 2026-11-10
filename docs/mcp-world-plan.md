@@ -55,6 +55,12 @@ Rules the modules share:
   (Camoufox, Hindsight), a vault path (Obsidian). A domain whose backend is
   absent is **not offered** in `tools/list`; a backend that dies between calls
   answers as a normal, isolated error (AC-5) — never a crash, never a leak.
+- **Settings stays short.** The key builder separates the internal data
+  tools from the world domains: the former keep the existing "Read
+  access" / "Write actions" expanders; each world domain is one row — on
+  grants its read-only scope, and its write scope is a second switch
+  inside the row, off by default. One line per domain, the spec's
+  read-only/restricted rule intact.
 - **Scope naming follows the value, not the backend.** `system:read` /
   `system:write` (the read scope already exists for `get_system_state`),
   `browser:*`, `office:write`, `skills:read`, `memory:*` (Hindsight — one
