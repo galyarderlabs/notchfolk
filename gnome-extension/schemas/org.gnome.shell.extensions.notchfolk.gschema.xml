@@ -215,17 +215,17 @@
       <description>Names of the open island’s pages that have no tab: music, devices, notifications, focus, reminders, shelf, calendar, calories, water, prayer. Apps, Usage and Router have their own switches (app-usage, usage-enabled, router-enabled).</description>
     </key>
     <key name="compact-timer" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>The focus timer in the closed island</summary>
       <description>Shows the time left of a running Pomodoro round beside the clock. Off, the Timer page keeps working.</description>
     </key>
     <key name="compact-calls" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Calls in the closed island</summary>
       <description>Shows a call in progress beside the clock, with its length and a way back to it.</description>
     </key>
     <key name="compact-notifications" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>The unread bell in the closed island</summary>
       <description>Shows a bell beside the clock while notifications wait, with how many. Alerts show either way.</description>
     </key>
@@ -235,12 +235,12 @@
       <description>Shows today&apos;s temperature beside the clock. The Weather page keeps working either way.</description>
     </key>
     <key name="compact-phone" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>The paired phone in the closed island</summary>
       <description>Shows a GSConnect-paired phone&apos;s battery beside the clock while it is connected.</description>
     </key>
     <key name="compact-router" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>The AI router in the closed island</summary>
       <description>Shows the AI gateway&apos;s health while it is connected. The Router page keeps working either way.</description>
     </key>
