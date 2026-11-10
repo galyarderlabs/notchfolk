@@ -9,14 +9,15 @@
 // colour kept × saturation (`small` on a closed island or an alert, `large` open), a sheen and a glow added.
 const LOOKS = {
     black: {fill: [0, 0, 0, 1], solid: [0, 0, 0], edge: null, blur: null},
-    // Clear glass, thick at its edge: what is behind it lightly blurred, its shapes and colours still there, a little
-    // darkened; a light backdrop held deeper from a fifth of the way up (a white page ends a dark grey, white text reads
-    // at about 9:1); the edge bending what is behind it, its colours parting into a thin rainbow, and catching the
-    // light, brightest up and left, again down and right.
-    glass: {fill: [0.03, 0.04, 0.05, 0.22], solid: [0.12, 0.13, 0.15],
-        edge: {color: [1, 1, 1], top: 0.16, bottom: 0.1},
-        blur: {radius: 14, brightness: 1, small: 0.95, large: 1.15, lo: 0.03, span: 0.64, gamma: 1, deep: 0.52,
-            knee: 0.22, sheen: 0.03, glow: 0.05, lens: 26, band: 24, spread: 0.7, rim: 0.5, rimWidth: 1.1}},
+    // Brighter glass variant (branch vibe/glass-bright-variant): towards the MacOs-CC liquid-glass look — a light
+    // milky glass instead of the dark one. What is behind it is blurred harder, its colours kept and lifted, its
+    // lightness held in a wider, brighter band (a white page ends a mid grey now, not a dark one); the edge bends what
+    // is behind it further, its colours parting wider, and catches the light harder. Trade-off, by design: white text
+    // reads less well over bright backdrops than on the dark glass (that was the dark glass's whole point).
+    glass: {fill: [0.35, 0.38, 0.45, 0.30], solid: [0.30, 0.33, 0.40],
+        edge: {color: [1, 1, 1], top: 0.38, bottom: 0.24},
+        blur: {radius: 22, brightness: 1, small: 1.2, large: 1.45, lo: 0.08, span: 0.78, gamma: 1, deep: 0.30,
+            knee: 0.35, sheen: 0.14, glow: 0.12, lens: 44, band: 32, spread: 1.0, rim: 0.85, rimWidth: 1.5}},
 };
 
 // Glass at its darkest (Settings' tint at 100): dark smoked glass, as GNOME's blurred menus look: what is behind
