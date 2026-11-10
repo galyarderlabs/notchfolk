@@ -12,6 +12,7 @@ Needs: fastmcp, dbus-next (pip install -r mcp/requirements.txt).
 import asyncio
 import json
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -85,17 +86,29 @@ async def main():
         # AC-3 + AC-2: the read-only tools run on the default read-only key, correctly.
         stats = await reader.call_tool("system_stats", {})
         stats = stats.data if hasattr(stats, "data") else stats
-        check("AC-2/3 system_stats", "memory" in stats and "load" in stats, str(stats))
-        files = await reader.call_tool("system_list_files", {"path": str(REPO / "mcp")})
+        check("AC-2/3 system_stats", stats.get("ok") and "uptime" in stats and "memory" in stats, str(stats))
+        fixture = os.path.join(os.path.expanduser("~"), "notchfolk-mcp-test")
+        async with Client(transport(), auth=BearerAuth(ADMIN_TOKEN)) as maker:
+            await maker.call_tool("system_write_file", {"path": f"{fixture}/probe.txt", "content": "notchfolk probe"})
+        files = await reader.call_tool("system_list_files", {"path": fixture})
         files = files.data if hasattr(files, "data") else files
-        names = {entry["name"] for entry in files}
-        check("AC-2/3 system_list_files", "server.py" in names and "tools" in names, str(names))
-        processes = await reader.call_tool("system_list_processes", {"limit": 5})
+        names = {entry["name"] for entry in files["entries"]}
+        check("AC-2/3 system_list_files", files.get("ok") and "probe.txt" in names, str(names))
+        read = await reader.call_tool("system_read_file", {"path": f"{fixture}/probe.txt"})
+        read = read.data if hasattr(read, "data") else read
+        check("AC-2/3 system_read_file", read.get("ok") and read["content"] == "notchfolk probe", str(read))
+        processes = await reader.call_tool("system_list_processes", {})
         processes = processes.data if hasattr(processes, "data") else processes
-        check("AC-2/3 system_list_processes", len(processes) > 0 and "pid" in processes[0])
+        check("AC-2/3 system_list_processes", processes.get("ok") and "by_cpu" in processes)
         toolchains = await reader.call_tool("system_toolchain_status", {})
         toolchains = toolchains.data if hasattr(toolchains, "data") else toolchains
-        check("AC-2/3 system_toolchain_status", "distro_package_manager" in toolchains, str(toolchains))
+        check("AC-2/3 system_toolchain_status", "distro_package_manager" in toolchains["checks"], str(toolchains))
+        # The guards: a blocked command is refused, and a write outside the roots is refused.
+        try:
+            await reader.call_tool("system_read_file", {"path": "/etc/shadow"})
+            check("guard: read outside the roots refused", False, "the read was allowed")
+        except Exception:
+            check("guard: read outside the roots refused", True)
 
         # A restricted tool is rejected at call time too, not only hidden.
         try:
@@ -109,13 +122,20 @@ async def main():
         check("AC-4 admin sees system_exec", "system_exec" in listed)
         result = await admin.call_tool("system_exec", {"command": "echo notchfolk"})
         result = result.data if hasattr(result, "data") else result
-        check("AC-2 system_exec on a scoped key", result["returncode"] == 0 and "notchfolk" in result["stdout"], str(result))
+        check("AC-2 system_exec on a scoped key", result["ok"] and "notchfolk" in result["stdout"], str(result))
 
-        # AC-2: system_update without confirm plans and runs nothing.
-        plan = await admin.call_tool("system_update", {"what": ["flatpak"]})
-        plan = plan.data if hasattr(plan, "data") else plan
-        check("AC-2 system_update plans without confirm", "plan" in plan and "confirm" in plan, str(plan))
+        # The reference's confirmation rule: update refuses without confirm.
+        refused = await admin.call_tool("system_update", {"domain": "flatpak", "action": "update"})
+        refused = refused.data if hasattr(refused, "data") else refused
+        check("AC-2 system_update refuses without confirm",
+              not refused.get("ok") and "confirm=true required" in refused.get("error", ""), str(refused))
+        # An absent toolchain is reported unavailable, not an error (the spec's rule).
+        unavailable = await admin.call_tool("system_update", {"domain": "flatpak", "action": "check"})
+        unavailable = unavailable.data if hasattr(unavailable, "data") else unavailable
+        check("AC-2 system_update check reports unavailable",
+              unavailable.get("ok") and unavailable.get("unavailable") == "flatpak", str(unavailable))
 
+    shutil.rmtree(os.path.join(os.path.expanduser("~"), "notchfolk-mcp-test"), ignore_errors=True)
     print(f"\n{'ALL PASS' if not failures else 'FAILURES: ' + ', '.join(failures)}")
     return 1 if failures else 0
 
