@@ -12,17 +12,9 @@ use zbus::object_server::InterfaceRef;
 
 use super::{SystemService, UsbDevice, publish};
 
-/// How the page names a device by its interfaces' classes, first match wins: a headset with
+/// What a device can be, in the order the page names them: first match wins, so a headset with
 /// controls is audio, and a phone that also mounts as a drive is a phone.
-const KINDS: &[(&str, &str)] = &[
-    ("drive", "08"),
-    ("keyboard", "keyboard"),
-    ("mouse", "mouse"),
-    ("audio", "01"),
-    ("camera", "0e"),
-    ("camera", "06"),
-    ("phone", "phone"),
-];
+const KIND_ORDER: &[&str] = &["drive", "keyboard", "mouse", "audio", "camera", "phone"];
 
 /// Every USB device on the bus, hubs and root hubs apart.
 fn list() -> Vec<UsbDevice> {
@@ -125,15 +117,23 @@ fn kind(device: &udev::Device) -> String {
             if class == "ff"
                 && interface
                     .driver()
-                    .map(|driver| matches(driver.to_str(), Some("adb" | "mtp")))
-                    .unwrap_or(false)
+                    .and_then(|driver| driver.to_str())
+                    .is_some_and(|driver| driver == "adb" || driver == "mtp")
             {
                 hid.insert("phone".to_owned());
             }
         }
     }
-    for (kind, class) in KINDS {
-        if classes.contains(*class) || hid.iter().any(|found| found == kind) {
+    for kind in KIND_ORDER {
+        let is = match *kind {
+            "drive" => classes.contains("08"),
+            "keyboard" => hid.contains("keyboard"),
+            "mouse" => hid.contains("mouse"),
+            "audio" => classes.contains("01"),
+            "camera" => classes.contains("0e") || classes.contains("06"),
+            _ => hid.contains("phone"),
+        };
+        if is {
             return (*kind).to_owned();
         }
     }
@@ -144,29 +144,39 @@ fn kind(device: &udev::Device) -> String {
 /// removed, and published each time it changed. udev's monitor blocks, so it runs on a thread of
 /// its own and hands the list to the async side.
 pub async fn watch(iface: InterfaceRef<SystemService>) -> anyhow::Result<()> {
-    let (sender, mut receiver) = tokio::sync::mpsc::channel(4);
+    // Room for a plug's burst of events; the thread blocks on a full channel rather than miss one.
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(16);
     std::thread::spawn(move || {
-        let _ = sender.blocking_send(list());
-        let Ok(builder) = udev::MonitorBuilder::new() else {
+        // The receiver gone (the watcher restarted, or Notchfolk is stopping): stop reading the bus.
+        let send = |devices| sender.blocking_send(devices).is_ok();
+        if !send(list()) {
             return;
-        };
-        let Ok(builder) = builder.match_subsystem_devtype("usb", "usb_device") else {
-            return;
-        };
-        let Ok(socket) = builder.listen() else {
-            return;
+        }
+        let monitor = udev::MonitorBuilder::new()
+            .and_then(|builder| builder.match_subsystem_devtype("usb", "usb_device"))
+            .and_then(|builder| builder.listen());
+        let socket = match monitor {
+            Ok(socket) => socket,
+            Err(error) => {
+                log::warn!("the USB monitor could not be opened: {error}");
+                return;
+            }
         };
         // Several events come with one plug; the list is read once per event, and publishing an
         // unchanged list changes nothing (see `publish`).
         for event in socket.iter() {
             match event.action().and_then(|action| action.to_str()) {
                 Some("add") | Some("remove") => {
-                    let _ = sender.blocking_send(list());
+                    if !send(list()) {
+                        return;
+                    }
                 }
                 _ => {}
             }
         }
     });
+    // As GSConnect's watcher: no SystemEvent, for USB drives no alert; the state change itself
+    // is what refreshes the page (see `publish`).
     while let Some(devices) = receiver.recv().await {
         publish(&iface, |state| state.usb = devices.clone(), None).await;
     }
@@ -180,12 +190,9 @@ mod tests {
     /// The page's kinds are what the extension names its icons by: they must not change silently.
     #[test]
     fn kinds_are_the_pages_vocabulary() {
-        let kinds: BTreeSet<_> = KINDS.iter().map(|(kind, _)| *kind).collect();
         assert_eq!(
-            kinds,
-            ["audio", "camera", "drive", "keyboard", "mouse", "phone"]
-                .into_iter()
-                .collect()
+            KIND_ORDER,
+            ["drive", "keyboard", "mouse", "audio", "camera", "phone"]
         );
     }
 }

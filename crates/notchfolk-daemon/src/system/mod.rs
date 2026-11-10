@@ -188,8 +188,9 @@ pub fn spawn_watchers(system: Connection, iface: InterfaceRef<SystemService>) {
     supervise("bluetooth", on_bus(BLUEZ), move || {
         bluetooth::watch(bus.clone(), state.clone())
     });
+    let usb_iface = iface.clone();
+    supervise("usb", None, move || usb::watch(usb_iface.clone()));
     supervise("camera", None, move || camera::watch(iface.clone()));
-    supervise("usb", None, move || usb::watch(iface.clone()));
 }
 
 /// Starts the session-bus watchers: GSConnect, which is a GNOME Shell extension and so never on
