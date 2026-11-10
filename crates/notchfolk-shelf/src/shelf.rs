@@ -574,9 +574,7 @@ impl ShelfWindow {
                 })
             });
             // In its row already, in the right place: leave it. Elsewhere, or in no row: move it there.
-            let in_place = tile
-                .parent()
-                .is_some_and(|parent| parent.as_ptr() == row.as_ptr())
+            let in_place = tile.parent() == Some(row.clone().upcast::<gtk::Widget>())
                 && tile.prev_sibling() == previous;
             if !in_place {
                 unparent(&tile);
