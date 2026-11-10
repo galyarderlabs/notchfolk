@@ -1275,6 +1275,7 @@
 /* In 1 px at the sides, as the helper's row inside its drop area's 1 px border (crates/notchfolk-shelf/src/style.css): the
  * window's tiles land on these exactly. */
 .notchfolk-shelf-tiles { spacing: 6px; padding: 0 1px; }
+.notchfolk-shelf-row { spacing: 6px; }
 
 .notchfolk-shelf-tile {
   padding: 6px 0;

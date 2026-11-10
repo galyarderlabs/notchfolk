@@ -18,7 +18,9 @@ import {isShelfCopy} from '../downloads.js';
 import {Lines, icon, iconButton, label} from '../widgets.js';
 
 /** The shelf holds this many files (as notchfolkd enforces). */
-export const SHELF_CAPACITY = 6;
+export const SHELF_CAPACITY = 12;
+/** Tiles in a row; two rows hold the shelf. */
+const ROW_SIZE = 6;
 
 // Sizes in CSS pixels (see `px`); keep them in step with the helper's tile.rs, which GTK scales likewise.
 const TILE_WIDTH = 84;
@@ -100,14 +102,18 @@ export const FilesView = GObject.registerClass({
         /** Each file's tile, kept while the file stays, so its preview never reloads (and blinks). */
         this._tileFor = new Map();
 
-        // Expanding, as BinLayout only honours START for children that do.
+        // Rows of ROW_SIZE tiles, each row centred: a short row sits in the middle, not against the left edge
+        // (as the helper's, crates/notchfolk-shelf, does). Expanding, as BinLayout only honours START for
+        // children that do — the rows centre inside it.
         this._tiles = new St.BoxLayout({
+            ...VERTICAL,
             style_class: 'notchfolk-shelf-tiles',
             x_expand: true,
-            x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
         });
         this.add_child(this._tiles);
+        /** The rows the tiles sit in, made and taken away as the count needs them. */
+        this._rows = [];
 
         this._empty = new St.BoxLayout({
             ...VERTICAL,
@@ -279,7 +285,8 @@ export const FilesView = GObject.registerClass({
         this._zone.queue_repaint();
     }
 
-    /** A tile per file, newest first; a file's tile is made once and kept while it stays. */
+    /** A tile per file, newest first, in rows of ROW_SIZE, each row centred; a file's tile is made once and kept
+     * while it stays, so its preview never reloads (and blinks). */
     _syncTiles(items) {
         const wanted = new Set(items.map(item => item.uri));
         for (const [uri, tile] of this._tileFor) {
@@ -288,16 +295,35 @@ export const FilesView = GObject.registerClass({
                 this._tileFor.delete(uri);
             }
         }
+        const rowsNeeded = Math.ceil(items.length / ROW_SIZE);
+        while (this._rows.length < rowsNeeded) {
+            const row = new St.BoxLayout({
+                style_class: 'notchfolk-shelf-row',
+                x_align: Clutter.ActorAlign.CENTER,
+            });
+            this._rows.push(row);
+            this._tiles.add_child(row);
+        }
         items.forEach((item, index) => {
             let tile = this._tileFor.get(item.uri);
             if (!tile) {
                 tile = this._tile(item);
                 this._tileFor.set(item.uri, tile);
-                this._tiles.insert_child_at_index(tile, index);
-            } else if (this._tiles.get_child_at_index(index) !== tile) {
-                this._tiles.set_child_at_index(tile, index);
+            }
+            const row = this._rows[Math.floor(index / ROW_SIZE)];
+            const pos = index % ROW_SIZE;
+            if (tile.get_parent() !== row) {
+                tile.get_parent()?.remove_child(tile);
+                row.insert_child_at_index(tile, pos);
+            } else if (row.get_child_at_index(pos) !== tile) {
+                row.set_child_at_index(tile, pos);
             }
         });
+        // Rows past the last one are empty now: every tile left sits in a row before them.
+        while (this._rows.length > rowsNeeded) {
+            const row = this._rows.pop();
+            row.destroy();
+        }
     }
 
     /** What the empty shelf says, as the helper does: where to drop, and what then. */
@@ -310,7 +336,7 @@ export const FilesView = GObject.registerClass({
         else if (dragging && this._dropOver && this._refusal === 'local')
             [title, hint] = ['Only files on this computer', 'Links and files online can’t be kept'];
         else if (dragging && this._dropOver && this._refusal)
-            [title, hint] = ['Too many files', 'The shelf holds six at a time'];
+            [title, hint] = ['Too many files', 'The shelf holds twelve at a time'];
         else if (dragging)
             [title, hint] = [this._dropOver ? 'Release to add it' : 'Drop to add it', 'Then drag it into any app, or click to copy it'];
         this._emptyTitle.text = title;

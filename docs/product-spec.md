@@ -440,8 +440,8 @@ with a phone.
   enough space, Downloads can't be written to). The bar says what the tab is
   for ("No files on the shelf · Drop files here, then drag them into any app", in the island's
   words and the helper's alike), how full it is ("3
-  of 6 · click to copy, or drag into any app"; with a file of its own, "3 of
-  6 · click to copy, ↓ to save, or drag out"), or "Full · remove a file to
+  of 12 · click to copy, or drag into any app"; with a file of its own, "3 of
+  12 · click to copy, ↓ to save, or drag out"), or "Full · remove a file to
   add another". With `notchfolk-shelf` installed, the helper draws this tab in a
   see-through window placed exactly over it, tile for tile as the island
   draws it: drag a file out to any app (a chat, an email, a folder).
@@ -500,7 +500,7 @@ with a phone.
   **Stop** at the end of the bar ends it; the tab goes and Files shows. A
   phone that asks also gets an alert (below); answered in either place,
   both go. Files sent from the phone land on the Files tab, as dropped ones
-  do (the shelf's six at most), in the shelf's own folder. Sharing stops by
+  do (the shelf's twelve at most), in the shelf's own folder. Sharing stops by
   itself after 10 minutes without a download, an upload, a phone picking
   files or an Allow (a page left open doesn't count), when the screen locks, when the computer sleeps, when Notchfolk is
   turned off, and when this computer's address goes (another network, Wi-Fi
