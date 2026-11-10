@@ -67,6 +67,12 @@ export function shortDate(dateTime = GLib.DateTime.new_now_local()) {
     return dateTime.format('%a %-d');
 }
 
+/** "9/11", the day before the month as numbers: the closed island's date, where room is
+ * the scarcest and the words are the longest. */
+export function numericDate(dateTime = GLib.DateTime.new_now_local()) {
+    return dateTime.format('%-d/%-m');
+}
+
 /** Formats a duration as "3:07" or "1:02:07". */
 export function duration(ms) {
     const total = Math.max(0, Math.round(ms / 1000));
