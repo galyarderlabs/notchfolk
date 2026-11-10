@@ -2,7 +2,9 @@
 
 All notable changes to Notchfolk are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
-[Semantic Versioning](https://semver.org/).
+[Semantic Versioning](https://semver.org/). Notchfolk began its own version
+sequence at 1.0.0 (2026-11-04); everything under "Upstream history" below is
+Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
@@ -202,6 +204,14 @@ script](migrate-from-isle.md) after installing.
   `~/.cache/notchfolk` and `~/.local/state/notchfolk`. Settings, data, keyring credentials
   and services carry over with
   [the one-time migration script](migrate-from-isle.md).
+
+---
+
+# Upstream history (Isle)
+
+Everything from here down is upstream Isle's changelog, kept for reference:
+the numbers are Isle's releases, which ran beside Notchfolk's own sequence
+above, and their compare links lead to Isle's repository.
 
 ## [1.6.1] - 2026-11-04
 
