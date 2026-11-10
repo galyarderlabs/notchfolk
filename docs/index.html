@@ -754,7 +754,7 @@ footer a:hover { color: var(--ink); }
           Star on GitHub
         </a>
       </div>
-      <small>Version <span class="js-ver">1.2.7</span> · GPL-3.0 · GNOME 46–51</small>
+      <small>Version <span class="js-ver">1.2.8</span> · GPL-3.0 · GNOME 46–51</small>
       <span class="dl-count js-dlcount"></span>
     </div>
   </div>
@@ -1103,26 +1103,28 @@ footer a:hover { color: var(--ink); }
   </section>
 
     <section id="new" class="wrap">
-    <h2 class="sec-title">New in Notchfolk 1.2.7.</h2>
-    <p class="sec-lede">Speech on an OpenAI-compatible router, replies that can be spoken, and a microphone that is finally heard.</p>
+    <h2 class="sec-title">New in Notchfolk 1.2.8.</h2>
+    <p class="sec-lede">A pill shape, a shortcut for every page, a larger island &mdash; and an installer that asks again.</p>
     <div class="news">
       <div>
         <h3>What&apos;s new</h3>
         <ul>
-          <li><b>Speech on your router</b><span>Speech recognition can run on an OpenAI-compatible router: the base URL, model and API key are set in Settings, the key kept in the desktop's secret store, and the endpoint paths editable. Local Whisper stays as the offline choice.</span></li>
-          <li><b>Spoken replies</b><span>The assistant can speak its answer through the same router, with the model and voice set in Settings. A request that arrives cuts the spoken reply short.</span></li>
+          <li><b>Pill shape</b><span>Settings &rarr; Shape: the island as a round pill floating just below the top bar, or the notch joined to the top as before &mdash; the same island either way, black or glass, on every display.</span></li>
+          <li><b>A shortcut for every page</b><span>Settings &rarr; Shortcuts: every page can be opened from anywhere with a shortcut of its own. Super+V opens the page Settings says &mdash; the clipboard history by default, as before.</span></li>
+          <li><b>Size: Large</b><span>The open island 720 px wide instead of 600, every page taller, each laying itself out for the room: a larger cover, timer ring and month.</span></li>
+          <li><b>The island on all displays</b><span>A mirror of the island on every monitor, not only the main one.</span></li>
         </ul>
       </div>
       <div>
         <h3>Fixes</h3>
         <ul>
-          <li><b>The microphone is heard again</b><span>The recorder was reading a WAV container as raw samples, so every recording looked like noise at full scale. Speech now comes through, however the gain is set.</span></li>
-          <li><b>Shortcut labels cannot carry markup</b><span>The key shown is the text after the last &gt;, with any leftover angle brackets stripped, so a label can never contain markup (CodeQL #37, #38).</span></li>
+          <li><b>The installer asks again</b><span>When GitHub times out or is busy for a moment, the one-line install tries again instead of failing.</span></li>
+          <li><b>opencode 2: session delete</b><span>Runs with --standalone, so it no longer starts a background service on a port the user's own may hold.</span></li>
         </ul>
         <div class="news-note">
           <h3>Good to know</h3>
-          <p>Local Whisper still answers offline &mdash; it takes over by itself whenever your router cannot be reached.</p>
-          <p>Version 1.2.7 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
+          <p>Bluetooth devices warn as their battery runs low (20, 10, 5%), beside the phone's.</p>
+          <p>Version 1.2.8 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
         </div>
       </div>
     </div>
@@ -1231,7 +1233,7 @@ addEventListener("scroll", barSync, { passive: true });
 // ---- Download ------------------------------------------------------------------------
 // Setiap rilis baru: ubah VERSION, dan SHA256 sesuai installer yang di-upload ke GitHub.
 const DOWNLOAD_URL = "https://github.com/galyarderlabs/notchfolk/releases";
-const VERSION = "1.2.7";
+const VERSION = "1.2.8";
 document.querySelectorAll(".js-dl").forEach(a => { if (a.closest("#download")) a.href = DOWNLOAD_URL; });
 document.querySelectorAll(".js-ver").forEach(e => e.textContent = VERSION);
 
@@ -1719,20 +1721,24 @@ fit(); addEventListener("resize", fit);
  "Standard or Large": "Standar atau Large",
  "The open island 600 or 720 px wide, its pages taller at Large, each laying itself out for the room.": "Island terbuka selebar 600 atau 720 px, halamannya lebih tinggi di Large, masing-masing menata dirinya sesuai ruangnya.",
  "Settings → Appearance → Island": "Settings → Appearance → Island",
- "New in Notchfolk 1.2.7.": "Yang baru di Notchfolk 1.2.7.",
- "Speech on an OpenAI-compatible router, replies that can be spoken, and a microphone that is finally heard.": "Speech lewat router yang kompatibel OpenAI, jawaban yang bisa diucapkan, dan mikrofon yang akhirnya terdengar.",
- "Speech on your router": "Speech di router-mu",
- "Speech recognition can run on an OpenAI-compatible router: the base URL, model and API key are set in Settings, the key kept in the desktop's secret store, and the endpoint paths editable. Local Whisper stays as the offline choice.": "Speech recognition bisa berjalan di router yang kompatibel OpenAI: base URL, model, dan API key diatur di Settings, key disimpan di secret store desktop, dan path endpoint bisa diubah. Local Whisper tetap jadi pilihan offline.",
- "Spoken replies": "Jawaban yang diucapkan",
- "The assistant can speak its answer through the same router, with the model and voice set in Settings. A request that arrives cuts the spoken reply short.": "Asisten bisa mengucapkan jawabannya lewat router yang sama, dengan model dan voice diatur di Settings. Permintaan baru yang datang memotong jawaban yang sedang diucapkan.",
+ "New in Notchfolk 1.2.8.": "Yang baru di Notchfolk 1.2.8.",
+ "A pill shape, a shortcut for every page, a larger island — and an installer that asks again.": "Bentuk kapsul, pintasan untuk tiap halaman, island yang lebih besar — dan installer yang mencoba lagi.",
+ "Pill shape": "Bentuk kapsul",
+ "Settings → Shape: the island as a round pill floating just below the top bar, or the notch joined to the top as before — the same island either way, black or glass, on every display.": "Settings → Shape: island sebagai kapsul bulat yang melayang sedikit di bawah bar atas, atau notch menempel di atas seperti sebelumnya — island yang sama keduanya, hitam atau kaca, di setiap layar.",
+ "A shortcut for every page": "Pintasan untuk tiap halaman",
+ "Settings → Shortcuts: every page can be opened from anywhere with a shortcut of its own. Super+V opens the page Settings says — the clipboard history by default, as before.": "Settings → Shortcuts: tiap halaman bisa dibuka dari mana pun dengan pintasannya sendiri. Super+V membuka halaman yang Settings pilih — default-nya riwayat clipboard, seperti sebelumnya.",
+ "Size: Large": "Size: Large",
+ "The open island 720 px wide instead of 600, every page taller, each laying itself out for the room: a larger cover, timer ring and month.": "Island terbuka selebar 720 px alih-alih 600, tiap halaman lebih tinggi, masing-masing menata dirinya sesuai ruangnya: sampul, ring timer, dan bulan kalender lebih besar.",
+ "The island on all displays": "Island di semua layar",
+ "A mirror of the island on every monitor, not only the main one.": "Salinan island di tiap monitor, bukan hanya yang utama.",
  "Fixes": "Perbaikan",
- "The microphone is heard again": "Mikrofon terdengar lagi",
- "The recorder was reading a WAV container as raw samples, so every recording looked like noise at full scale. Speech now comes through, however the gain is set.": "Perekam membaca kontainer WAV sebagai sampel mentah, jadi setiap rekaman terlihat seperti noise skala penuh. Sekarang suara terdengar, bagaimanapun gainnya diatur.",
- "Shortcut labels cannot carry markup": "Label pintasan tidak bisa membawa markup",
- "The key shown is the text after the last >, with any leftover angle brackets stripped, so a label can never contain markup (CodeQL #37, #38).": "Key yang ditampilkan adalah teks setelah > terakhir, dengan sisa tanda kurung sudut dibuang, jadi label tidak mungkin berisi markup (CodeQL #37, #38).",
+ "The installer asks again": "Installer mencoba lagi",
+ "When GitHub times out or is busy for a moment, the one-line install tries again instead of failing.": "Saat GitHub kehabisan waktu atau sibuk sebentar, instalasi satu baris mencoba lagi alih-alih gagal.",
+ "opencode 2: session delete": "opencode 2: hapus session",
+ "Runs with --standalone, so it no longer starts a background service on a port the user's own may hold.": "Jalan dengan --standalone, jadi tidak lagi menyalakan layanan latar belakang di port yang mungkin dipakai pengguna.",
  "Good to know": "Perlu diketahui",
- "Local Whisper still answers offline — it takes over by itself whenever your router cannot be reached.": "Local Whisper tetap menjawab offline — ia mengambil alih sendiri setiap kali router-mu tidak bisa dihubungi.",
- "Version 1.2.7 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.2.7 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
+ "Bluetooth devices warn as their battery runs low (20, 10, 5%), beside the phone's.": "Perangkat Bluetooth memberi peringatan saat baterainya menyusut (20, 10, 5%), di samping peringatan dari HP.",
+ "Version 1.2.8 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.2.8 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
  "Get Notchfolk for GNOME": "Dapatkan Notchfolk untuk GNOME",
  "GNOME 46–51 on Linux, x86_64.": "GNOME 46–51 di Linux, x86_64.",
  "Install with one command": "Pasang dengan satu perintah",
