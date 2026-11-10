@@ -40,12 +40,12 @@ mcp/
   tools/
     __init__.py        # domain registry: probe → register
     system.py          # 14 tools, local subprocess / systemd / filesystem
-    browser.py         # 10 tools, REST HTTP to the Camoufox server (localhost:9377)
-    office.py          # 1 tool, the office service
-    skills.py          # 7 tools, the skills service / skill trees
-    hindsight.py       # 39 tools, the Hindsight API
-    obsidian.py        # 14 tools, the Obsidian backend / vault
-    composio.py        # 8 tools, the Composio CLI
+    browser.py         # 10 tools, REST HTTP to the Camoufox server on localhost
+    office.py          # 1 tool, the officecli binary's mcp subcommand over stdio
+    skills.py          # 7 tools, the skill trees on the machine
+    hindsight.py       # 39 tools, the Hindsight engine's MCP endpoint on localhost
+    obsidian.py        # 14 tools, the vault on the machine
+    composio.py        # 8 tools, the Composio CLI (subprocess; no mcp subcommand)
 ```
 
 Rules the modules share:
@@ -75,20 +75,27 @@ Rules the modules share:
 ## 4. The prerequisite: read the source MCPs (Phase 0)
 
 The spec is explicit: exact API details are not invented — they come from
-reading the source MCP code on the VPS (niyatna-mcp, browser-mcp/Camoufox,
-office-mcp, skills-mcp, hindsight-mcp, obsidian-mcp, composio). That reading
-is **Phase 0** and it gates every domain: each domain's tasks name what must
-be extracted (endpoints, argument shapes, confirmation mechanisms, error
-forms) into `docs/mcp-world-apis.md`, and nothing of that domain is
-implemented before its section of that file exists.
+reading the source MCP code (niyatna-mcp, browser-mcp/Camoufox, office-mcp,
+skills-mcp, hindsight-mcp, obsidian-mcp, composio). That reading is
+**Phase 0** and it gates every domain — and it is **complete** (10 Nov
+2026): the details are recorded in `docs/mcp-world-apis.md`, one section
+per domain, and nothing of a domain is implemented before its section
+exists.
 
-Two things Phase 0 must answer precisely, because the spec leaves them open:
+Two things Phase 0 had to answer precisely, because the spec left them
+open — both answered:
 
-- **`system_update`'s "requires confirmation"** — the niyatna-mcp pattern
-  (one-shot `confirm` argument, or a plan-then-execute pair) is copied, not
+- **`system_update`'s "requires confirmation"** — one-shot `confirm`
+  argument, paired with check-first: `action=check` reports what would
+  change, `action=update` without `confirm=true` is refused
+  (`confirm=true required for action=update. Run action=check first.`),
+  `action=update` with `confirm=true` runs it, audited. Copied, not
   invented.
-- **Camoufox's driver** (CDP or Playwright behind the REST server) — the
-  browser tools are plain REST either way, but the answer is recorded.
+- **Camoufox's driver** — **Playwright**, not raw CDP: the REST server
+  launches Camoufox (anti-detection Firefox) via Playwright's
+  `firefox.launch` with camoufox-js options, proven by the launch code
+  and by cookie handling through Playwright's `context.addCookies()`.
+  The browser tools are plain REST either way.
 
 ## 5. Phases
 

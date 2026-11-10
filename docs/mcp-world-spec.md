@@ -48,7 +48,7 @@ A toolchain domain is offered only when its binary is present on the machine; wh
 
 ## 2. Browser MCP
 
-Value: the world can see and use the web through a real browser, driven over plain REST HTTP to the Camoufox server (localhost:9377). Whether the REST server itself drives the browser via CDP or Playwright is not yet verified (server.js was outside the read roots).
+Value: the world can see and use the web through a real browser, driven over plain REST HTTP to the Camoufox server (localhost:9377 by the package's own default). The REST server drives the browser through Playwright: it launches Camoufox (anti-detection Firefox) via Playwright's `firefox.launch` with camoufox-js options. (Verified from the REST server's launch code and its cookie handling, which uses Playwright's `context.addCookies()`.)
 
 | Tool | What it does | Access |
 |---|---|---|
@@ -111,7 +111,7 @@ Restricted tools, explicit scope required: `obsidian_create_note`, `obsidian_upd
 
 Value: the world reaches your accounts — mail and drive.
 
-Conditional: this value is present only when the machine has the Composio CLI. Authentication follows Composio's OAuth, not a bearer token in the keyring.
+Conditional: this value is present only when the machine has the Composio CLI. Authentication follows Composio's OAuth, not a bearer token in the keyring. Install, login, link, search, and execute shapes — and the fact that the CLI has no `mcp` subcommand, so Notchfolk invokes it as a subprocess — are in [mcp-world-apis.md](mcp-world-apis.md) §6.
 
 Read-only: `composio_search_mail`, `composio_read_mail`, `composio_search_drive`, `composio_read_drive_file`.
 Restricted: `composio_send_mail`, `composio_delete_mail`, `composio_share_drive_file`, `composio_write_drive_file`.
@@ -124,7 +124,7 @@ Conditional: this value is present only when needed. Its tool list is **TBD** �
 
 ## Tool mapping, acceptance criteria, and integration
 
-Exact API details are not invented here. They are obtained from reading the source MCP code on the VPS — the agreed step before implementation — and recorded in [mcp-world-apis.md](mcp-world-apis.md).
+Exact API details are recorded in [mcp-world-apis.md](mcp-world-apis.md), from a first-hand reading of the source MCP code (Phase 0, complete 10 Nov 2026). Nothing there is invented; where a value comes from the reference deployment rather than from the code, it is marked reference and is not a product default.
 
 Acceptance criteria used for every tool:
 
@@ -136,7 +136,7 @@ Acceptance criteria used for every tool:
 
 Read-only tools must meet AC-1, AC-2, AC-3, and AC-5. Restricted tools must meet AC-1, AC-2, AC-4, and AC-5.
 
-Integration backends: system tools — local subprocess / systemd / D-Bus in `server.py`, mimicking the niyatna-mcp implementation; browser tools — REST HTTP to the Camoufox server (localhost:9377); office — call the office service; skills — call the skills service / read the skill trees; Hindsight — call the Hindsight API; Obsidian — call the Obsidian backend / vault access; Composio — invoke the Composio CLI on the machine, only when the machine has it.
+Integration backends (all local, on the user's own machine): system tools — local subprocess / systemd / filesystem in `server.py`, following the reference implementation's logic; browser tools — REST HTTP to the Camoufox server on localhost (package default port 9377, from the user's own config); office — spawn the `officecli` binary's `mcp` subcommand over stdio; skills — read the skill trees on the machine directly; Hindsight — the Hindsight engine's MCP endpoint on localhost, at the address the user configured; Obsidian — the vault on the machine, at the path the user configured; Composio — invoke the Composio CLI on the machine, only when the machine has it (the one cloud-touching value).
 
 ## Out of scope
 

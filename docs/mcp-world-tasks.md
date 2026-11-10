@@ -10,28 +10,38 @@ spec's; every task names the ones it must prove.
 
 ### 0. Read the source MCPs on the VPS — the agreed step before implementation
 
-- [ ] `docs/mcp-world-apis.md` created, one section per domain, each naming
+- [x] `docs/mcp-world-apis.md` created, one section per domain, each naming
   the source MCP it was read from. A domain's section is the gate for that
   domain's implementation: nothing below starts for a domain whose section
-  does not exist yet.
-- [ ] niyatna-mcp read: the 14 system tools' argument shapes, the
-  `system_update` confirmation mechanism (one-shot `confirm` argument or
-  plan-then-execute — copied, not invented), the distro-detection rule as
-  implemented, and the log-reading approach.
-- [ ] browser-mcp / Camoufox `server.js` read: the REST routes and payloads
-  for all 10 tools, and the answer recorded — CDP or Playwright behind the
-  REST server.
-- [ ] office-mcp read: the office service's call shape for
-  `office_create_document`.
-- [ ] skills-mcp read: the catalogue's shape — what a skill, a file and the
-  index view look like for the 7 tools.
-- [ ] hindsight-mcp read: the API's endpoints and payloads for the 39 tools,
+  does not exist yet. **Done 10 Nov 2026 — Phase 0 complete.**
+- [x] niyatna-mcp read: the 14 system tools' argument shapes, the
+  `system_update` confirmation mechanism (one-shot `confirm` argument +
+  check first — copied, not invented), the distro-detection rule as
+  implemented, and the log-reading approach. Recorded in
+  `mcp-world-apis.md` §1.
+- [x] browser-mcp / Camoufox read: the REST routes and payloads for all 10
+  tools, and the answer recorded — **Playwright** behind the REST server
+  (Camoufox via `firefox.launch`). The MCP-layer contract is complete;
+  `server.js` internals were not read line by line (third-party driver
+  internals — see the boundary note in `mcp-world-apis.md`). Recorded in
+  `mcp-world-apis.md` §2.
+- [x] office-mcp read: the office service's call shape for
+  `office_create_document` (stdio proxy to `officecli mcp`, `batch` idiom,
+  resident model, install command). Recorded in `mcp-world-apis.md` §3.
+- [x] skills-mcp read: the catalogue's shape — what a skill, a file and the
+  index view look like for the 7 tools. Recorded in `mcp-world-apis.md` §4.
+- [x] hindsight-mcp read: the API's endpoints and payloads for the 39 tools,
   the operation model behind `list_operations` / `cancel_operation`, and the
-  bank / mental model / knowledge-base shapes.
-- [ ] obsidian-mcp read: the vault access shape for the 14 tools, and how
-  sync status is reported.
-- [ ] composio read: the CLI's invocation shapes for the 8 tools, and its
-  OAuth flow (never a bearer token in the keyring).
+  bank / mental model / knowledge-base shapes. Recorded in
+  `mcp-world-apis.md` §5.1. (Open: laptop runs its own engine vs a hosted
+  endpoint — undecided, recorded in the apis doc, not chosen here.)
+- [x] obsidian-mcp read: the vault access shape for the 14 tools, and how
+  sync status is reported. Recorded in `mcp-world-apis.md` §5.2.
+- [x] composio read: the CLI's invocation shapes for the 8 tools, and its
+  OAuth flow (never a bearer token in the keyring). Install, login, link,
+  search, execute — all from the CLI's own `--help` (0.4.0); the CLI has no
+  `mcp` subcommand, so Notchfolk invokes it as a subprocess. Recorded in
+  `mcp-world-apis.md` §6.
 
 ### 1. Ground: the domain framework
 
