@@ -63,6 +63,12 @@ spec's; every task names the ones it must prove.
   running the daemon and a client before and after.
 - [ ] A backend-down domain answers as a normal, isolated error — local tools
   unaffected, no secret in the message. **AC-5.**
+- [ ] Settings picks the browser backend: a row offering Camoufox or CDP
+  (with the debug port to fill in), written to the same mcp.env the
+  service reads - the same way Settings already writes mcp-clients.json.
+  The CDP choice carries its security note: an open debug port is
+  reachable by any local process, and Chrome 136+ keeps the port away
+  from the default profile.
 - [ ] Settings keeps its UX short while the scopes grow. The key builder
   separates the two halves: **Notchfolk** — the internal data tools, the
   existing "Read access" / "Write actions" expanders as they are — and
