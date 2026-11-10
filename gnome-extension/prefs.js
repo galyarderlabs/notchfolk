@@ -1127,6 +1127,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         look.add(hideDelay);
         page.add(look);
         page.add(pagesGroup(settings, window));
+        page.add(compactGroup(settings));
         page.add(shortcutsGroup(settings));
         page.add(appUsageGroup(settings, window));
         page.add(worldClocksGroup(settings, window));
@@ -1737,6 +1738,30 @@ function superVPageRow(settings, name, title) {
 }
 
 /** A switch per page; the last one on can't be turned off, so the island always has a page. */
+/** The live statuses of the closed island, each with its `compact-<kind>` switch; the recording dot and
+ * the service-down warning always show, so they have no switch. */
+const COMPACT_ROWS = [
+    ['timer', 'Timer', 'The time left of a running focus round'],
+    ['calls', 'Calls', 'A call in progress, with its length'],
+    ['notifications', 'Unread bell', 'A bell while notifications wait, with how many'],
+    ['weather', 'Weather', 'Today\u2019s temperature'],
+    ['phone', 'Phone', 'A paired phone\u2019s battery while it is connected'],
+    ['router', 'AI router', 'The gateway\u2019s health while it is connected'],
+];
+
+/** The closed island's statuses: fewer at a glance, each off the island but still working in its page. */
+function compactGroup(settings) {
+    const group = new Adw.PreferencesGroup({
+        title: 'The closed island shows',
+        description: 'Turn off the statuses you don\u2019t want at a glance; their pages keep working. The recording dot and a service failure always show.',
+    });
+    for (const [kind, title, subtitle] of COMPACT_ROWS) {
+        const row = switchRow(settings, `compact-${kind}`, title, subtitle);
+        group.add(row);
+    }
+    return group;
+}
+
 function pagesGroup(settings, window) {
     const group = new Adw.PreferencesGroup({title: 'Pages', description: 'The tabs of the open island. Turn off the ones you don’t use.'});
     const rows = PAGES.map(([name, title, iconName, subtitle]) => {
