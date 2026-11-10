@@ -337,6 +337,21 @@
       <summary>Shortcut to the Calendar page</summary>
       <description>Opens the island on the Calendar page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
     </key>
+    <key name="shortcut-calories" type="as">
+      <default>[]</default>
+      <summary>Shortcut to the Calories page</summary>
+      <description>Opens the island on the Calories page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
+    </key>
+    <key name="shortcut-water" type="as">
+      <default>[]</default>
+      <summary>Shortcut to the Water page</summary>
+      <description>Opens the island on the Water page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
+    </key>
+    <key name="shortcut-prayer" type="as">
+      <default>[]</default>
+      <summary>Shortcut to the Prayer page</summary>
+      <description>Opens the island on the Prayer page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
+    </key>
     <key name="shortcut-apps" type="as">
       <default>[]</default>
       <summary>Shortcut to the Apps page</summary>
