@@ -230,7 +230,7 @@
       <description>Shows a bell beside the clock while notifications wait, with how many. Alerts show either way.</description>
     </key>
     <key name="compact-weather" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>The weather in the closed island</summary>
       <description>Shows today&apos;s temperature beside the clock. The Weather page keeps working either way.</description>
     </key>

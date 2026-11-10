@@ -8,6 +8,14 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+### Changed
+
+- **The closed island's default drops the weather.** The quiet default was the assistant in the
+  middle, the clock to its left, the weather to its right — and the weather made the sides
+  uneven, the island growing longer on the left. The default is now just the assistant, the clock
+  and the music; the weather is off, and its switch has moved to Settings's own feature switches
+  (beside the pages'), where a feature of the notch belongs.
+
 ## [1.2.10] - 2026-11-10
 
 ### Added

@@ -1744,7 +1744,6 @@ const COMPACT_ROWS = [
     ['timer', 'Timer', 'The time left of a running focus round'],
     ['calls', 'Calls', 'A call in progress, with its length'],
     ['notifications', 'Unread bell', 'A bell while notifications wait, with how many'],
-    ['weather', 'Weather', 'Today\u2019s temperature'],
     ['phone', 'Phone', 'A paired phone\u2019s battery while it is connected'],
     ['router', 'AI router', 'The gateway\u2019s health while it is connected'],
 ];
@@ -1777,6 +1776,12 @@ function pagesGroup(settings, window) {
         group.add(row);
         return [name, row];
     });
+    // Weather is its own feature of the notch, not a page: its switch lives with the
+    // pages' own switches, so every feature of the island is in one place.
+    const weather = switchRow(settings, 'compact-weather', 'Weather',
+        'Today\u2019s temperature beside the clock in the closed island');
+    weather.add_prefix(new Gtk.Image({icon_name: 'weather-clear-symbolic'}));
+    group.add(weather);
     // The Apps, Devices and Usage pages' own switches, here too, so every tab is in one place.
     const apps = switchRow(settings, 'app-usage', 'Apps', 'Time spent in each app, kept on this computer for 30 days');
     apps.add_prefix(new Gtk.Image({icon_name: 'view-app-grid-symbolic'}));
