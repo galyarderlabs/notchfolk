@@ -40,7 +40,7 @@ mcp/
   tools/
     __init__.py        # domain registry: probe → register
     system.py          # 14 tools, local subprocess / systemd / filesystem
-    browser.py         # 10 tools, REST HTTP to the Camoufox server on localhost
+    browser.py         # 10 tools, two backends: Camoufox REST (default) and CDP attach (opt-in)
     office.py          # 1 tool, the officecli binary's mcp subcommand over stdio
     skills.py          # 7 tools, the skill trees on the machine
     hindsight.py       # 39 tools, the Hindsight engine's MCP endpoint on localhost
@@ -110,8 +110,11 @@ starts before the phase before it is verified on a live desktop.
    toolchains), then restricted (exec, write, patch, file ops, service, kill),
    then `system_update` with the distro detection rule and its confirmation.
    The sharpest edge in the whole spec; its scope is never default.
-3. **Browser** — the Camoufox REST client, read-only first (navigate,
-   snapshot, screenshot, scroll, tabs), then the restricted five.
+3. **Browser** — the Camoufox REST client (the default backend), read-only
+   first (navigate, snapshot, screenshot, scroll, tabs), then the restricted
+   five; then the CDP backend as the opt-in second way to the same ten
+   tools, for a Chromium-family browser of the user's own, with its
+   security note in Settings.
 4. **Skills and Office** — the two smallest domains; skills is all read-only,
    office is one restricted tool.
 5. **Memory** — Hindsight first (the implementation when available), then
