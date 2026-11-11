@@ -60,11 +60,13 @@ class WeatherPage extends Page {
 
         // The next hours, a card each: the hour, the hour's icon, the hour's temperature.
         this._hours = new St.BoxLayout({style_class: 'notchfolk-weather-hours'});
+        this._empty = label('Choose a location in Settings → Weather', 'notchfolk-weather-empty');
 
         column.add_child(this._location);
         column.add_child(hero);
         column.add_child(this._stats);
         column.add_child(this._hours);
+        column.add_child(this._empty);
         this.add_child(column);
 
         this._weather = new WeatherWatcher(settings);
@@ -134,6 +136,8 @@ class WeatherPage extends Page {
         }
         this._hours.visible = state.forecast.length > 0;
         this._stats.visible = Boolean(state.feelsLike || state.humidity || state.wind);
+        // No location picked (and no GNOME World Clock to follow): say so, instead of a blank page.
+        this._empty.visible = !state.locationName;
         this._disc.queue_repaint();
     }
 
