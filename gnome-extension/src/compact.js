@@ -565,20 +565,21 @@ export const CompactView = GObject.registerClass({
         this._musicArt.setPath(this._isServiceDown || !hasTrack ? '' : nowPlaying.art_path);
         this._musicStatus.visible = !this._isServiceDown && hasTrack;
         this._restDate.visible = !this._isServiceDown;
-        this._privacyDots.visible = shows('privacy');
+        // The dots' own update() decides their visibility from what is on; the switch
+        // decides by handing it an empty set when off.
         this._notificationCount.text = this._unseen > 0 ? (this._unseen > 9 ? '9+' : `${this._unseen}`) : '';
         this._notificationCount.visible = this._unseen > 0;
         this._micOff.visible = onCall && this._call.muted;
 
         // On a call the green phone already says the microphone is on, unless another app records too.
         const privacy = this._showingPrivacy() ? this._privacy : {};
-        this._privacyDots.update({
+        this._privacyDots.update(shows('privacy') ? {
             camera: privacy.camera,
             microphone: privacy.microphone && (!onCall || this._call.othersRecording),
             screenShare: privacy.screenShare,
             // Sharing with a phone stays visible even when other privacy indicators are off.
             phone: Boolean(this._daemon.state.share?.active),
-        });
+        } : {});
 
         const opacity = playing ? 255 : PAUSED_OPACITY;
         if (!restsAt(this._bars, 'opacity', opacity))
