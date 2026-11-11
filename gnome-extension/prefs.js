@@ -1647,7 +1647,8 @@ const PAGES = [
 /** The pages a shortcut of their own may open from anywhere, as the controller's SHORTCUT_PAGES, with their names. */
 const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, iconName]),
     ['phone', 'Phone', 'phone-symbolic'], ['apps', 'Apps', 'view-app-grid-symbolic'],
-    ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic']];
+    ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic'],
+    ['weather', 'Weather', 'weather-clear-symbolic']];
 
 /** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
 function shortcutsGroup(settings) {
@@ -1789,6 +1790,10 @@ function pagesGroup(settings, window) {
         'A phone or tablet paired through GSConnect: its battery, a ring to find it, and the clipboard sent over. Its tab shows while one is connected');
     phone.add_prefix(new Gtk.Image({icon_name: 'phone-symbolic'}));
     group.add(phone);
+    const weather = switchRow(settings, 'weather-enabled', 'Weather',
+        'The sky and the earth: the conditions, the next hours, the days, BMKG\u2019s earthquakes');
+    weather.add_prefix(new Gtk.Image({icon_name: 'weather-clear-symbolic'}));
+    group.add(weather);
     const usage = switchRow(settings, 'usage-enabled', 'AI Usage', 'Your AI plans’ limits, and warnings as one nears its end');
     usage.add_prefix(new Gtk.Image({icon_name: 'power-profile-performance-symbolic'}));
     if (!usageProviders().length) {
