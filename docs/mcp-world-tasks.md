@@ -63,6 +63,12 @@ spec's; every task names the ones it must prove.
   running the daemon and a client before and after.
 - [ ] A backend-down domain answers as a normal, isolated error — local tools
   unaffected, no secret in the message. **AC-5.**
+- [ ] Settings picks the browser backend: a row offering Camoufox or CDP
+  (with the debug port to fill in), written to the same mcp.env the
+  service reads - the same way Settings already writes mcp-clients.json.
+  The CDP choice carries its security note: an open debug port is
+  reachable by any local process, and Chrome 136+ keeps the port away
+  from the default profile.
 - [ ] Settings keeps its UX short while the scopes grow. The key builder
   separates the two halves: **Notchfolk** — the internal data tools, the
   existing "Read access" / "Write actions" expanders as they are — and
@@ -112,12 +118,15 @@ spec's; every task names the ones it must prove.
   local tools unaffected. **AC-5.**
 - [ ] Verified against a live Camoufox server: navigate, snapshot and
   screenshot of a known page, a click and a type on it.
-- [ ] The CDP backend, opt-in in Settings: the same ten tools over the
-  Chrome DevTools Protocol against a Chromium-family browser the user
-  points at (its debug port the user's own configuration; Chrome 136+
-  needs a --user-data-dir away from the default profile). The opt-in
-  carries the security note: an open debugging port is reachable by any
-  local process. **AC-1, AC-2, AC-3, AC-4, AC-5.**
+- [x] The CDP backend, opt-in: the same ten tools over the Chrome DevTools
+  Protocol against a Chromium-family browser the user points at
+  (`NOTCHFOLK_MCP_BROWSER=cdp`, the debug port the user's own
+  configuration; Chrome 136+ needs a --user-data-dir away from the
+  default profile). The opt-in carries the security note in the module's
+  docstring: an open debugging port is reachable by any local process.
+  **AC-1, AC-2, AC-3, AC-4, AC-5** proven against a mock Chromium over
+  the real protocol (tests/mcp/test_browser_cdp.py); the Settings opt-in
+  toggle follows with the Settings phase.
 - [ ] Verified against a live Chromium browser over CDP: the same
   navigate, snapshot, click and type as Camoufox.
 
