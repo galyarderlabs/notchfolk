@@ -24,6 +24,7 @@ later keep the port away from the default profile, so the attached browser is a
 dedicated profile. Firefox is out: it removed its CDP support.
 """
 
+import asyncio
 import json
 import os
 import urllib.error
@@ -55,6 +56,11 @@ BACKEND = os.getenv("NOTCHFOLK_MCP_BROWSER", "camoufox").lower()
 CAMOFOX_URL = os.getenv("NOTCHFOLK_MCP_CAMOFOX_URL", "http://localhost:9377").rstrip("/")
 CAMOFOX_KEY = os.getenv("NOTCHFOLK_MCP_CAMOFOX_KEY", "")
 CDP_URL = os.getenv("NOTCHFOLK_MCP_CDP_URL", f"http://localhost:{os.getenv('NOTCHFOLK_MCP_CDP_PORT', '9222')}")
+
+# One ceiling for a CDP call — connect, send, and the wait for the answer:
+# a browser that dies mid-call answers as an isolated timeout (AC-5), not a
+# hang. The Camoufox REST calls cap at 30s the same way.
+CDP_CALL_TIMEOUT = 30
 USER_ID = os.getenv("NOTCHFOLK_MCP_BROWSER_USER", "notchfolk")
 SESSION_KEY = os.getenv("NOTCHFOLK_MCP_BROWSER_SESSION", "default")
 
@@ -89,7 +95,22 @@ def cdp_websocket(tab_id: str) -> str:
 
 
 async def cdp_call(tab_id: str, method: str, params: dict | None = None) -> dict:
-    """One DevTools call on the tab's socket; its result, or its error as one."""
+    """One DevTools call on the tab's socket; its result, or its error as one.
+
+    A browser that dies mid-call answers as an isolated timeout, not a hang
+    (AC-5): the connect, the send, and the wait for the answer share one
+    ceiling, and the timeout comes back as a RuntimeError like every other
+    failure here.
+    """
+    try:
+        return await asyncio.wait_for(_cdp_call_once(tab_id, method, params), timeout=CDP_CALL_TIMEOUT)
+    except asyncio.TimeoutError:
+        raise RuntimeError(
+            f"cdp: {method} timed out after {CDP_CALL_TIMEOUT}s: the browser stopped answering") from None
+
+
+async def _cdp_call_once(tab_id: str, method: str, params: dict | None = None) -> dict:
+    """The call itself: connect, send, wait for the answer with this id."""
     async with websockets.connect(cdp_websocket(tab_id)) as socket:
         await socket.send(json.dumps({"id": 1, "method": method, "params": params or {}}))
         while True:
@@ -311,7 +332,13 @@ def register_cdp(mcp, authorize, write):
         where = f'[data-nf-ref="{ref}"]' if ref else selector
         if not where:
             raise RuntimeError("click needs a ref or a selector")
-        await cdp_evaluate(tab_id, f"document.querySelector({json.dumps(where)}).click()")
+        # The element may have gone while the page moved on: ask for it and
+        # click it in one script, so a missing element is a plain error
+        # ("element not found"), not a TypeError on null.
+        script = ("(() => { const el = document.querySelector(" + json.dumps(where) + ");" +
+                  " if (!el) return false; el.click(); return true; })()")
+        if not await cdp_evaluate(tab_id, script):
+            raise RuntimeError(f"click: element not found: {where}")
         return {"ok": True}
 
     @mcp.tool
@@ -323,14 +350,19 @@ def register_cdp(mcp, authorize, write):
         where = f'[data-nf-ref="{ref}"]' if ref else selector
         if not where:
             raise RuntimeError("type needs a ref or a selector")
-        script = ("(el => { el.focus(); el.value = " + json.dumps(text) + ";" +
-                  " el.dispatchEvent(new Event('input', {bubbles: true})); })(document.querySelector(" +
-                  json.dumps(where) + "))")
-        await cdp_evaluate(tab_id, script)
-        if press_enter:
-            await cdp_evaluate(tab_id,
-                               "el => el.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}))(document.querySelector(" +
-                               json.dumps(where) + "))")
+        # One script, as with click: the element may have gone while the page
+        # moved on, so a missing element is a plain "element not found", not a
+        # TypeError on null. The Enter key goes to the same element, in the
+        # same script — the old form built an arrow function it never called,
+        # so Enter was never dispatched at all.
+        script = ("(() => { const el = document.querySelector(" + json.dumps(where) + ");" +
+                  " if (!el) return false; el.focus(); el.value = " + json.dumps(text) + ";" +
+                  " el.dispatchEvent(new Event('input', {bubbles: true}));" +
+                  (" el.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));"
+                   if press_enter else "") +
+                  " return true; })()")
+        if not await cdp_evaluate(tab_id, script):
+            raise RuntimeError(f"type: element not found: {where}")
         return {"ok": True}
 
     @mcp.tool

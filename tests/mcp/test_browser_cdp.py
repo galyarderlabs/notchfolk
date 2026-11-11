@@ -88,6 +88,13 @@ async def cdp_socket(socket):
                 await socket.send(json.dumps({"id": call_id, "result": {"result": {"type": "object", "value": {
                     "url": "https://example.com", "title": "Example", "text": "Example Domain",
                     "elements": [{"ref": "e1", "tag": "a", "text": "More information"}]}}}}))
+            elif "never-answer" in expression:
+                # A browser that dies mid-call: never answers, so the call must
+                # time out on the client instead of hanging.
+                await asyncio.sleep(30)
+            elif "if (!el) return false" in expression and "#gone" in expression:
+                # The element the tool asked for is not on the page.
+                await socket.send(json.dumps({"id": call_id, "result": {"result": {"type": "boolean", "value": False}}}))
             else:
                 await socket.send(json.dumps({"id": call_id, "result": {"result": {"type": "number", "value": 2}}}))
         else:
@@ -118,6 +125,15 @@ async def main():
         print(f"{'ok' if condition else 'FAIL'}  {name}" + (f"  ({detail})" if detail and not condition else ""))
         if not condition:
             failures.append(name)
+
+    async def expect_error(name, coro, needle):
+        """A tool call that must fail with a plain error carrying needle."""
+        try:
+            result = await coro
+        except Exception as error:
+            check(name, needle in str(error), str(error))
+            return
+        check(name, getattr(result, "isError", False) and needle in str(result.content), str(result))
 
     os.environ["NOTCHFOLK_MCP_CLIENTS_FILE"] = clients_file()
     os.environ["NOTCHFOLK_MCP_BROWSER"] = "cdp"
@@ -219,9 +235,20 @@ async def main():
         await admin.call_tool("browser_type", {"tab_id": "tab-1", "text": "notchfolk", "selector": "#q"})
         check("contract: type sets the value and dispatches input",
               any("el.value" in expr and "new Event('input'" in expr for _, expr in EVALUATED))
+        await expect_error("element not found: click on a missing element is a plain error",
+                           admin.call_tool("browser_click", {"tab_id": "tab-1", "selector": "#gone"}),
+                           "element not found")
+        await expect_error("element not found: type into a missing element is a plain error",
+                           admin.call_tool("browser_type", {"tab_id": "tab-1", "text": "x", "selector": "#gone"}),
+                           "element not found")
         evaluate = await admin.call_tool("browser_evaluate", {"tab_id": "tab-1", "expression": "1 + 1"})
         evaluate = evaluate.data if hasattr(evaluate, "data") else evaluate
         check("AC-2 browser_evaluate", evaluate["result"] == 2, str(evaluate))
+        browser_module.CDP_CALL_TIMEOUT = 1
+        await expect_error("timeout: a browser that stops answering is an isolated error, not a hang",
+                           admin.call_tool("browser_evaluate", {"tab_id": "tab-1", "expression": "/* never-answer */ 1"}),
+                           "timed out")
+        browser_module.CDP_CALL_TIMEOUT = 30
         created = await admin.call_tool("browser_create_tab", {"url": "https://example.com/new"})
         created = created.data if hasattr(created, "data") else created
         check("AC-2 browser_create_tab (PUT /json/new)", created["result"]["id"] == "tab-2", str(created))
