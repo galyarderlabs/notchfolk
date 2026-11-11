@@ -34,6 +34,7 @@ export const BOTTOM_PADDING = 20;
 const TABS = {
     call: {icon: 'notchfolk-phone', label: 'Call'},
     music: {icon: 'notchfolk-music', label: 'Music'},
+    control: {icon: 'notchfolk-display-symbolic', label: 'Control Center'},
     notifications: {icon: 'notchfolk-bell', label: 'Notifications'},
     focus: {icon: 'notchfolk-timer', label: 'Timer'},
     reminders: {icon: 'notchfolk-tasks', label: 'Reminders'},

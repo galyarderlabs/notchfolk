@@ -1683,6 +1683,7 @@ function blackBesideWindowsRow(settings, window) {
 /** The open island's pages that can be left out, in tab order, with what goes with each. */
 const PAGES = [
     ['music', 'Music', 'audio-x-generic-symbolic', 'The player and lyrics, and the song in the closed island'],
+    ['control', 'Control Center', 'view-grid-symbolic', 'Wi-Fi, Bluetooth, brightness, volume and the rest of the quick controls'],
     ['notifications', 'Notifications', 'preferences-system-notifications-symbolic', 'The list to look back at, and its unread dot; alerts show either way'],
     ['focus', 'Timer', 'alarm-symbolic', 'Pomodoro focus sessions and breaks'],
     ['reminders', 'Reminders', 'object-select-symbolic', 'Your to-do list'],

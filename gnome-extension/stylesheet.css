@@ -479,6 +479,26 @@
 /* Pages line up with the header's edges, as far in as the room below them (BOTTOM_PADDING in expanded.js). */
 .notchfolk-page { padding: 6px 20px 0 20px; }
 
+/* ── Control Center ───────────────────────────────────── */
+
+.notchfolk-control-tiles { spacing: 8px; }
+.notchfolk-control-tile { padding: 8px 4px 7px 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.08); }
+.notchfolk-control-tile:hover { background-color: rgba(255, 255, 255, 0.12); }
+.notchfolk-control-tile:checked { background-color: #0a84ff; }
+.notchfolk-control-tile:disabled { opacity: 0.45; }
+.notchfolk-control-tile-icon { color: #ffffff; margin-bottom: 4px; }
+.notchfolk-control-tile-title { font-size: 12px; font-weight: 600; }
+.notchfolk-control-tile-subtitle { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+.notchfolk-control-tile:checked .notchfolk-control-tile-subtitle { color: rgba(255, 255, 255, 0.85); }
+.notchfolk-control-bottom { spacing: 16px; padding-top: 2px; }
+.notchfolk-control-slider-row { spacing: 8px; min-width: 130px; }
+.notchfolk-control-volume-button { color: rgba(255, 255, 255, 0.85); }
+.notchfolk-control-media { spacing: 10px; }
+.notchfolk-control-media-cover { color: rgba(255, 255, 255, 0.55); }
+.notchfolk-control-media-title { font-size: 13px; font-weight: 600; }
+.notchfolk-control-media-artist { font-size: 12px; color: rgba(255, 255, 255, 0.55); }
+.notchfolk-control-media-play { color: #ffffff; }
+
 /* ── Music ────────────────────────────────────────────── */
 
 .notchfolk-player { spacing: 20px; }
