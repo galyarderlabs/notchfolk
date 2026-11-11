@@ -25,7 +25,15 @@ Isle's changelog from before the fork, kept for reference.
   island; now they are one more of its switches, off by default - and they obey it: the dots'
   own update had been deciding their visibility from what was on, so the switch now hands it
   an empty set when off. The recording time still shows while a recording runs, whatever the
-  switch says.
+  switch says. The open island's dots show the same set as the closed one now - the phone
+  share dot had been dropped from the open island's set, so it vanished the moment the island
+  opened - and the Settings row names each colour: green camera, orange microphone, blue screen
+  share, purple phone share.
+  island; now they are one more of its switches, off by default. The recording time still
+  shows while a recording runs, whatever the switch says. The open island's dots show the same
+  set as the closed one now - the phone share dot had been dropped from the open island's set,
+  so it vanished the moment the island opened - and the Settings row names each colour: green
+  camera, orange microphone, blue screen share, purple phone share.
 
 ## [1.2.10] - 2026-11-10
 
