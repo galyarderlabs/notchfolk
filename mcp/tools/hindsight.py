@@ -220,7 +220,8 @@ def register(mcp, authorize, write):
                                    changes: dict | None = None) -> dict:
         """Changes a mental model's statement."""
         await write("update_mental_model")
-        return {"ok": True, "result": await _call("update_mental_model", _args(model_id=model_id, changes=changes))}
+        return {"ok": True, "result": await _call("update_mental_model",
+            _args(model_id=model_id, bank_id=bank_id, changes=changes))}
 
     @mcp.tool
     async def delete_mental_model(model_id: str, bank_id: str | None = None) -> dict:
@@ -280,7 +281,8 @@ def register(mcp, authorize, write):
                                      changes: dict | None = None) -> dict:
         """Changes a knowledge folder or page."""
         await write("update_knowledge_node")
-        return {"ok": True, "result": await _call("update_knowledge_node", _args(node_id=node_id, changes=changes))}
+        return {"ok": True, "result": await _call("update_knowledge_node",
+            _args(node_id=node_id, bank_id=bank_id, changes=changes))}
 
     @mcp.tool
     async def delete_knowledge_node(node_id: str, bank_id: str | None = None) -> dict:
@@ -329,7 +331,8 @@ def register(mcp, authorize, write):
                              options: dict | None = None) -> dict:
         """Rewrites a memory (resolve-entities semantics on the engine's side)."""
         await write("update_memory")
-        return {"ok": True, "result": await _call("update_memory", _args(memory_id=memory_id, content=content, options=options))}
+        return {"ok": True, "result": await _call("update_memory",
+            _args(memory_id=memory_id, bank_id=bank_id, content=content, options=options))}
 
     @mcp.tool
     async def invalidate_memory(memory_id: str, bank_id: str | None = None) -> dict:
