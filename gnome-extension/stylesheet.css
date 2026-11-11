@@ -163,7 +163,7 @@
 
 /* ── Compact ──────────────────────────────────────────── */
 
-.notchfolk-compact-row { padding: 0 16px; spacing: 12px; }
+.notchfolk-compact-row { padding: 0; spacing: 12px; }
 .notchfolk-compact-clock-side { spacing: 12px; }
 
 .notchfolk-compact-clock { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
@@ -179,7 +179,7 @@
 .notchfolk-compact-assistant-button:focus { background-color: rgba(255, 255, 255, 0.08); }
 
 /* Inside the top bar everything is sized like the bar's own text. */
-.notchfolk-compact-in-bar .notchfolk-compact-row { padding: 0 14px; spacing: 12px; }
+.notchfolk-compact-in-bar .notchfolk-compact-row { padding: 0; spacing: 12px; }
 .notchfolk-compact-in-bar .notchfolk-compact-clock-side { spacing: 10px; }
 .notchfolk-compact-in-bar .notchfolk-compact-status { spacing: 10px; }
 .notchfolk-compact-in-bar .notchfolk-compact-clock { font-size: 14px; letter-spacing: -0.1px; }
