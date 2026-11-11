@@ -28,7 +28,7 @@ export const WeatherWatcher = GObject.registerClass({
         this._updated = 0;
         this._refreshTimer = 0;
         this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: [],
-                    feelsLike: '', humidity: '', wind: ''};
+                    daily: [], feelsLike: '', humidity: '', wind: ''};
         this._settingsIds = [
             settings.connect('changed::weather-enabled', () => this._configure()),
             settings.connect('changed::weather-location', () => this._configure()),
@@ -67,8 +67,40 @@ export const WeatherWatcher = GObject.registerClass({
                 const timestamp = slice.get_timestamp?.() ?? 0;
                 const hour = timestamp
                     ? GLib.DateTime.new_from_unix_local(timestamp).format('%H') : '';
-                return {temperature, iconName, hour};
+                return {temperature, iconName, hour, timestamp};
             }).filter(slice => slice.temperature);
+        } catch {
+            return [];
+        }
+    }
+
+    /** The forecast's days: each date's coldest and warmest slice, with the warmest hour's
+     * icon - today, tomorrow, the day after. The temperatures GWeather answers are strings
+     * ("24\u00b0"); the numbers are read for the minima and maxima. A GWeather whose forecast
+     * carries no timestamps answers an empty list, and the page shows only the hours. */
+    _daily(info) {
+        try {
+            const byDate = new Map();
+            for (const slice of (info.get_forecast_list() ?? [])) {
+                const timestamp = slice.get_timestamp?.() ?? 0;
+                const temperature = Number.parseFloat(slice.get_temp?.() ?? '');
+                if (!timestamp || Number.isNaN(temperature))
+                    continue;
+                const when = GLib.DateTime.new_from_unix_local(timestamp);
+                const date = when.format('%Y-%m-%d');
+                if (!byDate.has(date))
+                    byDate.set(date, {date, name: when.format('%a'), low: temperature,
+                        high: temperature, iconName: slice.get_icon_name?.() ?? '',
+                        at: timestamp});
+                const day = byDate.get(date);
+                if (temperature < day.low)
+                    day.low = temperature;
+                if (temperature >= day.high) {
+                    day.high = temperature;
+                    day.iconName = slice.get_icon_name?.() ?? day.iconName;
+                }
+            }
+            return [...byDate.values()].slice(0, 5);
         } catch {
             return [];
         }
@@ -85,7 +117,7 @@ export const WeatherWatcher = GObject.registerClass({
         this._info = null;
         this._updated = 0;
         this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: [],
-                    feelsLike: '', humidity: '', wind: ''};
+                    daily: [], feelsLike: '', humidity: '', wind: ''};
 
         const location = this._settings.get_boolean('weather-enabled')
             ? WorldClocks.weatherLocation(this._settings, this._clocks) : null;
@@ -141,6 +173,7 @@ export const WeatherWatcher = GObject.registerClass({
             return;
         this.state = {
             forecast: this._forecast(info),
+            daily: this._daily(info),
             feelsLike: info.get_feels_like?.() ?? '',
             humidity: info.get_humidity?.() ?? '',
             wind: info.get_wind?.() ?? '',
