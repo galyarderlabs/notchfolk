@@ -19,8 +19,6 @@ import {Lines, icon, iconButton, label} from '../widgets.js';
 
 /** The shelf holds this many files (as notchfolkd enforces). */
 export const SHELF_CAPACITY = 12;
-/** Tiles in a row; two rows hold the shelf. */
-export const ROW_SIZE = 6;
 
 // Sizes in CSS pixels (see `px`); keep them in step with the helper's tile.rs, which GTK scales likewise.
 const TILE_WIDTH = 84;
@@ -31,9 +29,6 @@ const REMOVE_SIZE = 18;
 const NAME_WIDTH = 76;
 /** The preview's square plus room above it for the ×. */
 const FRAME_HEIGHT = PREVIEW_SIZE + 6;
-/** A row of tiles, in CSS pixels: the frame, the tile-box's spacing (4px), the name's two lines (2.5em at 12px,
- * 30px), and the tile's padding (6px top and bottom, 12px) — see stylesheet.css. */
-export const ROW_HEIGHT = FRAME_HEIGHT + 4 + 30 + 12;
 /** How long "copied" shows on a tile. */
 const COPIED_MS = 1100;
 /** The drop zone's dashed outline, drawn here alone, under the helper's see-through window too: one dash
@@ -105,18 +100,23 @@ export const FilesView = GObject.registerClass({
         /** Each file's tile, kept while the file stays, so its preview never reloads (and blinks). */
         this._tileFor = new Map();
 
-        // Rows of ROW_SIZE tiles, each row centred: a short row sits in the middle, not against the left edge
-        // (as the helper's, crates/notchfolk-shelf, does). Expanding, as BinLayout only honours START for
-        // children that do — the rows centre inside it.
+        // One row of tiles, sideways scrollable: it fills from the middle out to the edges, and past the
+        // width it scrolls, still one row — never two stacked. A short row sits in the middle, not against
+        // the left edge (as the helper's, crates/notchfolk-shelf, does). The helper's window scrolls its own
+        // row and reports it (see `scrollX`), so the names drawn here stay under its pictures.
         this._tiles = new St.BoxLayout({
-            ...VERTICAL,
-            style_class: 'notchfolk-shelf-tiles',
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
+            style_class: 'notchfolk-shelf-row',
+            x_align: Clutter.ActorAlign.CENTER,
         });
-        this.add_child(this._tiles);
-        /** The rows the tiles sit in, made and taken away as the count needs them. */
-        this._rows = [];
+        this._scroller = new St.ScrollView({
+            hscrollbar_policy: St.PolicyType.AUTOMATIC,
+            vscrollbar_policy: St.PolicyType.NEVER,
+            x_expand: true,
+            y_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            child: this._tiles,
+        });
+        this.add_child(this._scroller);
 
         this._empty = new St.BoxLayout({
             ...VERTICAL,
@@ -172,6 +172,14 @@ export const FilesView = GObject.registerClass({
             return;
         this._helperAvailable = available;
         this.update();
+    }
+
+    /** The row's scroll, in stage pixels: the helper's window scrolled its own row that far, so the names
+     * drawn here move with its pictures. */
+    set scrollX(x) {
+        const adjustment = this._scroller.hscroll;
+        if (adjustment)
+            adjustment.value = x;
     }
 
     /** A file is on its way: the zone and words say where it will land; the tiles stay as they are. */
@@ -271,8 +279,11 @@ export const FilesView = GObject.registerClass({
         const items = this._items;
         this._syncTiles(items);
         this._syncZone();
-        this._tiles.visible = items.length > 0;
+        this._scroller.visible = items.length > 0;
         this._empty.visible = items.length === 0;
+        // The helper's window draws its own scrollbar over the tab; this one's would double it, so it only
+        // shows while the tab draws itself.
+        this._scroller.hscrollbar_policy = this._helperActive ? St.PolicyType.NEVER : St.PolicyType.AUTOMATIC;
         // Under the helper's window each tile's picture and × stay laid out but unseen (hidden, the tab would shrink
         // and the window go, blinking): the window draws them. The names are only ever drawn here, as the empty
         // shelf's words: GTK breaks and draws text its own way, and a name changing as the window came in blinked.
@@ -288,8 +299,8 @@ export const FilesView = GObject.registerClass({
         this._zone.queue_repaint();
     }
 
-    /** A tile per file, newest first, in rows of ROW_SIZE, each row centred; a file's tile is made once and kept
-     * while it stays, so its preview never reloads (and blinks). */
+    /** A tile per file, newest first, in one row, centred while it fits and sideways scrollable past that; a
+     * file's tile is made once and kept while it stays, so its preview never reloads (and blinks). */
     _syncTiles(items) {
         const wanted = new Set(items.map(item => item.uri));
         for (const [uri, tile] of this._tileFor) {
@@ -298,35 +309,19 @@ export const FilesView = GObject.registerClass({
                 this._tileFor.delete(uri);
             }
         }
-        const rowsNeeded = Math.ceil(items.length / ROW_SIZE);
-        while (this._rows.length < rowsNeeded) {
-            const row = new St.BoxLayout({
-                style_class: 'notchfolk-shelf-row',
-                x_align: Clutter.ActorAlign.CENTER,
-            });
-            this._rows.push(row);
-            this._tiles.add_child(row);
-        }
         items.forEach((item, index) => {
             let tile = this._tileFor.get(item.uri);
             if (!tile) {
                 tile = this._tile(item);
                 this._tileFor.set(item.uri, tile);
             }
-            const row = this._rows[Math.floor(index / ROW_SIZE)];
-            const pos = index % ROW_SIZE;
-            if (tile.get_parent() !== row) {
+            if (tile.get_parent() !== this._tiles) {
                 tile.get_parent()?.remove_child(tile);
-                row.insert_child_at_index(tile, pos);
-            } else if (row.get_child_at_index(pos) !== tile) {
-                row.set_child_at_index(tile, pos);
+                this._tiles.insert_child_at_index(tile, index);
+            } else if (this._tiles.get_child_at_index(index) !== tile) {
+                this._tiles.set_child_at_index(tile, index);
             }
         });
-        // Rows past the last one are empty now: every tile left sits in a row before them.
-        while (this._rows.length > rowsNeeded) {
-            const row = this._rows.pop();
-            row.destroy();
-        }
     }
 
     /** What the empty shelf says, as the helper does: where to drop, and what then. */

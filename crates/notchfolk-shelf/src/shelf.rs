@@ -22,8 +22,6 @@ const SHELF_INTERFACE: &str = "io.galyarderlabs.notchfolk.Shelf1";
 const SHELF_ICON: &[u8] = include_bytes!("../../../gnome-extension/icons/notchfolk-shelf.svg");
 /// notchfolkd keeps this many files; a full shelf turns drops away.
 const CAPACITY: usize = 12;
-/// Tiles in a row; two rows hold the shelf.
-const ROW_SIZE: usize = 6;
 /// Hidden this long, the helper quits, its memory freed; the extension's next Show starts it again.
 const IDLE_QUIT_SECS: u32 = 20;
 /// Files dropped this recently (µs) are new on the shelf: their tiles pop in as they land.
@@ -54,8 +52,8 @@ struct Inner {
     window: gtk::Window,
     stack: gtk::Stack,
     tiles: gtk::Box,
-    /// The rows the tiles sit in, made and taken away as the count needs them.
-    rows: RefCell<Vec<gtk::Box>>,
+    /// The row's scroll, so a file that just landed shows at the front.
+    scroller: gtk::ScrolledWindow,
     empty_title: gtk::Label,
     empty_hint: gtk::Label,
     daemon: RefCell<Option<gio::DBusProxy>>,
@@ -97,10 +95,11 @@ impl ShelfWindow {
             }
         });
 
-        // Rows of ROW_SIZE tiles, each row centred, as in the island: a short row sits in the middle, not
-        // against the left edge, and no row ever stretches a tile.
+        // One row of tiles, sideways scrollable: it fills from the middle out to the edges, and past the
+        // width it scrolls, still one row — never two stacked. A short row sits in the middle, not against
+        // the left edge, and no row ever stretches a tile.
         let tiles = gtk::Box::builder()
-            .orientation(gtk::Orientation::Vertical)
+            .orientation(gtk::Orientation::Horizontal)
             .spacing(6)
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
@@ -111,6 +110,18 @@ impl ShelfWindow {
             .hexpand(true)
             .child(&tiles)
             .build();
+        // The island's tab draws the names under this window's pictures: it follows this row's scroll, told
+        // by a signal (logical pixels, as the placement is). Only a whole pixel's move is told, so a smooth
+        // scroll does not flood the bus.
+        let last = Rc::new(Cell::new(0));
+        scroller
+            .hadjustment()
+            .connect_value_changed(move |adjustment| {
+                let x = adjustment.value() as i32;
+                if last.replace(x) != x {
+                    service::announce_scrolled(x);
+                }
+            });
         let filled = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         filled.append(&scroller);
 
@@ -127,7 +138,7 @@ impl ShelfWindow {
             window,
             stack,
             tiles,
-            rows: RefCell::new(Vec::new()),
+            scroller,
             empty_title,
             empty_hint,
             daemon: RefCell::default(),
@@ -536,35 +547,17 @@ impl ShelfWindow {
         }
     }
 
-    /// Lays out a tile per file, newest first, in rows of ROW_SIZE, each row centred — as the island's
-    /// (files.js) are. A file already shown keeps its tile where it is, or moves it; only new files get tiles
-    /// (fading in with `mark_new`) and only gone ones lose theirs, so nothing else is taken down and put back,
-    /// nor replays its arrival.
+    /// Lays out a tile per file, newest first, in one row, centred while it fits and sideways scrollable
+    /// past that — as the island's (files.js) is. A file already shown keeps its tile where it is, or moves
+    /// it; only new files get tiles (fading in with `mark_new`) and only gone ones lose theirs, so nothing
+    /// else is taken down and put back, nor replays its arrival.
     fn render_tiles(&self, mark_new: bool) {
         let inner = &self.0;
         let mut old = inner.tile_cache.take();
         let mut cache = HashMap::new();
         let items = inner.items.borrow();
-        let rows_needed = items.len().div_ceil(ROW_SIZE);
-        let mut rows = inner.rows.borrow_mut();
-        while rows.len() < rows_needed {
-            let row = gtk::Box::builder()
-                .orientation(gtk::Orientation::Horizontal)
-                .spacing(6)
-                .halign(gtk::Align::Center)
-                .build();
-            inner.tiles.append(&row);
-            rows.push(row);
-        }
         let mut previous: Option<gtk::Widget> = None;
-        let mut current_row = usize::MAX;
-        for (index, item) in items.iter().enumerate() {
-            let row_index = index / ROW_SIZE;
-            if row_index != current_row {
-                current_row = row_index;
-                previous = None;
-            }
-            let row = &rows[row_index];
+        for item in items.iter() {
             let tile = old.remove(&item.uri).unwrap_or_else(|| {
                 let weak = Rc::downgrade(&self.0);
                 tile::new(item, mark_new, move |uri| {
@@ -573,12 +566,12 @@ impl ShelfWindow {
                     }
                 })
             });
-            // In its row already, in the right place: leave it. Elsewhere, or in no row: move it there.
-            let in_place = tile.parent() == Some(row.clone().upcast::<gtk::Widget>())
+            // In the row already, in the right place: leave it. Elsewhere, or in no row: move it there.
+            let in_place = tile.parent() == Some(inner.tiles.clone().upcast::<gtk::Widget>())
                 && tile.prev_sibling() == previous;
             if !in_place {
                 unparent(&tile);
-                row.insert_child_after(&tile, previous.as_ref());
+                inner.tiles.insert_child_after(&tile, previous.as_ref());
             }
             previous = Some(tile.clone());
             cache.insert(item.uri.clone(), tile);
@@ -586,13 +579,11 @@ impl ShelfWindow {
         for gone in old.into_values() {
             unparent(&gone);
         }
-        // Rows past the last one are empty now: every tile left sits in a row before them.
-        while rows.len() > rows_needed {
-            if let Some(row) = rows.pop() {
-                inner.tiles.remove(&row);
-            }
-        }
         inner.tile_cache.replace(cache);
+        if mark_new {
+            // A file just landed at the front: show it, not where the row was scrolled to.
+            inner.scroller.hadjustment().set_value(0.0);
+        }
     }
 }
 

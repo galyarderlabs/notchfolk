@@ -44,6 +44,7 @@ const ShelfWindowProxy = Gio.DBusProxy.makeProxyWrapper(`
   <signal name="Hovering"><arg name="uris" type="as"/></signal>
   <signal name="Drawn"/>
   <signal name="Save"><arg name="uri" type="s"/></signal>
+  <signal name="Scrolled"><arg name="x" type="i"/></signal>
 </interface></node>`);
 
 /** Errors meaning the helper cannot be started at all. */
@@ -525,6 +526,13 @@ export class ShelfHelper extends Signals.EventEmitter {
                     // 1.5.4: ↓ on a file the Shelf keeps itself, saved by the extension as from its own tile; the
                     // helper shows ↓ only once told this extension does (an older helper has no SetSaves).
                     this._saveId = proxy.connectSignal('Save', (_proxy, _sender, [uri]) => this.emit('save', uri));
+                    // The helper's window scrolled its row sideways: the tab's own row follows, so the names
+                    // it draws stay under the window's pictures. The offset arrives in the helper's logical
+                    // pixels; the tab takes stage ones, as its placement does.
+                    this._scrolledId = proxy.connectSignal('Scrolled', (_proxy, _sender, [x]) => {
+                        const unit = this._unit ?? uiScale();
+                        this._page.helperScrollX = x * unit;
+                    });
                     this._signalProxy = proxy;
                     this._ownerId = proxy.connect('notify::g-name-owner', () => this._onOwnerChanged(proxy));
                     this._saySaves(proxy);
@@ -667,6 +675,7 @@ export class ShelfHelper extends Signals.EventEmitter {
             this._signalProxy.disconnectSignal(this._hoveringId);
             this._signalProxy.disconnectSignal(this._drawnId);
             this._signalProxy.disconnectSignal(this._saveId);
+            this._signalProxy.disconnectSignal(this._scrolledId);
             this._signalProxy.disconnect(this._ownerId);
         }
         this._proxy = null;
