@@ -75,7 +75,7 @@ export const WeatherWatcher = GObject.registerClass({
     }
 
     /** The forecast's days: each date's coldest and warmest slice, with the warmest hour's
-     * icon - today, tomorrow, the day after. The temperatures GWeather answers are strings
+     * icon - five of them, today first. The temperatures GWeather answers are strings
      * ("24\u00b0"); the numbers are read for the minima and maxima. A GWeather whose forecast
      * carries no timestamps answers an empty list, and the page shows only the hours. */
     _daily(info) {

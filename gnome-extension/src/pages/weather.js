@@ -97,8 +97,8 @@ class WeatherPage extends Page {
 
         this._weather = new WeatherWatcher(settings);
         this._weatherChanged = this._weather.connect('changed', () => this._update());
-        this._quakes = new QuakeWatcher();
-        this._quakesChanged = this._quakes.connect('changed', () => this._updateQuakes());
+        this._quakeWatcher = new QuakeWatcher();
+        this._quakesChanged = this._quakeWatcher.connect('changed', () => this._updateQuakes());
         this._update();
         this._updateQuakes();
     }
@@ -199,12 +199,12 @@ class WeatherPage extends Page {
     /** The page on screen is when the sky is worth fetching; off it, the watchers rest. */
     onActivate() {
         this._weather.active = true;
-        this._quakes.active = true;
+        this._quakeWatcher.active = true;
     }
 
     onDeactivate() {
         this._weather.active = false;
-        this._quakes.active = false;
+        this._quakeWatcher.active = false;
     }
 
     /** The whole sky from the last reading: the hero, the three facts, the curve and its
@@ -257,7 +257,7 @@ class WeatherPage extends Page {
     /** BMKG's latest earthquakes: a badge for the magnitude, where it sat, how deep, when. */
     _updateQuakes() {
         this._quakes.destroy_all_children();
-        for (const quake of this._quakes.quakes) {
+        for (const quake of this._quakeWatcher.quakes) {
             const row = new St.BoxLayout({style_class: 'notchfolk-weather-quake'});
             const badge = label(`M${quake.magnitude.toFixed(1)}`,
                 `notchfolk-weather-quake-badge ${quake.magnitude >= 6 ? 'severe' : quake.magnitude >= 5 ? 'strong' : ''}`);
@@ -269,7 +269,7 @@ class WeatherPage extends Page {
             row.add_child(text);
             this._quakes.add_child(row);
         }
-        const has = this._quakes.quakes.length > 0;
+        const has = this._quakeWatcher.quakes.length > 0;
         this._quakesTitle.visible = has;
         this._quakes.visible = has;
     }
@@ -277,8 +277,8 @@ class WeatherPage extends Page {
     destroy() {
         this._weather.disconnect(this._weatherChanged);
         this._weather.destroy();
-        this._quakes.disconnect(this._quakesChanged);
-        this._quakes.destroy();
+        this._quakeWatcher.disconnect(this._quakesChanged);
+        this._quakeWatcher.destroy();
         super.destroy();
     }
 });
