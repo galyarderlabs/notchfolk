@@ -27,7 +27,8 @@ export const WeatherWatcher = GObject.registerClass({
         this._info = null;
         this._updated = 0;
         this._refreshTimer = 0;
-        this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: []};
+        this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: [],
+                    feelsLike: '', humidity: '', wind: ''};
         this._settingsIds = [
             settings.connect('changed::weather-enabled', () => this._configure()),
             settings.connect('changed::weather-location', () => this._configure()),
@@ -83,7 +84,8 @@ export const WeatherWatcher = GObject.registerClass({
         }
         this._info = null;
         this._updated = 0;
-        this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: []};
+        this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: [],
+                    feelsLike: '', humidity: '', wind: ''};
 
         const location = this._settings.get_boolean('weather-enabled')
             ? WorldClocks.weatherLocation(this._settings, this._clocks) : null;
@@ -134,6 +136,9 @@ export const WeatherWatcher = GObject.registerClass({
             return;
         this.state = {
             forecast: this._forecast(info),
+            feelsLike: info.get_feels_like?.() ?? '',
+            humidity: info.get_humidity?.() ?? '',
+            wind: info.get_wind?.() ?? '',
             temperature,
             iconName: info.get_symbolic_icon_name() || 'weather-clear-symbolic',
             summary: info.get_weather_summary() || '',

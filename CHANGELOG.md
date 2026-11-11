@@ -12,7 +12,9 @@ Isle's changelog from before the fork, kept for reference.
 
 - **The weather is a page of its own.** The closed island no longer shows the weather at all:
   it lives on a Weather page now, like Focus and Calendar — the location, the current
-  conditions large, and the next hours in a row, refreshed while the page is open. Its switch
+  conditions large - the condition's icon on a drawn sky disc, what it feels like, the
+  humidity and the wind beneath - and the next hours as cards, refreshed while the page is
+  open. Its switch
   is the Weather group's own in Settings, with the city beside it; the closed island's quiet
   default is the assistant, the clock and the music, nothing else.
 - **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" — the day
@@ -20,8 +22,10 @@ Isle's changelog from before the fork, kept for reference.
   keep their words.
 - **The privacy dots are a switch, off by default.** The blue and orange dots that said the
   camera, the microphone, a screen share or a phone share was on always showed in the closed
-  island; now they are one more of its switches, off by default. The recording time still
-  shows while a recording runs, whatever the switch says.
+  island; now they are one more of its switches, off by default - and they obey it: the dots'
+  own update had been deciding their visibility from what was on, so the switch now hands it
+  an empty set when off. The recording time still shows while a recording runs, whatever the
+  switch says.
 
 ## [1.2.10] - 2026-11-10
 
