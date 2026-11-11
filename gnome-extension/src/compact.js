@@ -250,8 +250,10 @@ export const CompactView = GObject.registerClass({
         const imbalance = Math.abs(leftWidth - rightWidth);
         this._rowPad.width = Math.ceil(imbalance / 2);
         this._rowEndPad.width = imbalance - this._rowPad.width;
-        // Row padding, and the row's four gaps: pad, side, assistant, side, pad.
-        return Math.ceil(2 * px(this._inBar ? 14 : 16) + 4 * px(12) + leftWidth + rightWidth +
+        // No row padding anymore: the cover and the bars sit at the notch's ends, and only the pads
+        // that balance the sides sit between them and the edge. The row's four gaps: pad, side,
+        // assistant, side, pad.
+        return Math.ceil(4 * px(12) + leftWidth + rightWidth +
             this._rowPad.width + this._rowEndPad.width + px(size.center));
     }
 
