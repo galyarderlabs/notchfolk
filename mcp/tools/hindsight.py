@@ -23,6 +23,7 @@ change something sit behind memory:write, and are not even visible to a key with
 it (AC-4).
 """
 
+import json
 import os
 import urllib.error
 import urllib.request
@@ -81,7 +82,6 @@ async def _call(name: str, arguments: dict) -> object:
             return result.data
         for block in getattr(result, "content", []):
             if hasattr(block, "text"):
-                import json
                 try:
                     return json.loads(block.text)
                 except (ValueError, TypeError):
