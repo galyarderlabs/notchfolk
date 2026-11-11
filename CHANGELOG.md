@@ -12,7 +12,7 @@ Isle's changelog from before the fork, kept for reference.
 
 - **The Weather page grows its forecast and the earth.** The next hours walk a drawn curve -
   the Prayer page's arc, for the sky - each hour its temperature, the warmest hour lit; the
-  days beneath (today, tomorrow, the day after, each its warmest and coldest, from met.no's
+  days beneath (five of them, today first, each its warmest and coldest, from met.no's
   forecast); and BMKG's latest earthquakes, Indonesia's own meteorology agency, each with its
   magnitude, where it sat, how deep and when - M5.0 and up, refreshed every 15 minutes while
   the page is open. The page names its sources at the foot, as the Prayer page names Kemenag.

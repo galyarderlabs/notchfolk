@@ -69,7 +69,7 @@ class WeatherPage extends Page {
         this._curve.connect('repaint', area => this._paintCurve(area));
         this._curveLabels = new St.BoxLayout({style_class: 'notchfolk-weather-curve-labels'});
 
-        // The days: today, tomorrow, the day after - each its coldest and warmest.
+        // The days: five of them, today first - each its coldest and warmest.
         this._days = new St.BoxLayout({style_class: 'notchfolk-weather-days'});
 
         // The earth: BMKG's latest earthquakes, a row of their own.
