@@ -78,6 +78,11 @@ const INTERFACE: &str = r#"
     <signal name="Save">
       <arg name="uri" type="s"/>
     </signal>
+    <!-- The window's row scrolled sideways this far (logical pixels): the extension scrolls the tab's own
+         row by the same, so the names it draws stay under this window's pictures. -->
+    <signal name="Scrolled">
+      <arg name="x" type="i"/>
+    </signal>
   </interface>
 </node>"#;
 
@@ -179,6 +184,11 @@ pub fn announce_drawn() {
 /// Asks the extension to save the file at `uri` into Downloads.
 pub fn announce_save(uri: &str) {
     announce("Save", &(uri,).to_variant());
+}
+
+/// Tells the extension the row scrolled sideways this far (logical pixels).
+pub fn announce_scrolled(x: i32) {
+    announce("Scrolled", &(x,).to_variant());
 }
 
 /// Emits one of the interface's signals; a failure is only logged.
