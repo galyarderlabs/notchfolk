@@ -57,6 +57,8 @@ connects to the network only for these:
 | Speech model | `huggingface.co` (the official whisper.cpp and Silero files) | A plain download, only when you run `notchfolk-setup-voice` (or press Set up); each file's SHA-256 is checked |
 | Shelf files you share with your phone | Your phone, over the local network, only while sharing (see below) | The names, sizes and contents of the Shelf's files, to a phone you allowed; nothing goes through the internet |
 | Events you add to an account's calendar | That account's server (Google, or another in Online Accounts), through Evolution Data Server, as any calendar app sends it | The event's title, day and time, once, when you add it to that calendar (picked with the chip in the add field). Just before, notchfolkd opens a connection to that server and closes it, sending nothing, to see it is in reach; behind a proxy it skips that |
+| Weather | GWeather's own sources (met.no, and the airports' METAR reports), through GNOME's own library | A plain request for the location picked in Settings (or the nearest GNOME World Clock), every 30 minutes while the Weather page is open |
+| Earthquakes | BMKG's public feed (`data.bmkg.go.id`) | A plain request, no key, every 15 minutes while the Weather page is open; nothing is sent but the request itself |
 | LLM Router usage | The gateway's own address (Settings → LLM Router: the local default, or the base URL you set) | Read-only requests for the usage numbers, with the token the gateway's own CLI uses on this machine (never a password); the numbers never go anywhere else. Off when LLM Router is turned off; while its chip and page are not shown, nothing is asked at all |
 
 When ChatGPT can't be asked (offline, signed out), its limits are read from
