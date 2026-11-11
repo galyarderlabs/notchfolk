@@ -170,7 +170,7 @@
 .notchfolk-compact-clock-box { spacing: 8px; }
 .notchfolk-compact-status { spacing: 12px; }
 .notchfolk-compact-status-item { spacing: 8px; }
-.notchfolk-compact-rest-date { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.9); letter-spacing: -0.1px; }
+.notchfolk-compact-rest-date { font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.9); letter-spacing: -0.2px; }
 .notchfolk-compact-status-time { font-size: 13px; font-weight: 600; font-feature-settings: "tnum"; }
 .notchfolk-compact-recording-time { color: #ff453a; }
 .notchfolk-compact-notification-count { color: #ff453a; font-size: 11px; font-weight: 700; }
@@ -183,7 +183,7 @@
 .notchfolk-compact-in-bar .notchfolk-compact-clock-side { spacing: 10px; }
 .notchfolk-compact-in-bar .notchfolk-compact-status { spacing: 10px; }
 .notchfolk-compact-in-bar .notchfolk-compact-clock { font-size: 14px; letter-spacing: -0.1px; }
-.notchfolk-compact-in-bar .notchfolk-compact-rest-date { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.9); letter-spacing: -0.1px; }
+.notchfolk-compact-in-bar .notchfolk-compact-rest-date { font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.9); letter-spacing: -0.1px; }
 .notchfolk-compact-in-bar .notchfolk-compact-status-time { font-size: 12px; }
 .notchfolk-compact-in-bar .notchfolk-compact-assistant-button { width: 30px; height: 30px; padding: 1px; }
 

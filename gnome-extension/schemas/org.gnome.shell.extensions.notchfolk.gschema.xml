@@ -234,6 +234,11 @@
       <summary>The paired phone in the closed island</summary>
       <description>Shows a GSConnect-paired phone&apos;s battery beside the clock while it is connected.</description>
     </key>
+    <key name="compact-privacy" type="b">
+      <default>false</default>
+      <summary>The privacy dots in the closed island</summary>
+      <description>Shows the dots that say the camera, the microphone, a screen share or a phone share is on. Off, the dots leave the closed island; the recording time still shows while a recording runs.</description>
+    </key>
     <key name="compact-router" type="b">
       <default>false</default>
       <summary>The AI router in the closed island</summary>

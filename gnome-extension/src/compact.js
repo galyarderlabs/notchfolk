@@ -33,7 +33,7 @@ const POINTER_REST_MS = 2500;
 const POINTER_POLL_MS = 33;
 /** The live statuses Settings can take off the closed island (`compact-<kind>`); the recording dot and the
  * service-down warning always show, whatever the switches say. */
-const COMPACT_STATUSES = ['timer', 'calls', 'notifications', 'phone', 'router'];
+const COMPACT_STATUSES = ['timer', 'calls', 'notifications', 'phone', 'router', 'privacy'];
 /** The music bars' opacity while the song is paused. */
 const PAUSED_OPACITY = 110;
 /** How often the focus ring is redrawn; it moves too slowly to need more. */
@@ -565,7 +565,7 @@ export const CompactView = GObject.registerClass({
         this._musicArt.setPath(this._isServiceDown || !hasTrack ? '' : nowPlaying.art_path);
         this._musicStatus.visible = !this._isServiceDown && hasTrack;
         this._restDate.visible = !this._isServiceDown;
-        this._privacyDots.visible = true;
+        this._privacyDots.visible = shows('privacy');
         this._notificationCount.text = this._unseen > 0 ? (this._unseen > 9 ? '9+' : `${this._unseen}`) : '';
         this._notificationCount.visible = this._unseen > 0;
         this._micOff.visible = onCall && this._call.muted;
