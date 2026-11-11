@@ -16,7 +16,12 @@ Isle's changelog from before the fork, kept for reference.
   is the Weather group's own in Settings, with the city beside it; the closed island's quiet
   default is the assistant, the clock and the music, nothing else.
 - **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" — the day
-  before the month, as the island's room asks; the pages keep their words.
+  before the month, as the island's room asks, in the clock's own size and tracking; the pages
+  keep their words.
+- **The privacy dots are a switch, off by default.** The blue and orange dots that said the
+  camera, the microphone, a screen share or a phone share was on always showed in the closed
+  island; now they are one more of its switches, off by default. The recording time still
+  shows while a recording runs, whatever the switch says.
 
 ## [1.2.10] - 2026-11-10
 
