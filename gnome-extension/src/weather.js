@@ -99,7 +99,12 @@ export const WeatherWatcher = GObject.registerClass({
         const info = GWeather.Info.new(location);
         info.set_application_id(APP_ID);
         info.set_contact_info(CONTACT);
-        info.set_enabled_providers(GWeather.Provider.METAR);
+        // METAR reads the airports; met.no covers the world and carries the forecast the
+        // page's hours need. Whichever name this GWeather knows, it joins the mask.
+        const providers = [GWeather.Provider.METAR, GWeather.Provider.MET_NO, GWeather.Provider.MET,
+            GWeather.Provider.YR_NO].filter(provider => provider !== undefined)
+            .reduce((mask, provider) => mask | provider, 0);
+        info.set_enabled_providers(providers);
         this._info = info;
         this._updated = info.connect('updated', () => this._onUpdated(info));
         this.emit('changed');

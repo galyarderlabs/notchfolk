@@ -2036,7 +2036,7 @@
 .notchfolk-weather-column { spacing: 12px; padding: 16px 20px; }
 .notchfolk-weather-location { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.6); }
 .notchfolk-weather-hero { spacing: 16px; }
-.notchfolk-weather-disc { spacing: -64px; }
+.notchfolk-weather-disc { width: 64px; height: 64px; }
 .notchfolk-weather-icon { icon-size: 38px; }
 .notchfolk-weather-hero-text { spacing: 2px; }
 .notchfolk-weather-temperature { font-size: 38px; font-weight: 800; letter-spacing: -0.5px; }
