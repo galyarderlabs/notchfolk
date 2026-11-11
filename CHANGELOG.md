@@ -29,11 +29,11 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Changed
 
-- **The closed island shows less, by choice.** Its statuses are switches in Settings - Island:
-  the timer, calls, the unread bell, the paired phone, the AI router and the privacy dots. The
-  default is the quiet layout: the assistant in the middle, the clock and its date to the left,
-  the music in the corners, nothing else. The weather has left the closed island entirely; it
-  lives on the Weather page.
+- **The closed island is as quiet as you draw it.** Its statuses are switches in Settings -
+  Island: the timer, calls, the unread bell, the paired phone, the AI router and the privacy
+  dots. The default is the quiet layout: the assistant in the middle, the clock and its date to
+  the left, the music in the corners, nothing else. The weather has left the closed island
+  entirely; it lives on the Weather page.
 - **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" - the day
   before the month, in the clock's own size and tracking; the pages keep their words.
 - **The privacy dots obey their switch, and say what they are.** Their own update had been
