@@ -142,13 +142,13 @@ spec's; every task names the ones it must prove.
 
 ### 5. Memory — Hindsight, then Obsidian
 
-- [ ] Hindsight read-only (18 tools): `recall`, `reflect`, `list_banks`,
+- [x] Hindsight read-only (18 tools): `recall`, `reflect`, `list_banks`,
   `get_bank`, `get_bank_stats`, `list_mental_models`, `get_mental_model`,
   `list_directives`, `list_memories`, `get_memory`, `list_documents`,
   `get_document`, `list_operations`, `get_operation`, `list_tags`,
   `get_knowledge_base_tree`, `search_knowledge_base`,
   `get_knowledge_page`. **AC-1, AC-2, AC-3, AC-5.**
-- [ ] Hindsight restricted (21 tools): `retain`, `sync_retain`,
+- [x] Hindsight restricted (21 tools): `retain`, `sync_retain`,
   `create_bank`, `update_bank`, `delete_bank`, `create_mental_model`,
   `update_mental_model`, `delete_mental_model`, `refresh_mental_model`,
   `clear_mental_model`, `create_directive`, `delete_directive`,
