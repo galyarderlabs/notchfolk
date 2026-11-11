@@ -2031,3 +2031,17 @@
   50% { opacity: 0.35; }
   100% { opacity: 1.0; }
 }
+
+/* The Weather page: the sky as a page of its own - the location, the conditions large,
+   and the next hours in a row. */
+.notchfolk-weather-column { spacing: 10px; padding: 14px 18px; }
+.notchfolk-weather-location { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.6); }
+.notchfolk-weather-now { spacing: 14px; }
+.notchfolk-weather-icon { icon-size: 48px; }
+.notchfolk-weather-temperature { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; }
+.notchfolk-weather-summary { font-size: 14px; color: rgba(255, 255, 255, 0.75); }
+.notchfolk-weather-hours { spacing: 14px; margin-top: 6px; }
+.notchfolk-weather-hour { spacing: 5px; }
+.notchfolk-weather-hour-time { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+.notchfolk-weather-hour-icon { icon-size: 20px; }
+.notchfolk-weather-hour-temp { font-size: 12.5px; font-weight: 600; }

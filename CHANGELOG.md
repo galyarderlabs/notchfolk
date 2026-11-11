@@ -10,11 +10,11 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Changed
 
-- **The closed island's default drops the weather.** The quiet default was the assistant in the
-  middle, the clock to its left, the weather to its right — and the weather made the sides
-  uneven, the island growing longer on the left. The default is now just the assistant, the clock
-  and the music; the weather is off, and its switch has moved to Settings's own feature switches
-  (beside the pages'), where a feature of the notch belongs.
+- **The weather is a page of its own.** The closed island no longer shows the weather at all:
+  it lives on a Weather page now, like Focus and Calendar — the location, the current
+  conditions large, and the next hours in a row, refreshed while the page is open. Its switch
+  is the Weather group's own in Settings, with the city beside it; the closed island's quiet
+  default is the assistant, the clock and the music, nothing else.
 - **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" — the day
   before the month, as the island's room asks; the pages keep their words.
 
