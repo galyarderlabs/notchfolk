@@ -1746,7 +1746,7 @@ const COMPACT_ROWS = [
     ['notifications', 'Unread bell', 'A bell while notifications wait, with how many'],
     ['phone', 'Phone', 'A paired phone\u2019s battery while it is connected'],
     ['router', 'AI router', 'The gateway\u2019s health while it is connected'],
-    ['privacy', 'Privacy dots', 'The dots for the camera, microphone, screen sharing and phone share'],
+    ['privacy', 'Privacy dots', 'Green camera, orange microphone, blue screen share, purple phone share'],
 ];
 
 /** The closed island's statuses: fewer at a glance, each off the island but still working in its page. */
