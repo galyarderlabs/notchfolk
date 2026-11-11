@@ -8,32 +8,47 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-11
+
+### Added
+
+- **The world MCP: the System and Browser domains.** The MCP server learns domains beyond the
+  island's own data. The System domain (14 tools) maintains the machine: stats, logs, file
+  listing, reading, search, process listing and toolchain status are read-only on the default
+  key; running commands, writing, patching, file operations, service control, killing processes
+  and updating the system or a toolchain are restricted behind `system:write`, with the guards
+  the reference taught (write roots, blocked commands, kill rules) and `system_update`'s
+  check-then-confirm rule. The Browser domain (10 tools) sees and uses the web through a real
+  browser: over the Camoufox server's REST contract, or, opt-in, over CDP to a Chromium-family
+  browser of the user's own. A domain whose backend is absent is not offered at all, and a
+  restricted tool is not visible to a key without its scope.
+- **The Weather page.** The sky as a page of its own, like Focus and Calendar: the location,
+  the current conditions large (the condition's icon on a drawn sky disc, what it feels like,
+  the humidity and the wind beneath), and the next hours as cards, refreshed while the page is
+  open. Its switch is the Weather group's own in Settings, with the city beside it.
+
 ### Changed
 
-- **The weather is a page of its own.** The closed island no longer shows the weather at all:
-  it lives on a Weather page now, like Focus and Calendar — the location, the current
-  conditions large - the condition's icon on a drawn sky disc, what it feels like, the
-  humidity and the wind beneath - and the next hours as cards, refreshed while the page is
-  open. Its switch
-  is the Weather group's own in Settings, with the city beside it; the closed island's quiet
-  default is the assistant, the clock and the music, nothing else.
-- **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" — the day
-  before the month, as the island's room asks, in the clock's own size and tracking; the pages
-  keep their words.
-- **The privacy dots are a switch, off by default.** The blue and orange dots that said the
-  camera, the microphone, a screen share or a phone share was on always showed in the closed
-  island; now they are one more of its switches, off by default - and they obey it: the dots'
-  own update had been deciding their visibility from what was on, so the switch now hands it
-  an empty set when off. The recording time still shows while a recording runs, whatever the
-  switch says. The open island's dots show the same set as the closed one now - the phone
-  share dot had been dropped from the open island's set, so it vanished the moment the island
-  opened - and the Settings row names each colour: green camera, orange microphone, blue screen
-  share, purple phone share.
-  island; now they are one more of its switches, off by default. The recording time still
-  shows while a recording runs, whatever the switch says. The open island's dots show the same
-  set as the closed one now - the phone share dot had been dropped from the open island's set,
-  so it vanished the moment the island opened - and the Settings row names each colour: green
-  camera, orange microphone, blue screen share, purple phone share.
+- **The closed island is as quiet as you draw it.** Its statuses are switches in Settings -
+  Island: the timer, calls, the unread bell, the paired phone, the AI router and the privacy
+  dots. The default is the quiet layout: the assistant in the middle, the clock and its date to
+  the left, the music in the corners, nothing else. The weather has left the closed island
+  entirely; it lives on the Weather page.
+- **The closed island's date is numbers.** "Sen 9 Nov" beside the clock is now "9/11" - the day
+  before the month, in the clock's own size and tracking; the pages keep their words.
+- **The privacy dots obey their switch, and say what they are.** Their own update had been
+  deciding their visibility from what was on, so the switch hands it an empty set when off; the
+  open island's dots show the same set as the closed one (the phone share dot had been dropped
+  from the open island's set); and the Settings row names each colour: green camera, orange
+  microphone, blue screen share, purple phone share.
+- **The closed island's ends are flush.** The row's fixed end padding held the cover and the
+  bars off the notch's edge; only the pads that balance the sides sit between them and the edge
+  now.
+- **The Shelf is one row.** Twelve files fill one row from the middle out to the edges, and
+  past the width it scrolls - the island no longer grows tall for a second stacked row.
+- **The glass bends as a dome.** What is behind the glass island bends across its face, most at
+  the rim and flat at the centre, as thick glass does; a glass too small to hold the band gets
+  a smaller dome, its height and its bend scaled together.
 
 ## [1.2.10] - 2026-11-10
 
