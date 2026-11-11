@@ -127,7 +127,7 @@ const PILL_HEADER_TOP = 8;
 
 /** The pages a shortcut of their own may open from anywhere (Settings → Shortcuts; `shortcut-<page>`, none set at
  * first: the usual ones are GNOME's). As prefs.js lists them. */
-const SHORTCUT_PAGES = ['music', 'notifications', 'focus', 'reminders', 'shelf', 'calendar', 'calories', 'water',
+const SHORTCUT_PAGES = ['music', 'control', 'notifications', 'focus', 'reminders', 'shelf', 'calendar', 'calories', 'water',
     'prayer', 'phone', 'apps', 'devices', 'usage', 'weather'];
 
 /** A question back is shown this long before the island listens for the reply. */
