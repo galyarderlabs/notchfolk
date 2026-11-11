@@ -20,7 +20,7 @@ import {Lines, icon, iconButton, label} from '../widgets.js';
 /** The shelf holds this many files (as notchfolkd enforces). */
 export const SHELF_CAPACITY = 12;
 /** Tiles in a row; two rows hold the shelf. */
-const ROW_SIZE = 6;
+export const ROW_SIZE = 6;
 
 // Sizes in CSS pixels (see `px`); keep them in step with the helper's tile.rs, which GTK scales likewise.
 const TILE_WIDTH = 84;
@@ -31,6 +31,9 @@ const REMOVE_SIZE = 18;
 const NAME_WIDTH = 76;
 /** The preview's square plus room above it for the ×. */
 const FRAME_HEIGHT = PREVIEW_SIZE + 6;
+/** A row of tiles, in CSS pixels: the frame, the tile-box's spacing (4px), the name's two lines (2.5em at 12px,
+ * 30px), and the tile's padding (6px top and bottom, 12px) — see stylesheet.css. */
+export const ROW_HEIGHT = FRAME_HEIGHT + 4 + 30 + 12;
 /** How long "copied" shows on a tile. */
 const COPIED_MS = 1100;
 /** The drop zone's dashed outline, drawn here alone, under the helper's see-through window too: one dash

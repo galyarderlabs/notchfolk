@@ -15,7 +15,8 @@ import {DropLight} from '../dropLight.js';
 import {Thumbnails} from '../thumbnails.js';
 import {icon, iconButton, label, pillButton, setEnabled} from '../widgets.js';
 import {ClipsView} from './clips.js';
-import {FilesView, SHELF_CAPACITY} from './files.js';
+import {LARGE_PAGE_HEIGHT, PAGE_HEIGHT} from '../expanded.js';
+import {FilesView, ROW_HEIGHT, ROW_SIZE, SHELF_CAPACITY} from './files.js';
 import {Page} from './page.js';
 import {PhoneCode, PhoneView} from './phone.js';
 
@@ -43,6 +44,12 @@ const SHARE_ERROR_MS = 5000;
 const COLOR_WAIT_MS = 400;
 /** A dragged file's colour comes from its preview, read within this long or not at all. */
 const COLOR_LATE_MS = 1500;
+/** The page's height when the shelf holds two rows of files, in CSS pixels: the page's top padding (6,
+ * .notchfolk-page), the bar (29, the tabs row), the column's spacing (8, .notchfolk-shelf-column), and two rows
+ * of tiles (ROW_HEIGHT each, files.js) with the gap between them (6, .notchfolk-shelf-tiles) — the same on
+ * either size, as the tiles do not grow with it. 257 by the pieces, 265 for a little room at the bottom, so the
+ * second row's names are never cut by a pixel of rounding. */
+const TWO_ROW_HEIGHT = 6 + 29 + 8 + 2 * ROW_HEIGHT + 6 + 8;
 
 /** The Shelf page; `_clips` and `_files` draw its two tabs. */
 export const ShelfPage = GObject.registerClass({
@@ -61,6 +68,9 @@ export const ShelfPage = GObject.registerClass({
             layout_manager: new Clutter.BoxLayout(),
             height,
         });
+        /** The height for one row of files (PAGE_HEIGHT, or LARGE_PAGE_HEIGHT on Large): two rows keep their
+         * extra height on top of it (see `_syncHeight`). */
+        this._baseHeight = height;
         onUiScale(this, scale => (this.layout_manager.spacing = 16 * scale));
         this.name = 'shelf';
         this._history = history;
@@ -441,6 +451,7 @@ export const ShelfPage = GObject.registerClass({
         } else {
             this._files.update();
             this._updateFilesHint();
+            this._syncHeight();
         }
     }
 
@@ -676,6 +687,25 @@ export const ShelfPage = GObject.registerClass({
 
     // Page
 
+    /** The size setting (Settings → Size) just set the base height for every page; the shelf keeps its extra row
+     * on top of it. A height that is neither base is this page's own two-row height, already applied. */
+    onPageHeight(height) {
+        if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
+            return;
+        this._baseHeight = height;
+        this._syncHeight();
+    }
+
+    /** Grows the page for a second row of files, or back to one row's height; the island follows (see
+     * `height-changed`). */
+    _syncHeight() {
+        const wanted = this._files.items.length > ROW_SIZE ? TWO_ROW_HEIGHT : this._baseHeight;
+        if (wanted === this.pageHeight)
+            return;
+        this.pageHeight = wanted;
+        this.emit('height-changed');
+    }
+
     /** Redraws the views that changed while closed. */
     _flushStale() {
         const clips = this._stale.delete('clips');
@@ -684,6 +714,7 @@ export const ShelfPage = GObject.registerClass({
         if (this._stale.delete('files')) {
             this._files.update();
             this._updateFilesHint();
+            this._syncHeight();
         }
         return clips;
     }
