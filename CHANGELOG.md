@@ -16,6 +16,8 @@ Isle's changelog from before the fork, kept for reference.
   forecast); and BMKG's latest earthquakes, Indonesia's own meteorology agency, each with its
   magnitude, where it sat, how deep and when - M5.0 and up, refreshed every 15 minutes while
   the page is open. The page names its sources at the foot, as the Prayer page names Kemenag.
+  And the Settings catch up with the page: its switch sits in the Pages group with every other
+  tab, and it takes a shortcut of its own (Settings → Shortcuts) to open from anywhere.
 
 ## [1.3.0] - 2026-11-11
 
