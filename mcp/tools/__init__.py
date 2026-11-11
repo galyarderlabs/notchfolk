@@ -8,9 +8,9 @@ declares its scopes; a domain whose backend is absent is not offered at all
 (the spec's availability rule). The internal data tools stay in server.py.
 """
 
-from . import browser, system
+from . import browser, hindsight, system
 
-DOMAINS = [browser, system]
+DOMAINS = [browser, hindsight, system]
 
 
 def register(mcp, authorize, write):
