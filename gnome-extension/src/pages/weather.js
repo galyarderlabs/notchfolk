@@ -41,7 +41,7 @@ class WeatherPage extends Page {
         this.add_child(column);
 
         this._weather = new WeatherWatcher(settings);
-        this._weather.connect('changed', () => this._update());
+        this._weatherChanged = this._weather.connect('changed', () => this._update());
         this._update();
     }
 
@@ -74,6 +74,7 @@ class WeatherPage extends Page {
     }
 
     destroy() {
+        this._weather.disconnect(this._weatherChanged);
         this._weather.destroy();
         super.destroy();
     }
