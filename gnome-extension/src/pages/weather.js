@@ -39,9 +39,11 @@ class WeatherPage extends Page {
         this._disc = new St.DrawingArea({width: DISC_SIZE, height: DISC_SIZE,
             y_align: Clutter.ActorAlign.CENTER});
         this._disc.connect('repaint', area => this._paintDisc(area));
-        const discBox = new St.BoxLayout({style_class: 'notchfolk-weather-disc',
+        // The icon rides on the disc, centred over it - a BinLayout overlay, not a spacing trick.
+        const discBox = new St.Widget({layout_manager: new Clutter.BinLayout(),
             y_align: Clutter.ActorAlign.CENTER});
-        this._icon = new St.Icon({icon_name: 'weather-clear-symbolic', style_class: 'notchfolk-weather-icon'});
+        this._icon = new St.Icon({icon_name: 'weather-clear-symbolic', style_class: 'notchfolk-weather-icon',
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         discBox.add_child(this._disc);
         discBox.add_child(this._icon);
         const heroText = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-weather-hero-text'});
@@ -60,11 +62,15 @@ class WeatherPage extends Page {
 
         // The next hours, a card each: the hour, the hour's icon, the hour's temperature.
         this._hours = new St.BoxLayout({style_class: 'notchfolk-weather-hours'});
+        this._empty = label('Choose a location in Settings → Weather', 'notchfolk-weather-empty');
+        this._fetching = label('Fetching the sky…', 'notchfolk-weather-empty');
 
         column.add_child(this._location);
         column.add_child(hero);
         column.add_child(this._stats);
         column.add_child(this._hours);
+        column.add_child(this._empty);
+        column.add_child(this._fetching);
         this.add_child(column);
 
         this._weather = new WeatherWatcher(settings);
@@ -84,19 +90,22 @@ class WeatherPage extends Page {
     /** The sky disc: a soft blue with a lighter top, as glass over the sky. */
     _paintDisc(area) {
         const cr = area.get_context();
-        const size = area.get_surface_size();
-        const [width, height] = [size[0], size[1]];
+        const [width, height] = area.get_surface_size();
+        if (width <= 0 || height <= 0) {
+            cr.$dispose();
+            return;
+        }
         const radius = Math.min(width, height) / 2;
         cr.save();
         cr.translate(width / 2, height / 2);
         cr.scale(radius, radius);
         const gradient = new Cairo.LinearGradient(0, -1, 0, 1);
-        gradient.addColorStopRgb(0, 0.55, 0.74, 0.92);
-        gradient.addColorStopRgb(1, 0.24, 0.42, 0.66);
+        gradient.addColorStopRGBA(0, 0.55, 0.74, 0.92, 1);
+        gradient.addColorStopRGBA(1, 0.24, 0.42, 0.66, 1);
         cr.setSource(gradient);
         cr.arc(0, 0, 1, 0, 2 * Math.PI);
         cr.fill();
-        cr.setSourceRgb(1, 1, 1);
+        cr.setSourceRGBA(1, 1, 1, 0.35);
         cr.setLineWidth(0.06);
         cr.arc(0, 0, 0.97, 0, 2 * Math.PI);
         cr.stroke();
@@ -134,6 +143,9 @@ class WeatherPage extends Page {
         }
         this._hours.visible = state.forecast.length > 0;
         this._stats.visible = Boolean(state.feelsLike || state.humidity || state.wind);
+        // No location picked: say so; a location whose reading has not arrived says it is fetching.
+        this._empty.visible = !state.locationName;
+        this._fetching.visible = Boolean(state.locationName) && !state.temperature;
         this._disc.queue_repaint();
     }
 
