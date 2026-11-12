@@ -690,7 +690,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             // there, set up before the row existed). Whenever the compatible provider is
             // the one, the file carries the URL: picked, prefilled or changed.
             if (current.id === 'openai-compatible')
-                saveAiEnvValue('NOTCHFOLK_OPENAI_BASE_URL', routerUrl.text.trim());
+                saveAiEnvValue('NOTCHFOLK_OPENAI_BASE_URL', settings.get_string('voice-router-url'));
             modelId.title = current.id === 'oh-my-pi' ? 'Optional provider/model id' : 'OpenAI-compatible model id';
             if (customModel && modelId.text !== settings.get_string(modelKey))
                 modelId.text = settings.get_string(modelKey);
