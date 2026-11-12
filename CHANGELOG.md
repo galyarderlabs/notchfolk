@@ -18,8 +18,12 @@ Isle's changelog from before the fork, kept for reference.
   visible beside the model: the URL feeds speech from the setting it always read and chat
   through ai.env (chmod 600, written by the row itself), the key lives
   in the desktop's secret store as it already did. The model choices stay their own - the chat's
-  model id, the speech-to-text model, the text-to-speech model. The ai.env file still works
-  for those who set it before the row existed.
+  model id, the speech-to-text model, the text-to-speech model. And speech may live elsewhere:
+  a Speech base URL row overrides the shared one when the chat rides an official provider
+  (DeepSeek carries no speech endpoints) while speech sits on another endpoint - empty follows
+  the shared, as it does for those who never need the difference. The chat's own key (ai.env)
+  wins over the shared one, for the same difference on the key side. The ai.env file still
+  works for those who set it before the rows existed.
 
 ### Added
 
