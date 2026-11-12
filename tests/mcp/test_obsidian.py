@@ -149,6 +149,10 @@ async def main():
         search = result(await reader.call_tool("obsidian_search", {"query": "coffee shelf"}))
         check("AC-2/3 search finds the note", search["ok"] and search["total_matches"] == 1
               and search["results"][0]["path"] == "Journal/today.md", str(search)[:150])
+        recent = result(await reader.call_tool("obsidian_recent", {}))
+        check("the templates stay out of the notes",
+              all("_System" not in entry["path"] for entry in recent["results"]),
+              str([e["path"] for e in recent["results"]]))
         listing = result(await reader.call_tool("obsidian_list", {"relative": "Journal"}))
         check("AC-2/3 list", listing["ok"] and [e["name"] for e in listing["entries"]] == ["today.md", "yesterday.md"],
               str(listing))

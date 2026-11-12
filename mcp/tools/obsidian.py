@@ -125,7 +125,9 @@ def _notes(vault: Path, include_templates: bool = False):
             relative = path.relative_to(vault)
             if path.is_symlink():
                 continue
-            if not include_templates and TEMPLATE_DIR in relative.parts:
+            # TEMPLATE_DIR is a two-part path; the parts are single components, so the
+            # string itself never appears among them - ask the path, not the parts.
+            if not include_templates and relative.is_relative_to(TEMPLATE_DIR):
                 continue
             if path.stat().st_size > MAX_NOTE_BYTES:
                 continue
