@@ -14,6 +14,7 @@ import St from 'gi://St';
 import {VERTICAL, px} from '../compat.js';
 import {label} from '../widgets.js';
 import {QuakeWatcher} from '../quake.js';
+import {LARGE_PAGE_HEIGHT, PAGE_HEIGHT} from '../expanded.js';
 import {WeatherWatcher} from '../weather.js';
 import {Page} from './page.js';
 
@@ -31,6 +32,9 @@ class WeatherPage extends Page {
             height,
         });
         this.name = 'weather';
+        /** The height for the page's bare state (PAGE_HEIGHT, or LARGE_PAGE_HEIGHT on
+         * Large); the sections it gains keep their extra height on top of it. */
+        this._baseHeight = height;
 
         const column = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
             style_class: 'notchfolk-weather-column'});
@@ -196,6 +200,27 @@ class WeatherPage extends Page {
         cr.$dispose();
     }
 
+    /** The size setting just set the base height for every page; the page keeps its
+     * sections' extra height on top of it (see `_syncHeight`). */
+    onPageHeight(height) {
+        if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
+            return;
+        this._baseHeight = height;
+        this._syncHeight();
+    }
+
+    /** Grows the page for the sections it is showing - the curve and its hours, the days,
+     * the quakes - or back to the bare height; the island follows (see `height-changed`). */
+    _syncHeight() {
+        const sections = (this._curve.visible ? 118 : 0) + (this._days.visible ? 88 : 0)
+            + (this._quakes.visible ? 34 + this._quakeWatcher.quakes.length * 46 : 0);
+        const wanted = this._baseHeight + sections;
+        if (wanted === this.pageHeight)
+            return;
+        this.pageHeight = wanted;
+        this.emit('height-changed');
+    }
+
     /** The page on screen is when the sky is worth fetching; off it, the watchers rest. */
     onActivate() {
         this._weather.active = true;
@@ -252,6 +277,7 @@ class WeatherPage extends Page {
         this._empty.visible = !state.locationName;
         this._fetching.visible = Boolean(state.locationName) && !state.temperature;
         this._disc.queue_repaint();
+        this._syncHeight();
     }
 
     /** BMKG's latest earthquakes: a badge for the magnitude, where it sat, how deep, when. */
@@ -272,6 +298,7 @@ class WeatherPage extends Page {
         const has = this._quakeWatcher.quakes.length > 0;
         this._quakesTitle.visible = has;
         this._quakes.visible = has;
+        this._syncHeight();
     }
 
     destroy() {
