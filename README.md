@@ -56,8 +56,8 @@ tabs for each page.
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/alerts.png" alt="The closed island showing 33,0 °C" width="100%"><br>
-<b>Weather.</b> Current conditions on the closed island — temperature and summary for your place, from your world clocks, refreshed every half hour.
+<img src="docs/images/alerts.png" alt="The Weather page" width="100%"><br>
+<b>Weather.</b> A page of its own: the current conditions large on a drawn sky disc, what it feels like, the humidity and the wind, the next hours as a curve, five days of warmest and coldest — and the latest earthquakes from BMKG, Indonesia's own meteorology agency. The city is picked in Settings; the closed island stays quiet.
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="100%"><br>
@@ -131,7 +131,7 @@ tabs for each page.
 <td width="50%" valign="top">
 <img src="docs/images/mcp-settings.png" alt="MCP settings: access scopes, remote access with a public hostname, and the tunnel setup" width="100%"><br>
 <img src="docs/images/mcp-app.png" alt="NotchFolks in the ChatGPT Apps directory" width="100%"><br>
-<b>MCP server.</b> An optional MCP server for agents outside Notchfolk: read tools for your data and actions, writes only what you list in <code>~/.config/notchfolk/mcp.env</code>, on loopback by default and remote access through an authenticated tunnel.
+<b>MCP server.</b> An optional MCP server for agents outside Notchfolk: read tools for your data and actions, writes only what you list in <code>~/.config/notchfolk/mcp.env</code>, on loopback by default and remote access through an authenticated tunnel. Beyond the island's own data, the world domains: <b>System</b> (the machine itself — stats, logs, files, processes, updates, the sharp tools behind their own scope), <b>Browser</b> (the web through a real browser: Camoufox, or your own Chromium over CDP) and <b>Memory</b> (the Hindsight engine's 39 tools — what the agent learns, kept across conversations). A domain whose backend is absent is not offered at all; a restricted tool is not even visible to a key without its scope.
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/more-ais.png" alt="The AI picker: Claude Code, Codex, Hermes Agent, OpenAI-compatible API, Oh My Pi, opencode, Antigravity" width="100%"><br>
@@ -209,6 +209,12 @@ and [CHANGELOG.md](CHANGELOG.md) for what changed. Everyone taking part
 follows the [Code of Conduct](CODE_OF_CONDUCT.md); please report security
 problems privately as described in [SECURITY.md](SECURITY.md).
 
+### Author
+
+- [@muhamadgalihsaputra](https://github.com/muhamadgalihsaputra) — Galih:
+  Notchfolk itself. Every change since the fork of Isle — the quiet island,
+  the Weather page, the world MCP — and the direction behind them.
+
 ### Contributors
 
 Thanks to everyone who has made Notchfolk better:
@@ -218,6 +224,9 @@ Thanks to everyone who has made Notchfolk better:
   a sun or a moon by each World Clock.
 - [@Ashishranjan980](https://github.com/Ashishranjan980): the Apps page, where
   your time in each app goes.
+- [@daotheone](https://github.com/daotheone): the DeepSeek request that became
+  the assistant's shared endpoint rows — one Base URL and one API key, in
+  Settings instead of a file.
 
 ## Support
 
