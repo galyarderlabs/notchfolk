@@ -56,6 +56,7 @@ tabs for each page.
 </tr>
 <tr>
 <td width="50%" valign="top">
+<img src="docs/images/weather.png" alt="Weather page: Bogor conditions, hourly temperature chart, five-day forecast and a recent earthquake" width="100%"><br>
 <b>Weather.</b> Choose a city in Settings, or follow the GNOME World Clock nearest your time zone. See current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by each forecast condition, and the five-day forecast. Nearby earthquakes use BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event. The closed island stays quiet.
 </td>
 <td width="50%" valign="top">

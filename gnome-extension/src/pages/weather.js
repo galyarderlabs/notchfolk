@@ -21,6 +21,8 @@ import {Page} from './page.js';
 
 /** The sky disc's size, in CSS pixels (see `px`). */
 const DISC_SIZE = 52;
+/** Keep the current conditions and five-day forecast roomy without crowding hourly data. */
+const OVERVIEW_WIDTH = 300;
 /** How many of the forecast's hours the curve walks. */
 const CURVE_HOURS = 8;
 
@@ -105,8 +107,8 @@ class WeatherPage extends Page {
         daysBlock.x_expand = false;
         // Keep the lower forecast column exactly under the current-conditions column.
         onUiScale(this, scale => {
-            overview.width = 270 * scale;
-            daysBlock.width = 270 * scale;
+            overview.width = OVERVIEW_WIDTH * scale;
+            daysBlock.width = OVERVIEW_WIDTH * scale;
         });
         const quakesBlock = new St.BoxLayout({...VERTICAL, x_expand: true,
             style_class: 'notchfolk-weather-quakes-block'});
@@ -142,7 +144,8 @@ class WeatherPage extends Page {
 
         // The curve through the next hours, as the Prayer page's arc: drawn above, its
         // hour marks labelled below.
-        this._hoursTitle = label('Hourly forecast', 'notchfolk-weather-section-title');
+        this._hoursTitle = label('Hourly forecast',
+            'notchfolk-weather-section-title notchfolk-weather-hours-title');
         this._curve = new St.DrawingArea({x_expand: true, style_class: 'notchfolk-weather-curve'});
         this._curve.connect('repaint', area => this._paintCurve(area));
         // Expand across the same width as the chart so each label column can sit under its dot.
@@ -162,6 +165,8 @@ class WeatherPage extends Page {
             column_homogeneous: true, column_spacing: px(8), row_spacing: px(8)});
         this._quakes = new St.Widget({layout_manager: this._quakeGrid, x_expand: true,
             style_class: 'notchfolk-weather-quakes'});
+        this._quakeContent = new St.BoxLayout({...VERTICAL, x_expand: true,
+            style_class: 'notchfolk-weather-quakes-content'});
 
         this._empty = label('Choose a location in Settings \u2192 Weather', 'notchfolk-weather-empty');
         this._fetching = label('Fetching the sky\u2026', 'notchfolk-weather-empty');
@@ -178,8 +183,9 @@ class WeatherPage extends Page {
         row.add_child(forecast);
         this._quakeHeading.add_child(this._quakeIcon);
         this._quakeHeading.add_child(this._quakesTitle);
-        quakesBlock.add_child(this._quakeHeading);
-        quakesBlock.add_child(this._quakes);
+        this._quakeContent.add_child(this._quakeHeading);
+        this._quakeContent.add_child(this._quakes);
+        quakesBlock.add_child(this._quakeContent);
         column.add_child(row);
         daysBlock.add_child(this._daysTitle);
         daysBlock.add_child(this._days);
@@ -230,15 +236,15 @@ class WeatherPage extends Page {
     _stat(title, kind, iconName) {
         const box = new St.BoxLayout({...VERTICAL, x_expand: true,
             style_class: 'notchfolk-weather-stat'});
-        const heading = new St.BoxLayout({style_class: 'notchfolk-weather-stat-heading'});
+        const heading = new St.BoxLayout({x_align: Clutter.ActorAlign.CENTER,
+            style_class: 'notchfolk-weather-stat-heading'});
         heading.add_child(new St.Icon({icon_name: iconName, style_class: 'notchfolk-weather-stat-icon'}));
         heading.add_child(label(title, 'notchfolk-weather-stat-title'));
         const valueStyle = kind === 'daylight'
             ? 'notchfolk-weather-stat-value notchfolk-weather-stat-daylight-value'
             : 'notchfolk-weather-stat-value';
-        const value = label('', valueStyle);
+        const value = label('', valueStyle, {x_align: Clutter.ActorAlign.CENTER});
         value.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        value.x_expand = true;
         box.add_child(heading);
         box.add_child(value);
         box._kind = kind;

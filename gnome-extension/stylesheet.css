@@ -2040,17 +2040,15 @@
 .notchfolk-weather-scroll { -st-vfade-offset: 18px; }
 .notchfolk-weather-column { spacing: 8px; padding: 6px 20px; }
 .notchfolk-weather-row { spacing: 12px; }
-.notchfolk-weather-overview { width: 270px; spacing: 8px; padding: 0; }
+.notchfolk-weather-overview { width: 300px; spacing: 8px; padding: 0; }
 .notchfolk-weather-forecast { spacing: 4px; }
 .notchfolk-weather-days-block, .notchfolk-weather-quakes-block { spacing: 6px; }
-.notchfolk-weather-days-block { width: 270px; }
-.notchfolk-weather-quakes-block {
-  padding-left: 20px; border-left: 1px solid rgba(255, 255, 255, 0.12);
-}
+.notchfolk-weather-days-block { width: 300px; }
 .notchfolk-weather-section-title {
   font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
   color: rgba(255, 255, 255, 0.72); margin-bottom: 4px;
 }
+.notchfolk-weather-hours-title { margin-left: 40px; }
 .notchfolk-weather-quakes-title {
   font-size: 13px; font-weight: 650; color: rgba(255, 255, 255, 0.9);
   margin-bottom: 2px;
@@ -2090,6 +2088,7 @@
 .notchfolk-weather-day-high { font-size: 13px; font-weight: 700; color: #ffffff; }
 .notchfolk-weather-day-low { font-size: 11px; color: rgba(255, 255, 255, 0.72); }
 .notchfolk-weather-quake-heading { spacing: 7px; }
+.notchfolk-weather-quakes-content { spacing: 6px; margin-left: 40px; margin-right: 40px; }
 .notchfolk-weather-quakes { spacing: 8px; }
 .notchfolk-weather-quake {
   min-width: 0; spacing: 12px; padding: 8px 12px; border-radius: 12px;
