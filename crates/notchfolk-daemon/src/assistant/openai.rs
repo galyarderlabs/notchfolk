@@ -452,40 +452,7 @@ pub fn byok_configured() -> bool {
         && (super::cloud::key().is_some() || config_value("NOTCHFOLK_OPENAI_API_KEY").is_some())
 }
 
-/// The endpoint's base URL, as Settings' one shared Base URL row last saved it (ai.env
-/// carries it, chmod 600; the speech side reads the same value from GSettings).
-pub fn endpoint_url() -> Option<String> {
-    config_value("NOTCHFOLK_OPENAI_BASE_URL")
-}
 
-/// Saves the endpoint's base URL into ai.env, creating the file (chmod 600) if it is not
-/// there and keeping every other line as it is. An empty URL removes the line.
-pub fn save_endpoint_url(url: &str) -> anyhow::Result<()> {
-    let path = dirs::config_dir()
-        .context("could not find the config directory")?
-        .join("notchfolk/ai.env");
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).context("could not create the config directory")?;
-    }
-    let old = std::fs::read_to_string(&path).unwrap_or_default();
-    let mut lines: Vec<String> = old.lines().map(str::to_owned).collect();
-    lines.retain(|line| !line.trim().starts_with("NOTCHFOLK_OPENAI_BASE_URL="));
-    if !url.trim().is_empty() {
-        lines.push(format!("NOTCHFOLK_OPENAI_BASE_URL={}", url.trim()));
-    }
-    let joined = if lines.is_empty() {
-        String::new()
-    } else {
-        let mut text = lines.join("\n");
-        text.push('\n');
-        text
-    };
-    std::fs::write(&path, joined).context("could not write ai.env")?;
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
-        .context("could not set ai.env's permissions")?;
-    Ok(())
-}
 
 pub fn discover(provider: &str) -> anyhow::Result<Vec<String>> {
     if provider == "oh-my-pi" {

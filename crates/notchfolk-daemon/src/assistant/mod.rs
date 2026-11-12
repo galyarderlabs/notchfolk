@@ -429,24 +429,6 @@ impl AssistantService {
             .map(|key| key.is_some())
     }
 
-    /// Saves the shared Base URL into ai.env (chmod 600), keeping every other line;
-    /// an empty one removes it. The one Base URL row in Settings is the only caller -
-    /// the speech side reads the same value from GSettings.
-    async fn set_openai_url(&self, url: &str) -> fdo::Result<()> {
-        let url = url.to_owned();
-        tokio::task::spawn_blocking(move || openai::save_endpoint_url(&url))
-            .await
-            .map_err(|err| fdo::Error::Failed(err.to_string()))?
-            .map_err(|err| fdo::Error::Failed(err.to_string()))
-    }
-
-    /// The OpenAI-compatible endpoint's base URL, as Settings last saved it.
-    async fn openai_url(&self) -> fdo::Result<String> {
-        tokio::task::spawn_blocking(openai::endpoint_url)
-            .await
-            .map_err(|err| fdo::Error::Failed(err.to_string()))?
-            .ok_or_else(|| fdo::Error::Failed("no endpoint URL is configured".into()))
-    }
 
 
     /// Records a request and answers it; `context` is JSON

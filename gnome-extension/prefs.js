@@ -805,7 +805,21 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         }
         for (const [row, name] of [[hermesUrl, 'NOTCHFOLK_HERMES_URL'], [hermesKey, 'HERMES_API_KEY']]) {
             row.visible = false;
-            row.connect('changed', () => saveAiEnvValue(name, row.text.trim()));
+            // Debounced: a keystroke must not mean a file write.
+            let save = 0;
+            row.connect('changed', () => {
+                if (save)
+                    GLib.source_remove(save);
+                save = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
+                    save = 0;
+                    saveAiEnvValue(name, row.text.trim());
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+            row.connect('destroy', () => {
+                if (save)
+                    GLib.source_remove(save);
+            });
         }
         const syncHermes = () => {
             const hermes = settings.get_string('voice-provider') === 'hermes';
@@ -819,12 +833,22 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         // OpenAI-compatible base URL. Speech reads it from this setting; chat reads it from
         // ai.env, which notchfolkd keeps in step through SetOpenaiUrl.
         const routerUrl = new Adw.EntryRow({title: 'Base URL', text: settings.get_string('voice-router-url')});
+        let saveUrl = 0;
         routerUrl.connect('changed', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
                 settings.set_string('voice-router-url', routerUrl.text.trim());
-            Gio.DBus.session.call(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, 'SetOpenaiUrl',
-                new GLib.Variant('(s)', [routerUrl.text.trim()]), null,
-                Gio.DBusCallFlags.NONE, -1, null, null);
+            // The chat side reads ai.env; the same file the Hermes rows write, the same helper.
+            if (saveUrl)
+                GLib.source_remove(saveUrl);
+            saveUrl = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
+                saveUrl = 0;
+                saveAiEnvValue('NOTCHFOLK_OPENAI_BASE_URL', routerUrl.text.trim());
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        routerUrl.connect('destroy', () => {
+            if (saveUrl)
+                GLib.source_remove(saveUrl);
         });
         const urlChanged = settings.connect('changed::voice-router-url', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
