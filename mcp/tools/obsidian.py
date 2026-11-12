@@ -112,18 +112,24 @@ def _safe_path(vault: Path, relative: str) -> Path | dict:
 
 
 def _notes(vault: Path, include_templates: bool = False):
-    """Every note in the vault, as (path, title) - hidden and private parts never reached."""
-    for path in sorted(vault.rglob("*.md")):
-        relative = path.relative_to(vault)
-        if any(part.startswith(".") or part in PRIVATE for part in relative.parts):
-            continue
-        if path.is_symlink():
-            continue
-        if not include_templates and TEMPLATE_DIR in relative.parts:
-            continue
-        if path.stat().st_size > MAX_NOTE_BYTES:
-            continue
-        yield path, relative
+    """Every note in the vault, as (path, title). The walk never descends into a hidden
+    or private folder (pruned at the folder, not filtered after), never follows a
+    directory symlink, and skips a symlinked or over-cap note it meets."""
+    for root, folders, files in os.walk(vault, followlinks=False):
+        folders[:] = sorted(folder for folder in folders
+                           if not folder.startswith(".") and folder not in PRIVATE)
+        for name in sorted(files):
+            if not name.endswith(".md"):
+                continue
+            path = Path(root) / name
+            relative = path.relative_to(vault)
+            if path.is_symlink():
+                continue
+            if not include_templates and TEMPLATE_DIR in relative.parts:
+                continue
+            if path.stat().st_size > MAX_NOTE_BYTES:
+                continue
+            yield path, relative
 
 
 def _write_atomic(path: Path, data: bytes) -> None:
@@ -285,11 +291,16 @@ def register(mcp, authorize, write):
         if not home.is_dir():
             return _fail(f"not a folder of the vault: {folder!r}")
         if template_name:
+            if "/" in template_name or "\\" in template_name or template_name.startswith("."):
+                return _fail(f"not a template name: {template_name!r}")
             template = vault / TEMPLATE_DIR / template_name
             if not template.is_file():
                 return _fail(f"no such template: {template_name!r}")
             content = template.read_text(encoding="utf-8-sig").replace(
                 "{{title}}", title).replace("{{date}}", datetime.now().strftime("%Y-%m-%d"))
+        data = content.encode("utf-8")
+        if len(data) > MAX_NOTE_BYTES:
+            return _fail(f"the note is over the size cap ({MAX_NOTE_BYTES} bytes)")
         name = title if title.endswith(".md") else title + ".md"
         target = home / name
         try:
@@ -297,11 +308,11 @@ def register(mcp, authorize, write):
         except FileExistsError:
             return _fail("A note with that name already exists; read it before deciding what to do.")
         with os.fdopen(handle, "wb") as note:
-            note.write(content.encode("utf-8"))
+            note.write(data)
             note.flush()
             os.fsync(note.fileno())
         return _ok(created=True, path=target.relative_to(vault).as_posix(),
-                   sha256=_sha256(content.encode("utf-8")), size_bytes=len(content.encode("utf-8")))
+                   sha256=_sha256(data), size_bytes=len(data))
 
     @mcp.tool
     async def obsidian_update_note(relative: str, content: str, expected_sha256: str) -> dict:
@@ -409,15 +420,21 @@ def register(mcp, authorize, write):
         name = target.stem
         wikilink = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
         markdown = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
-        incoming, outgoing = [], []
+        # The asked note's own links are the outgoing ones - its wikilinks (the fragment
+        # after # already dropped by the pattern) and its markdown targets, the private
+        # ones dropped; the incoming are the notes that point at it, each scanned once.
+        text = target.read_text(encoding="utf-8-sig", errors="replace")
+        outgoing = [wanted.strip() for wanted in wikilink.findall(text)]
+        outgoing += [link for link in markdown.findall(text)
+                     if not link.startswith(("http:", "https:", "mailto:", "#"))]
+        incoming = []
         for path, note in _notes(vault, include_templates=True):
-            text = path.read_text(encoding="utf-8-sig", errors="replace")
-            for target_name in wikilink.findall(text):
-                if target_name.strip() == name and note != Path(relative):
+            if note == Path(relative):
+                continue
+            for wanted in wikilink.findall(path.read_text(encoding="utf-8-sig", errors="replace")):
+                if wanted.strip() == name:
                     incoming.append({"path": note.as_posix(), "title": path.stem})
-            for link in markdown.findall(text):
-                if not link.startswith(("http:", "https:", "mailto:", "#")):
-                    outgoing.append(link)
+                    break
         return _ok(path=relative, incoming=incoming, outgoing=outgoing)
 
     @mcp.tool

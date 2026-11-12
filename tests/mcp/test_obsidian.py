@@ -35,10 +35,12 @@ def build_vault(root: Path):
     """A real vault: notes in folders, a template, private internals, a symlink out."""
     (root / "Journal").mkdir()
     (root / "Journal" / "today.md").write_text("# Today\n\nBought coffee for the shelf.\n")
-    (root / "Journal" / "yesterday.md").write_text("Walked by the river, thought of rust.\n")
+    (root / "Journal" / "yesterday.md").write_text(
+        "Walked by the river, thought of rust. [[plans]] for tomorrow.\n")
     (root / "Projects").mkdir()
     (root / "Projects" / "notchfolk.md").write_text(
-        "# Notchfolk\n\nThe notch [[today]] links here. See also [[notchfolk]].\n")
+        "# Notchfolk\n\nThe notch [[today]] links here. See also [[notchfolk]] and "
+        "[[yesterday]]'s page.\n")
     (root / "loose.md").write_text("A loose note, for search and recent.\n")
     (root / "_System" / "Templates").mkdir(parents=True)
     (root / "_System" / "Templates" / "daily.md").write_text(
@@ -153,6 +155,10 @@ async def main():
         backlinks = result(await reader.call_tool("obsidian_backlinks", {"relative": "Journal/today.md"}))
         check("AC-2/3 backlinks", backlinks["ok"] and len(backlinks["incoming"]) == 1
               and backlinks["incoming"][0]["path"] == "Projects/notchfolk.md", str(backlinks)[:150])
+        notchlinks = result(await reader.call_tool("obsidian_backlinks", {"relative": "Projects/notchfolk.md"}))
+        check("backlinks' outgoing are the note's own",
+              sorted(notchlinks["outgoing"]) == ["notchfolk", "today", "yesterday"],
+              str(notchlinks["outgoing"]))
         templates = result(await reader.call_tool("obsidian_templates_list", {}))
         check("AC-2/3 templates_list", templates["ok"] and templates["templates"] == ["daily.md"])
         skills = result(await reader.call_tool("obsidian_skills_list", {}))
@@ -172,6 +178,13 @@ async def main():
         created = result(await admin.call_tool("obsidian_create_note",
             {"title": "plans", "folder": "Projects", "content": "New note body."}))
         check("AC-2/3 create", created["ok"] and created["path"] == "Projects/plans.md", str(created))
+        traversal = result(await admin.call_tool("obsidian_create_note",
+            {"title": "escape", "folder": "Projects", "content": "x",
+             "template_name": "../../etc/passwd"}))
+        check("create's template name is gated", not traversal["ok"], str(traversal))
+        huge = result(await admin.call_tool("obsidian_create_note",
+            {"title": "huge", "folder": "Projects", "content": "x" * 600_000}))
+        check("create obeys the size cap", not huge["ok"], str(huge)[:100])
         again = result(await admin.call_tool("obsidian_create_note",
             {"title": "plans", "folder": "Projects", "content": "Again."}))
         check("create never overwrites", not again["ok"] and "already exists" in again["error"], str(again))
