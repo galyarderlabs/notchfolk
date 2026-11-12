@@ -16,7 +16,7 @@ Isle's changelog from before the fork, kept for reference.
   and the speech side kept its own router URL and key, two of everything for what is one
   endpoint. Settings → Assistant carries one Base URL row and one API key row, always
   visible beside the model: the URL feeds speech from the setting it always read and chat
-  through ai.env (chmod 600, written by the same helper the Hermes rows use), the key lives
+  through ai.env (chmod 600, written by the row itself), the key lives
   in the desktop's secret store as it already did. The model choices stay their own - the chat's
   model id, the speech-to-text model, the text-to-speech model. The ai.env file still works
   for those who set it before the row existed.

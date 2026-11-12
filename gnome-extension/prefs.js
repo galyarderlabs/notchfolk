@@ -831,13 +831,13 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
 
         // One endpoint for both: the assistant's chat models and speech go to the same
         // OpenAI-compatible base URL. Speech reads it from this setting; chat reads it
-        // from ai.env, written below by the same helper the Hermes rows use.
+        // from ai.env, which this row writes itself (chmod 600, every other line kept).
         const routerUrl = new Adw.EntryRow({title: 'Base URL', text: settings.get_string('voice-router-url')});
         let saveUrl = 0;
         routerUrl.connect('changed', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
                 settings.set_string('voice-router-url', routerUrl.text.trim());
-            // The chat side reads ai.env; the same file the Hermes rows write, the same helper.
+            // The chat side reads ai.env: this row keeps that line of the file in step.
             if (saveUrl)
                 GLib.source_remove(saveUrl);
             saveUrl = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
