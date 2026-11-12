@@ -131,6 +131,8 @@ main() {
     if systemctl --user is-active --quiet notchfolkd 2>/dev/null; then
         if systemctl --user restart notchfolkd 2>/dev/null; then
             echo "Notchfolk's daemon restarted: what was just installed is what answers now."
+        else
+            echo "Notchfolk's daemon could not be restarted. Log out and back in, or run: systemctl --user restart notchfolkd"
         fi
     fi
     echo
