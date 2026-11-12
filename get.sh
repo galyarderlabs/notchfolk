@@ -125,6 +125,14 @@ main() {
 
     # The package's uninstaller stays around as a command.
     install -Dm755 "$package/uninstall.sh" "$HOME/.local/bin/notchfolk-uninstall"
+    # The daemon keeps running the binary it was started with: an update that leaves the
+    # process alone leaves the old code answering (its service is Restart=on-failure
+    # only). Restart it when it is running, so what was just installed is what answers.
+    if systemctl --user is-active --quiet notchfolkd 2>/dev/null; then
+        if systemctl --user restart notchfolkd 2>/dev/null; then
+            echo "Notchfolk's daemon restarted: what was just installed is what answers now."
+        fi
+    fi
     echo
     # Not when a speech model is there already (an update, or a voice setup it moved over).
     if ! compgen -G "${XDG_DATA_HOME:-$HOME/.local/share}/notchfolk/models/ggml-*-q8_0.bin" >/dev/null; then

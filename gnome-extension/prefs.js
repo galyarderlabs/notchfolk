@@ -685,6 +685,12 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const entry = catalog.of(current.id);
             const customModel = ['openai-compatible', 'oh-my-pi'].includes(current.id);
             modelId.visible = customModel;
+            // The chat client reads the shared URL from ai.env - and a prefilled row that
+            // was never touched never wrote it (the user whose router URL was already
+            // there, set up before the row existed). Whenever the compatible provider is
+            // the one, the file carries the URL: picked, prefilled or changed.
+            if (current.id === 'openai-compatible')
+                saveAiEnvValue('NOTCHFOLK_OPENAI_BASE_URL', settings.get_string('voice-router-url'));
             modelId.title = current.id === 'oh-my-pi' ? 'Optional provider/model id' : 'OpenAI-compatible model id';
             if (customModel && modelId.text !== settings.get_string(modelKey))
                 modelId.text = settings.get_string(modelKey);
@@ -2371,7 +2377,12 @@ function saveAiEnvValue(name, value) {
         return;  // Nothing to keep and nothing to add: no empty file.
     GLib.mkdir_with_parents(dir, 0o700);
     GLib.file_set_contents(path, kept.length ? kept.join('\n') + '\n' : '');
-    GLib.chmod(path, 0o600);
+    // GLib.chmod does not exist in GJS (g_chmod is a POSIX macro, never in the gir) - the
+    // call threw, and the file landed world-readable, which notchfolkd refuses to read.
+    // Gio's own attribute is the way that works.
+    const info = new Gio.FileInfo();
+    info.set_attribute_uint32(Gio.FILE_ATTRIBUTE_UNIX_MODE, 0o600);
+    Gio.File.new_for_path(path).set_attributes_from_info(info, Gio.FileQueryInfoFlags.NONE, null);
 }
 
 function choiceRow(settings, key, title, subtitle, choices) {
