@@ -204,7 +204,7 @@ class RouterPage extends Page {
             ? `${tokens(stats.prompt_tokens)} / ${tokens(stats.completion_tokens)}` : '—';
         this._metricValues.cost.text = connected ? `$${Number(stats.cost ?? 0).toFixed(2)}` : '—';
         const statusText = {
-            connected: router.version ? `Connected · ${router.version}` : 'Connected',
+            connected: router?.version ? `Connected · ${router?.version}` : 'Connected',
             outdated: 'Update your gateway first',
             unauthorized: 'Authentication failed · check Router settings',
             unreachable: 'Gateway offline · check its URL and make sure it is running',
