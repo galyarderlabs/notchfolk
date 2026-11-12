@@ -56,8 +56,7 @@ tabs for each page.
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/alerts.png" alt="The Weather page" width="100%"><br>
-<b>Weather.</b> A page of its own: the current conditions large on a drawn sky disc, what it feels like, the humidity and the wind, the next hours as a curve, five days of warmest and coldest — and the latest earthquakes from BMKG, Indonesia's own meteorology agency. The city is picked in Settings; the closed island stays quiet.
+<b>Weather.</b> Choose a city in Settings, or follow the GNOME World Clock nearest your time zone. See current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by each forecast condition, and the five-day forecast. Nearby earthquakes use BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event. The closed island stays quiet.
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="100%"><br>
