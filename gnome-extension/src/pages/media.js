@@ -15,7 +15,7 @@ import {VERTICAL, onUiScale, px} from '../compat.js';
 import {EXPANDED_WIDTH, LARGE_WIDTH, PAGE_HEIGHT} from '../expanded.js';
 import * as Format from '../format.js';
 import * as Playback from '../playback.js';
-import {Art, Bars, Slider, fence, icon, iconButton, label, ownIcon, restsAt, setButtonIcon, setEnabled, smallCover, coverKey} from '../widgets.js';
+import {Art, Bars, Slider, fence, icon, iconButton, label, ownIcon, pillButton, restsAt, setButtonIcon, setEnabled, smallCover, coverKey} from '../widgets.js';
 import {LyricsPane} from './lyrics.js';
 import {Page} from './page.js';
 
@@ -55,7 +55,7 @@ class LyricsWidthLayout extends Clutter.LayoutManager {
 export const MediaPage = GObject.registerClass(
 class MediaPage extends Page {
     /** Builds all three layouts up front; only the mode's is shown. */
-    _init(daemon, audio, {height}) {
+    _init(daemon, audio, settings, {height}) {
         super._init(daemon, {
             style_class: 'notchfolk-page notchfolk-media',
             layout_manager: new Clutter.BinLayout(),
@@ -63,6 +63,7 @@ class MediaPage extends Page {
         });
         this.name = 'music';
         this._audio = audio;
+        this._settings = settings;
         /** 'player', 'lyrics' or 'audio' (volume and outputs). */
         this._mode = 'player';
         this._tint = null;
@@ -248,6 +249,18 @@ class MediaPage extends Page {
         texts.y_align = Clutter.ActorAlign.START;
         head.add_child(texts);
         const modes = new St.BoxLayout({style_class: 'notchfolk-player-modes', y_align: Clutter.ActorAlign.START});
+        // Karaoke: the line being sung in the closed island while music plays (see
+        // `compact-karaoke`). A pill that lights while it is on, as the mode buttons fill.
+        const karaokeOn = () => settings.get_boolean('compact-karaoke');
+        this._karaoke = pillButton('Karaoke', 'notchfolk-karaoke-toggle', () => {
+            settings.set_boolean('compact-karaoke', !karaokeOn());
+        });
+        const syncKaraoke = () => {
+            this._karaoke.style_class = `notchfolk-pill notchfolk-karaoke-toggle${karaokeOn() ? ' on' : ''}`;
+        };
+        this._karaokeSettingsId = settings.connect('changed::compact-karaoke', syncKaraoke);
+        this._karaoke.connect('destroy', () => settings.disconnect(this._karaokeSettingsId));
+        syncKaraoke();
         // With more than one player running: switch to the next, shown by its app's icon.
         this._playerIcon = new St.Icon({icon_size: 16});
         this._playerSwitch = new St.Button({style_class: 'notchfolk-button notchfolk-button-flat notchfolk-player-switch', child: this._playerIcon,
@@ -256,6 +269,7 @@ class MediaPage extends Page {
             if (this._nextPlayer)
                 this.daemon.call('media', 'Choose', this._nextPlayer.name);
         });
+                modes.add_child(this._karaoke);
         modes.add_child(this._playerSwitch);
         modes.add_child(this._modeButton('lyrics', 'notchfolk-lyrics', 'Show lyrics', false));
         modes.add_child(this._modeButton('audio', 'notchfolk-output', 'Volume and output', false));

@@ -178,6 +178,16 @@
 .notchfolk-compact-assistant-button:hover,
 .notchfolk-compact-assistant-button:focus { background-color: rgba(255, 255, 255, 0.08); }
 
+/* The karaoke line: the sung line in the assistant's centre while it plays, at the
+   compact's own text size, capped so a long line never grows the island past its measure. */
+.notchfolk-compact-karaoke { font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
+  max-width: 300px; color: rgba(255, 255, 255, 0.9); }
+.notchfolk-compact-karaoke-button { border-radius: 8px; padding: 2px 6px; }
+.notchfolk-compact-karaoke-button:hover, .notchfolk-compact-karaoke-button:focus {
+  background-color: rgba(255, 255, 255, 0.08); }
+/* The Music page's own toggle for it, a pill that lights while it is on. */
+.notchfolk-karaoke-toggle.on { background-color: rgba(255, 159, 10, 0.25); color: #ffb748; }
+
 /* Inside the top bar everything is sized like the bar's own text. */
 .notchfolk-compact-in-bar .notchfolk-compact-row { padding: 0; spacing: 12px; }
 .notchfolk-compact-in-bar .notchfolk-compact-clock-side { spacing: 10px; }

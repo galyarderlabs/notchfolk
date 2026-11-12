@@ -234,6 +234,11 @@
       <summary>The paired phone in the closed island</summary>
       <description>Shows a GSConnect-paired phone&apos;s battery beside the clock while it is connected.</description>
     </key>
+    <key name="compact-karaoke" type="b">
+      <default>false</default>
+      <summary>The karaoke line in the closed island</summary>
+      <description>While a song with synced lyrics plays, the closed island shows the line being sung in its centre - the cover left, the wave right - and the clock and the date wait. The switch is on the Music page; off, or a song without synced lyrics, leaves the closed island as it is. The line still opens the assistant when clicked.</description>
+    </key>
     <key name="compact-privacy" type="b">
       <default>false</default>
       <summary>The privacy dots in the closed island</summary>
