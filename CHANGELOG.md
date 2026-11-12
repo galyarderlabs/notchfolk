@@ -10,6 +10,16 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
+- **The world MCP: the Memory domain's Obsidian backend.** Notes, and memory's fallback:
+  16 tools over the user's own vault of Markdown notes - the overview, the guide, the sync
+  status, search, list, read, recent, backlinks, the templates and the workflow skills to
+  read; create, update, patch and move to write (create never overwrites, updates and
+  moves require the current SHA-256, there is no delete - archive or move instead). Every
+  path goes through one gate: vault-relative only, no `..`, no hidden parts, no symlinks,
+  the private internals never reachable. Offered only when a vault answers.
+
+### Added
+
 - **One endpoint, one place: the Base URL and the API key are shared by the assistant's
   chat and its speech.** The compatible-API provider had a row for its model and none for its
   endpoint - the base URL and the API key lived in ~/.config/notchfolk/ai.env, edited by hand -

@@ -156,12 +156,12 @@ spec's; every task names the ones it must prove.
   `delete_document`, `cancel_operation`, `create_knowledge_page`,
   `create_knowledge_folder`, `update_knowledge_node`,
   `delete_knowledge_node`. **AC-1, AC-2, AC-4, AC-5.**
-- [ ] Obsidian read-only (10 tools): `obsidian_overview`,
+- [x] Obsidian read-only (10 tools): `obsidian_overview`,
   `obsidian_guide`, `obsidian_sync_status`, `obsidian_search`,
   `obsidian_list`, `obsidian_read`, `obsidian_recent`,
   `obsidian_backlinks`, `obsidian_templates_list`,
   `obsidian_template_read`. **AC-1, AC-2, AC-3, AC-5.**
-- [ ] Obsidian restricted (4 tools): `obsidian_create_note`,
+- [x] Obsidian restricted (4 tools): `obsidian_create_note`,
   `obsidian_update_note`, `obsidian_patch_note`, `obsidian_move_note`.
   **AC-1, AC-2, AC-4, AC-5.**
 - [ ] The backend rule: Hindsight is the implementation when available;
