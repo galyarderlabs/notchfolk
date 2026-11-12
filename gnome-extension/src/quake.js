@@ -51,7 +51,7 @@ function fromBmkg(feed, center) {
 function fromUsgs(feed) {
     return (feed?.features ?? []).map(feature => {
         const properties = feature.properties ?? {};
-        const [longitude, latitude, depthKm] = feature.geometry?.coordinates ?? [];
+        const depthKm = feature.geometry?.coordinates?.[2];
         const time = Number(properties.time);
         const when = Number.isFinite(time)
             ? GLib.DateTime.new_from_unix_utc(Math.floor(time / 1000))?.format('%d %b · %H:%M UTC') ?? ''
