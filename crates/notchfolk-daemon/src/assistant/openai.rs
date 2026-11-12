@@ -19,6 +19,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::{Context, bail};
+use log::warn;
 use serde_json::{Value, json};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -92,12 +93,13 @@ impl Client {
 
     pub fn byok(model: &str, instructions: &str) -> anyhow::Result<Self> {
         let base_url = config_value("NOTCHFOLK_OPENAI_BASE_URL").ok_or_else(|| {
-            anyhow::anyhow!(
-                "Set NOTCHFOLK_OPENAI_BASE_URL and NOTCHFOLK_OPENAI_API_KEY in ~/.config/notchfolk/ai.env"
-            )
+            anyhow::anyhow!("Set the endpoint's base URL in Settings → Assistant")
         })?;
-        let api_key = config_value("NOTCHFOLK_OPENAI_API_KEY")
-            .ok_or_else(|| anyhow::anyhow!("NOTCHFOLK_OPENAI_API_KEY is not configured"))?;
+        // The key from the desktop's secret store first (Settings → Assistant), then the
+        // ai.env file for those who set it there before the row existed.
+        let api_key = endpoint_key()
+            .or_else(|| config_value("NOTCHFOLK_OPENAI_API_KEY"))
+            .ok_or_else(|| anyhow::anyhow!("Set the endpoint's API key in Settings → Assistant"))?;
         Ok(Self {
             base_url,
             api_key,
@@ -446,7 +448,81 @@ fn load_history(kind: &str) -> Vec<Value> {
 
 pub fn byok_configured() -> bool {
     config_value("NOTCHFOLK_OPENAI_BASE_URL").is_some()
-        && config_value("NOTCHFOLK_OPENAI_API_KEY").is_some()
+        && (endpoint_key().is_some() || config_value("NOTCHFOLK_OPENAI_API_KEY").is_some())
+}
+
+/// The keyring entry's name, under the service the assistant's credentials use.
+const KEYRING_ACCOUNT: &str = "openai-compatible-key";
+
+/// The keyring entry the endpoint's API key is kept in (Settings → Assistant).
+fn keyring_entry() -> Result<keyring::Entry, keyring::Error> {
+    keyring::Entry::new("io.galyarderlabs.notchfolk", KEYRING_ACCOUNT)
+}
+
+/// The saved endpoint API key, if there is one.
+pub fn endpoint_key() -> Option<String> {
+    match keyring_entry().and_then(|entry| match entry.get_password() {
+        Ok(key) => Ok(Some(key)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(err) => Err(err),
+    }) {
+        Ok(key) => key.filter(|key| !key.is_empty()),
+        Err(err) => {
+            warn!("could not read the endpoint's API key: {err}");
+            None
+        }
+    }
+}
+
+/// Saves the endpoint's API key; an empty one removes it. The key never enters GSettings
+/// or a plain file - it lives in the desktop's secret store, as the speech router's does.
+pub fn save_endpoint_key(key: &str) -> anyhow::Result<()> {
+    let entry = keyring_entry().context("could not reach the keyring")?;
+    if key.is_empty() {
+        match entry.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => (),
+            Err(err) => return Err(err).context("could not remove the API key"),
+        }
+    } else {
+        entry
+            .set_password(key)
+            .context("could not save the API key")?;
+    }
+    Ok(())
+}
+
+/// The endpoint's base URL, as Settings last saved it (ai.env carries it, chmod 600).
+pub fn endpoint_url() -> Option<String> {
+    config_value("NOTCHFOLK_OPENAI_BASE_URL")
+}
+
+/// Saves the endpoint's base URL into ai.env, creating the file (chmod 600) if it is not
+/// there and keeping every other line as it is. An empty URL removes the line.
+pub fn save_endpoint_url(url: &str) -> anyhow::Result<()> {
+    let path = dirs::config_dir()
+        .context("could not find the config directory")?
+        .join("notchfolk/ai.env");
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).context("could not create the config directory")?;
+    }
+    let old = std::fs::read_to_string(&path).unwrap_or_default();
+    let mut lines: Vec<String> = old.lines().map(str::to_owned).collect();
+    lines.retain(|line| !line.trim().starts_with("NOTCHFOLK_OPENAI_BASE_URL="));
+    if !url.trim().is_empty() {
+        lines.push(format!("NOTCHFOLK_OPENAI_BASE_URL={}", url.trim()));
+    }
+    let joined = if lines.is_empty() {
+        String::new()
+    } else {
+        let mut text = lines.join("\n");
+        text.push('\n');
+        text
+    };
+    std::fs::write(&path, joined).context("could not write ai.env")?;
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
+        .context("could not set ai.env's permissions")?;
+    Ok(())
 }
 
 pub fn discover(provider: &str) -> anyhow::Result<Vec<String>> {

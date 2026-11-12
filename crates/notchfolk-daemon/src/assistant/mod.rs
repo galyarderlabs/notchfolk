@@ -429,6 +429,42 @@ impl AssistantService {
             .map(|key| key.is_some())
     }
 
+    /// Saves the OpenAI-compatible endpoint's base URL into ai.env (chmod 600), keeping
+    /// every other line; an empty one removes it. Settings is the only caller.
+    async fn set_openai_url(&self, url: &str) -> fdo::Result<()> {
+        let url = url.to_owned();
+        tokio::task::spawn_blocking(move || openai::save_endpoint_url(&url))
+            .await
+            .map_err(|err| fdo::Error::Failed(err.to_string()))?
+            .map_err(|err| fdo::Error::Failed(err.to_string()))
+    }
+
+    /// The OpenAI-compatible endpoint's base URL, as Settings last saved it.
+    async fn openai_url(&self) -> fdo::Result<String> {
+        tokio::task::spawn_blocking(openai::endpoint_url)
+            .await
+            .map_err(|err| fdo::Error::Failed(err.to_string()))?
+            .ok_or_else(|| fdo::Error::Failed("no endpoint URL is configured".into()))
+    }
+
+    /// Saves the OpenAI-compatible endpoint's API key in the desktop's secret store; an
+    /// empty one removes it.
+    async fn set_openai_key(&self, key: &str) -> fdo::Result<()> {
+        let key = key.to_owned();
+        tokio::task::spawn_blocking(move || openai::save_endpoint_key(&key))
+            .await
+            .map_err(|err| fdo::Error::Failed(err.to_string()))?
+            .map_err(|err| fdo::Error::Failed(format!("GNOME Keyring: {err}")))
+    }
+
+    /// Whether the OpenAI-compatible endpoint's API key is saved, without returning it.
+    async fn openai_key_set(&self) -> fdo::Result<bool> {
+        tokio::task::spawn_blocking(openai::endpoint_key)
+            .await
+            .map_err(|err| fdo::Error::Failed(err.to_string()))?
+            .map(|key| key.is_some())
+    }
+
     /// Records a request and answers it; `context` is JSON
     /// `{apps, provider, agy_model, claude_model, codex_model, grok_model, whisper_model, language, selection, …}`.
     async fn listen(

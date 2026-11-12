@@ -10,6 +10,15 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
+- **The OpenAI-compatible endpoint is set in Settings, not in a file.** The assistant's
+  compatible-API provider had a row for its model and none for its endpoint: the base URL
+  and the API key lived in ~/.config/notchfolk/ai.env, edited by hand. Settings → Assistant
+  carries both rows now - the URL into ai.env (chmod 600, written by notchfolkd, every other
+  line kept), the key into the desktop's secret store, as the speech router's key already
+  was. The file still works for those who set it before the rows existed.
+
+### Added
+
 - **The Weather page grows its forecast and the earth.** The next hours walk a drawn curve -
   the Prayer page's arc, for the sky - each hour its temperature, the warmest hour lit; the
   days beneath (five of them, today first, each its warmest and coldest, from met.no's

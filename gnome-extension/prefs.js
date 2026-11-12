@@ -652,6 +652,51 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             expression: new Gtk.PropertyExpression(Gtk.StringObject, null, 'string')});
         const modelId = new Adw.EntryRow({title: 'OpenAI-compatible model id'});
         modelId.visible = false;
+        // The endpoint's base URL and API key, set here instead of a file: the URL into
+        // ai.env (chmod 600, kept by notchfolkd), the key into the desktop's secret store.
+        const endpointUrl = new Adw.EntryRow({title: 'Endpoint base URL', text: ''});
+        endpointUrl.visible = false;
+        const endpointKey = new Adw.PasswordEntryRow({title: 'Endpoint API key'});
+        if (typeof endpointKey.show_peek_icon === 'boolean')
+            endpointKey.show_peek_icon = true;
+        endpointKey.visible = false;
+        const endpointKeyStatus = new Gtk.Label({label: 'Not set', valign: Gtk.Align.CENTER});
+        endpointKey.add_suffix(endpointKeyStatus);
+        const readEndpointUrl = () => {
+            try {
+                endpointUrl.text = Gio.DBus.session.call_sync(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE,
+                    'OpenaiUrl', null, new GLib.VariantType('(s)'), Gio.DBusCallFlags.NONE, -1, null).deepUnpack()[0];
+            } catch {
+                endpointUrl.text = '';
+            }
+        };
+        const readEndpointKey = () => {
+            try {
+                const saved = Gio.DBus.session.call_sync(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE,
+                    'OpenaiKeySet', null, new GLib.VariantType('(b)'), Gio.DBusCallFlags.NONE, -1, null).deepUnpack()[0];
+                endpointKeyStatus.label = saved ? 'Saved' : 'Not set';
+            } catch {
+                endpointKeyStatus.label = 'Unknown';
+            }
+        };
+        endpointUrl.connect('changed', () => {
+            Gio.DBus.session.call(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, 'SetOpenaiUrl',
+                new GLib.Variant('(s)', [endpointUrl.text.trim()]), null,
+                Gio.DBusCallFlags.NONE, -1, null, null);
+        });
+        endpointKey.connect('apply', () => {
+            Gio.DBus.session.call(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, 'SetOpenaiKey',
+                new GLib.Variant('(s)', [endpointKey.text]), null,
+                Gio.DBusCallFlags.NONE, -1, null, (conn, call) => {
+                    try {
+                        call.call_finish();
+                        endpointKey.text = '';
+                        readEndpointKey();
+                    } catch {
+                        endpointKeyStatus.label = 'Unknown';
+                    }
+                });
+        });
         modelId.text = settings.get_string('voice-openai-model');
         let modelChoices = [];
         let modelKey = null;
@@ -685,6 +730,12 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const entry = catalog.of(current.id);
             const customModel = ['openai-compatible', 'oh-my-pi'].includes(current.id);
             modelId.visible = customModel;
+            endpointUrl.visible = current.id === 'openai-compatible';
+            endpointKey.visible = current.id === 'openai-compatible';
+            if (endpointUrl.visible) {
+                readEndpointUrl();
+                readEndpointKey();
+            }
             modelId.title = current.id === 'oh-my-pi' ? 'Optional provider/model id' : 'OpenAI-compatible model id';
             if (customModel && modelId.text !== settings.get_string(modelKey))
                 modelId.text = settings.get_string(modelKey);
@@ -2032,7 +2083,7 @@ const AI_PROVIDERS = [
         about: 'Hermes keeps its own personality and memory; Notchfolk adds its desktop instructions. A Hermes elsewhere: its endpoint and key below',
         models: () => [['', 'Hermes default'], ...apiModels('hermes')]},
     {id: 'openai-compatible', name: 'OpenAI-compatible API', command: '', modelKey: 'voice-openai-model',
-        available: () => signedIn('openai-compatible'), about: 'Store endpoint and API key in ~/.config/notchfolk/ai.env (chmod 600)',
+        available: () => signedIn('openai-compatible'), about: 'The endpoint base URL and its API key, set in the rows below',
         models: () => apiModels('openai-compatible')},
     {id: 'oh-my-pi', name: 'Oh My Pi', command: 'omp', modelKey: 'voice-omp-model',
         about: 'Oh My Pi coding agent, with its own provider settings and Notchfolk desktop actions',
