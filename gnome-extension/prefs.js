@@ -685,6 +685,12 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const entry = catalog.of(current.id);
             const customModel = ['openai-compatible', 'oh-my-pi'].includes(current.id);
             modelId.visible = customModel;
+            // The chat client reads the shared URL from ai.env - and a prefilled row that
+            // was never touched never wrote it (the user whose router URL was already
+            // there, set up before the row existed). Whenever the compatible provider is
+            // the one, the file carries the URL: picked, prefilled or changed.
+            if (current.id === 'openai-compatible')
+                saveAiEnvValue('NOTCHFOLK_OPENAI_BASE_URL', routerUrl.text.trim());
             modelId.title = current.id === 'oh-my-pi' ? 'Optional provider/model id' : 'OpenAI-compatible model id';
             if (customModel && modelId.text !== settings.get_string(modelKey))
                 modelId.text = settings.get_string(modelKey);
