@@ -754,7 +754,7 @@ footer a:hover { color: var(--ink); }
           Star on GitHub
         </a>
       </div>
-      <small>Version <span class="js-ver">1.3.0</span> · GPL-3.0 · GNOME 46–51</small>
+      <small>Version <span class="js-ver">1.4.0</span> · GPL-3.0 · GNOME 46–51</small>
       <span class="dl-count js-dlcount"></span>
     </div>
   </div>
@@ -1103,25 +1103,24 @@ footer a:hover { color: var(--ink); }
   </section>
 
     <section id="new" class="wrap">
-    <h2 class="sec-title">New in Notchfolk 1.3.0.</h2>
-    <p class="sec-lede">The world comes to the MCP, the sky becomes a page, and the closed island is as quiet as you draw it.</p>
+    <h2 class="sec-title">New in Notchfolk 1.4.0.</h2>
+    <p class="sec-lede">The world remembers, the sky shows its hours, and the assistant's endpoint lives in Settings.</p>
     <div class="news">
       <div>
         <h3>What&apos;s new</h3>
         <ul>
-          <li><b>The world MCP: System and Browser</b><span>The MCP server learns to maintain the machine (stats, logs, files, processes, updates &mdash; the sharp tools behind their own scope) and to use the web through a real browser: the Camoufox server, or your own Chromium over CDP. A backend that is not there is not offered; a restricted tool is not even visible to a key without its scope.</span></li>
-          <li><b>The Weather page</b><span>The sky as a page of its own, like Focus and Calendar: the location, the conditions large on a drawn sky disc, what it feels like, the humidity and the wind, and the next hours as cards.</span></li>
+          <li><b>The world MCP: Memory whole</b><span>The Hindsight engine's 39 tools (1.3.0) now stand beside the Obsidian backend's 16 &mdash; your own vault of Markdown notes: search, read, create, update, patch and move, with create never overwriting and no delete by design. One gate for every path; offered only when a vault answers.</span></li>
+          <li><b>The Weather page, full</b><span>The next hours walk a drawn curve, five days of warmest and coldest beneath, and BMKG's latest earthquakes &mdash; Indonesia's own meteorology agency. The page grows for what it shows, and its tab fills while its page is open.</span></li>
         </ul>
       </div>
       <div>
         <h3>Changed</h3>
         <ul>
-          <li><b>The closed island, by choice</b><span>Its statuses are switches &mdash; timer, calls, the unread bell, the paired phone, the AI router, the privacy dots &mdash; and the default is the quiet layout: the assistant, the clock and its date, the music. The weather has left it; the date is numbers now, and the ends are flush.</span></li>
-          <li><b>The Shelf is one row</b><span>Twelve files fill one row from the middle out, and past the width it scrolls &mdash; the island no longer grows tall.</span></li>
+          <li><b>One endpoint, one place</b><span>The assistant's chat and its speech share one Base URL and one API key in Settings &mdash; the key in the desktop's secret store, never a plain file. The model choices stay their own, and speech may live elsewhere when the chat rides an official provider.</span></li>
         </ul>
         <div class="news-note">
           <h3>Good to know</h3>
-          <p>Version 1.3.0 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
+          <p>Version 1.4.0 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
         </div>
       </div>
     </div>
@@ -1230,7 +1229,7 @@ addEventListener("scroll", barSync, { passive: true });
 // ---- Download ------------------------------------------------------------------------
 // Setiap rilis baru: ubah VERSION, dan SHA256 sesuai installer yang di-upload ke GitHub.
 const DOWNLOAD_URL = "https://github.com/galyarderlabs/notchfolk/releases";
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 document.querySelectorAll(".js-dl").forEach(a => { if (a.closest("#download")) a.href = DOWNLOAD_URL; });
 document.querySelectorAll(".js-ver").forEach(e => e.textContent = VERSION);
 
@@ -1614,18 +1613,16 @@ fit(); addEventListener("resize", fit);
  "Lightweight": "Ringan",
  "Customize": "Kustomisasi",
  "What's new": "Yang baru",
- "New in Notchfolk 1.3.0.": "Yang baru di Notchfolk 1.3.0.",
- "The world comes to the MCP, the sky becomes a page, and the closed island is as quiet as you draw it.": "Dunia datang ke MCP, langit jadi halaman, dan island tertutup setenang yang kamu gambar.",
- "The world MCP: System and Browser": "MCP dunia: System dan Browser",
- "The MCP server learns to maintain the machine (stats, logs, files, processes, updates — the sharp tools behind their own scope) and to use the web through a real browser: the Camoufox server, or your own Chromium over CDP. A backend that is not there is not offered; a restricted tool is not even visible to a key without its scope.": "Server MCP belajar merawat mesin (statistik, log, file, proses, update — alat tajamnya di balik scope sendiri) dan memakai web lewat browser sungguhan: server Camoufox, atau Chromium-mu sendiri lewat CDP. Backend yang tidak ada tidak ditawarkan; tool restricted bahkan tidak kelihatan bagi key tanpa scopenya.",
- "The Weather page": "Halaman Weather",
- "The sky as a page of its own, like Focus and Calendar: the location, the conditions large on a drawn sky disc, what it feels like, the humidity and the wind, and the next hours as cards.": "Langit sebagai halaman sendiri, seperti Focus dan Calendar: lokasi, kondisi terkini besar di cakram langit yang digambar, terasa seperti apa, kelembapan, angin, dan beberapa jam ke depan sebagai kartu.",
+ "New in Notchfolk 1.4.0.": "Yang baru di Notchfolk 1.4.0.",
+ "The world remembers, the sky shows its hours, and the assistant's endpoint lives in Settings.": "Dunia mengingat, langit memperlihatkan jam-jamnya, dan endpoint assistant hidup di Settings.",
+ "The world MCP: Memory whole": "MCP dunia: Memory utuh",
+ "The Hindsight engine's 39 tools (1.3.0) now stand beside the Obsidian backend's 16 — your own vault of Markdown notes: search, read, create, update, patch and move, with create never overwriting and no delete by design. One gate for every path; offered only when a vault answers.": "39 tool mesin Hindsight (1.3.0) kini berdampingan dengan 16 tool backend Obsidian — vault Markdown milikmu sendiri: search, read, create, update, patch, dan move, dengan create yang tak pernah menimpa dan tanpa delete sesuai desain. Satu gerbang untuk setiap path; ditawarkan hanya saat vault menjawab.",
+ "The Weather page, full": "Halaman Weather, penuh",
+ "The next hours walk a drawn curve, five days of warmest and coldest beneath, and BMKG's latest earthquakes — Indonesia's own meteorology agency. The page grows for what it shows, and its tab fills while its page is open.": "Jam-jam berikutnya berjalan di kurva yang digambar, lima hari terpanas dan terdingin di bawahnya, dan gempa terbaru BMKG — badan meteorologi Indonesia sendiri. Halaman tumbuh mengikuti yang ditampilkannya, dan tab-nya terisi saat halamannya terbuka.",
+ "One endpoint, one place": "Satu endpoint, satu tempat",
+ "The assistant's chat and its speech share one Base URL and one API key in Settings — the key in the desktop's secret store, never a plain file. The model choices stay their own, and speech may live elsewhere when the chat rides an official provider.": "Chat dan speech assistant berbagi satu Base URL dan satu API key di Settings — key di secret store desktop, bukan file polos. Pilihan model tetap miliknya masing-masing, dan speech bisa tinggal di tempat lain saat chat menunggangi provider resmi.",
+ "Version 1.4.0 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.4.0 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
  "Changed": "Berubah",
- "The closed island, by choice": "Island tertutup, sesuai pilihanmu",
- "Its statuses are switches — timer, calls, the unread bell, the paired phone, the AI router, the privacy dots — and the default is the quiet layout: the assistant, the clock and its date, the music. The weather has left it; the date is numbers now, and the ends are flush.": "Status-statusnya jadi switch — timer, panggilan, bel notifikasi, HP yang dipasangkan, router AI, titik privasi — dan default-nya layout tenang: assistant, jam dengan tanggalnya, musik. Cuaca sudah pergi; tanggalnya sekarang angka, dan ujungnya rapat.",
- "The Shelf is one row": "Shelf satu baris",
- "Twelve files fill one row from the middle out, and past the width it scrolls — the island no longer grows tall.": "Dua belas file mengisi satu baris dari tengah ke pinggir, dan melebihi lebar ia menggulir — island tidak lagi memanjang.",
- "Version 1.3.0 is the latest release. Run the install command again to update; your settings stay as you set them.": "Versi 1.3.0 adalah rilis terbaru. Jalankan perintah instalasi lagi untuk memperbarui; pengaturanmu tetap seperti yang kamu atur.",
  "Download": "Download",
  "Support": "Dukung",
  "Now available for GNOME 46–51": "Sekarang tersedia untuk GNOME 46–51",
