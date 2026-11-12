@@ -36,9 +36,10 @@ Isle's changelog from before the fork, kept for reference.
 - **The Weather page grows its forecast and the earth.** The next hours walk a drawn curve -
   the Prayer page's arc, for the sky - each hour its temperature, the warmest hour lit; the
   days beneath (five of them, today first, each its warmest and coldest, from met.no's
-  forecast); and BMKG's latest earthquakes, Indonesia's own meteorology agency, each with its
-  magnitude, where it sat, how deep and when - M5.0 and up, refreshed every 15 minutes while
-  the page is open. The page names its sources at the foot, as the Prayer page names Kemenag.
+  forecast); and the earthquakes near the chosen city - BMKG for Indonesia, USGS for
+  everywhere else and for the gaps, each with its magnitude, where it sat, how deep and
+  when, refreshed every 15 minutes while the page is open. The page names its sources at
+  the foot, as the Prayer page names Kemenag.
   And the Settings catch up with the page: its switch sits in the Pages group with every other
   tab, and it takes a shortcut of its own (Settings → Shortcuts) to open from anywhere.
 
