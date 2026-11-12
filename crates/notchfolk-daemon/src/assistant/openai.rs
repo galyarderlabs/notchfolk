@@ -452,8 +452,6 @@ pub fn byok_configured() -> bool {
         && (super::cloud::key().is_some() || config_value("NOTCHFOLK_OPENAI_API_KEY").is_some())
 }
 
-
-
 pub fn discover(provider: &str) -> anyhow::Result<Vec<String>> {
     if provider == "oh-my-pi" {
         return discover_omp_models();

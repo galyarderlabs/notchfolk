@@ -429,8 +429,6 @@ impl AssistantService {
             .map(|key| key.is_some())
     }
 
-
-
     /// Records a request and answers it; `context` is JSON
     /// `{apps, provider, agy_model, claude_model, codex_model, grok_model, whisper_model, language, selection, …}`.
     async fn listen(

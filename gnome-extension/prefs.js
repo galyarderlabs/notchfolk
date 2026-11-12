@@ -830,8 +830,8 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         syncHermes();
 
         // One endpoint for both: the assistant's chat models and speech go to the same
-        // OpenAI-compatible base URL. Speech reads it from this setting; chat reads it from
-        // ai.env, which notchfolkd keeps in step through SetOpenaiUrl.
+        // OpenAI-compatible base URL. Speech reads it from this setting; chat reads it
+        // from ai.env, written below by the same helper the Hermes rows use.
         const routerUrl = new Adw.EntryRow({title: 'Base URL', text: settings.get_string('voice-router-url')});
         let saveUrl = 0;
         routerUrl.connect('changed', () => {
