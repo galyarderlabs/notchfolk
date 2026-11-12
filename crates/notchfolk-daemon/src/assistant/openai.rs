@@ -92,12 +92,13 @@ impl Client {
 
     pub fn byok(model: &str, instructions: &str) -> anyhow::Result<Self> {
         let base_url = config_value("NOTCHFOLK_OPENAI_BASE_URL").ok_or_else(|| {
-            anyhow::anyhow!(
-                "Set NOTCHFOLK_OPENAI_BASE_URL and NOTCHFOLK_OPENAI_API_KEY in ~/.config/notchfolk/ai.env"
-            )
+            anyhow::anyhow!("Set the endpoint's base URL in Settings → Assistant")
         })?;
+        // The chat's own key first (ai.env, for an endpoint whose key differs from the
+        // speech one), then the shared key the speech router keeps in the secret store.
         let api_key = config_value("NOTCHFOLK_OPENAI_API_KEY")
-            .ok_or_else(|| anyhow::anyhow!("NOTCHFOLK_OPENAI_API_KEY is not configured"))?;
+            .or_else(super::cloud::key)
+            .ok_or_else(|| anyhow::anyhow!("Set the API key in Settings → Assistant"))?;
         Ok(Self {
             base_url,
             api_key,
@@ -446,7 +447,7 @@ fn load_history(kind: &str) -> Vec<Value> {
 
 pub fn byok_configured() -> bool {
     config_value("NOTCHFOLK_OPENAI_BASE_URL").is_some()
-        && config_value("NOTCHFOLK_OPENAI_API_KEY").is_some()
+        && (super::cloud::key().is_some() || config_value("NOTCHFOLK_OPENAI_API_KEY").is_some())
 }
 
 pub fn discover(provider: &str) -> anyhow::Result<Vec<String>> {

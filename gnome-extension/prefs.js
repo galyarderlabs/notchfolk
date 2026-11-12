@@ -805,7 +805,21 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         }
         for (const [row, name] of [[hermesUrl, 'NOTCHFOLK_HERMES_URL'], [hermesKey, 'HERMES_API_KEY']]) {
             row.visible = false;
-            row.connect('changed', () => saveAiEnvValue(name, row.text.trim()));
+            // Debounced: a keystroke must not mean a file write.
+            let save = 0;
+            row.connect('changed', () => {
+                if (save)
+                    GLib.source_remove(save);
+                save = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
+                    save = 0;
+                    saveAiEnvValue(name, row.text.trim());
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+            row.connect('destroy', () => {
+                if (save)
+                    GLib.source_remove(save);
+            });
         }
         const syncHermes = () => {
             const hermes = settings.get_string('voice-provider') === 'hermes';
@@ -815,46 +829,34 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         settings.connect('changed::voice-provider', syncHermes);
         syncHermes();
 
-        const options = [provider, model, modelId, hermesUrl, hermesKey, customInstructions];
-        options.push(choiceRow(settings, 'voice-speech-engine', 'Speech recognition',
-            'The router over the network; local Whisper works offline and takes over when the router cannot be reached', [
-            ['cloud', 'Cloud (OpenAI-compatible router)'],
-            ['local', 'Local Whisper (offline)'],
-        ]));
-        // The router: where speech goes and the model that hears it. The API key never enters GSettings —
-        // it lives in the desktop's secret store, kept there by notchfolkd.
-        const routerUrl = new Adw.EntryRow({title: 'Router base URL', text: settings.get_string('voice-router-url')});
+        // One endpoint for both: the assistant's chat models and speech go to the same
+        // OpenAI-compatible base URL. Speech reads it from this setting; chat reads it
+        // from ai.env, which this row writes itself (chmod 600, every other line kept).
+        const routerUrl = new Adw.EntryRow({title: 'Base URL', text: settings.get_string('voice-router-url')});
+        let saveUrl = 0;
         routerUrl.connect('changed', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
                 settings.set_string('voice-router-url', routerUrl.text.trim());
+            // The chat side reads ai.env: this row keeps that line of the file in step.
+            if (saveUrl)
+                GLib.source_remove(saveUrl);
+            saveUrl = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
+                saveUrl = 0;
+                saveAiEnvValue('NOTCHFOLK_OPENAI_BASE_URL', routerUrl.text.trim());
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        routerUrl.connect('destroy', () => {
+            if (saveUrl)
+                GLib.source_remove(saveUrl);
         });
         const urlChanged = settings.connect('changed::voice-router-url', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
                 routerUrl.text = settings.get_string('voice-router-url');
         });
         routerUrl.connect('destroy', () => settings.disconnect(urlChanged));
-        const cloudModel = new Adw.EntryRow({title: 'Speech-to-text model', text: settings.get_string('voice-speech-cloud-model')});
-        cloudModel.connect('changed', () => {
-            if (cloudModel.text.trim() !== settings.get_string('voice-speech-cloud-model'))
-                settings.set_string('voice-speech-cloud-model', cloudModel.text.trim());
-        });
-        const modelChanged = settings.connect('changed::voice-speech-cloud-model', () => {
-            if (cloudModel.text.trim() !== settings.get_string('voice-speech-cloud-model'))
-                cloudModel.text = settings.get_string('voice-speech-cloud-model');
-        });
-        cloudModel.connect('destroy', () => settings.disconnect(modelChanged));
-        // Where speech endpoints live: the OpenAI-compatible paths by default, another router's own.
-        const sttPath = new Adw.EntryRow({title: 'Speech-to-text path', text: settings.get_string('voice-stt-path')});
-        sttPath.connect('changed', () => {
-            if (sttPath.text.trim() !== settings.get_string('voice-stt-path'))
-                settings.set_string('voice-stt-path', sttPath.text.trim().replace(/^\/+/, ''));
-        });
-        const sttChanged = settings.connect('changed::voice-stt-path', () => {
-            if (sttPath.text.trim() !== settings.get_string('voice-stt-path'))
-                sttPath.text = settings.get_string('voice-stt-path');
-        });
-        sttPath.connect('destroy', () => settings.disconnect(sttChanged));
-        const apiKey = new Adw.PasswordEntryRow({title: 'Router API key'});
+
+        const apiKey = new Adw.PasswordEntryRow({title: 'API key'});
         if (typeof apiKey.show_peek_icon === 'boolean')
             apiKey.show_peek_icon = true;
         const keyStatus = new Gtk.Label({label: 'Not set', valign: Gtk.Align.CENTER});
@@ -886,6 +888,48 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             if (saveKey)
                 GLib.source_remove(saveKey);
         });
+
+        const options = [provider, model, modelId, hermesUrl, hermesKey, customInstructions];
+        options.push(routerUrl, apiKey);
+        options.push(choiceRow(settings, 'voice-speech-engine', 'Speech recognition',
+            'The router over the network; local Whisper works offline and takes over when the router cannot be reached', [
+            ['cloud', 'Cloud (OpenAI-compatible router)'],
+            ['local', 'Local Whisper (offline)'],
+        ]));
+        // Speech elsewhere than the shared endpoint: the chat on an official provider,
+        // speech on another - empty follows the shared Base URL.
+        const speechUrl = new Adw.EntryRow({title: 'Speech base URL (empty = the shared)',
+            text: settings.get_string('voice-speech-url')});
+        speechUrl.connect('changed', () => {
+            if (speechUrl.text.trim() !== settings.get_string('voice-speech-url'))
+                settings.set_string('voice-speech-url', speechUrl.text.trim());
+        });
+        const speechUrlChanged = settings.connect('changed::voice-speech-url', () => {
+            if (speechUrl.text.trim() !== settings.get_string('voice-speech-url'))
+                speechUrl.text = settings.get_string('voice-speech-url');
+        });
+        speechUrl.connect('destroy', () => settings.disconnect(speechUrlChanged));
+        const cloudModel = new Adw.EntryRow({title: 'Speech-to-text model', text: settings.get_string('voice-speech-cloud-model')});
+        cloudModel.connect('changed', () => {
+            if (cloudModel.text.trim() !== settings.get_string('voice-speech-cloud-model'))
+                settings.set_string('voice-speech-cloud-model', cloudModel.text.trim());
+        });
+        const modelChanged = settings.connect('changed::voice-speech-cloud-model', () => {
+            if (cloudModel.text.trim() !== settings.get_string('voice-speech-cloud-model'))
+                cloudModel.text = settings.get_string('voice-speech-cloud-model');
+        });
+        cloudModel.connect('destroy', () => settings.disconnect(modelChanged));
+        // Where speech endpoints live: the OpenAI-compatible paths by default, another router's own.
+        const sttPath = new Adw.EntryRow({title: 'Speech-to-text path', text: settings.get_string('voice-stt-path')});
+        sttPath.connect('changed', () => {
+            if (sttPath.text.trim() !== settings.get_string('voice-stt-path'))
+                settings.set_string('voice-stt-path', sttPath.text.trim().replace(/^\/+/, ''));
+        });
+        const sttChanged = settings.connect('changed::voice-stt-path', () => {
+            if (sttPath.text.trim() !== settings.get_string('voice-stt-path'))
+                sttPath.text = settings.get_string('voice-stt-path');
+        });
+        sttPath.connect('destroy', () => settings.disconnect(sttChanged));
         // The reply spoken as well as shown, through the same router.
         const speak = switchRow(settings, 'voice-speak-replies', 'Speak the replies',
             'The reply is spoken through the router’s /v1/audio/speech as well as shown');
@@ -928,10 +972,9 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         // Only the picked engine's settings show, as Hermes' endpoint rows do.
         const syncEngine = () => {
             const cloud = settings.get_string('voice-speech-engine') === 'cloud';
-            routerUrl.visible = cloud;
+            speechUrl.visible = cloud;
             cloudModel.visible = cloud;
             sttPath.visible = cloud;
-            apiKey.visible = cloud;
             speak.visible = cloud;
             ttsModel.visible = cloud;
             ttsPath.visible = cloud;
@@ -940,7 +983,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         };
         settings.connect('changed::voice-speech-engine', syncEngine);
         syncEngine();
-        options.push(routerUrl, cloudModel, sttPath, apiKey, speak, ttsModel, ttsPath, ttsVoice, whisperModel);
+        options.push(speechUrl, cloudModel, sttPath, speak, ttsModel, ttsPath, ttsVoice, whisperModel);
         options.push(choiceRow(settings, 'voice-language', 'Language', 'The language you speak', [
             ['', 'Any (detected)'],
             ['id,en', 'Indonesian or English'],
@@ -2032,7 +2075,7 @@ const AI_PROVIDERS = [
         about: 'Hermes keeps its own personality and memory; Notchfolk adds its desktop instructions. A Hermes elsewhere: its endpoint and key below',
         models: () => [['', 'Hermes default'], ...apiModels('hermes')]},
     {id: 'openai-compatible', name: 'OpenAI-compatible API', command: '', modelKey: 'voice-openai-model',
-        available: () => signedIn('openai-compatible'), about: 'Store endpoint and API key in ~/.config/notchfolk/ai.env (chmod 600)',
+        available: () => signedIn('openai-compatible'), about: 'The endpoint base URL and its API key, set in the rows below',
         models: () => apiModels('openai-compatible')},
     {id: 'oh-my-pi', name: 'Oh My Pi', command: 'omp', modelKey: 'voice-omp-model',
         about: 'Oh My Pi coding agent, with its own provider settings and Notchfolk desktop actions',

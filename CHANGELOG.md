@@ -10,6 +10,23 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
+- **One endpoint, one place: the Base URL and the API key are shared by the assistant's
+  chat and its speech.** The compatible-API provider had a row for its model and none for its
+  endpoint - the base URL and the API key lived in ~/.config/notchfolk/ai.env, edited by hand -
+  and the speech side kept its own router URL and key, two of everything for what is one
+  endpoint. Settings → Assistant carries one Base URL row and one API key row, always
+  visible beside the model: the URL feeds speech from the setting it always read and chat
+  through ai.env (chmod 600, written by the row itself), the key lives
+  in the desktop's secret store as it already did. The model choices stay their own - the chat's
+  model id, the speech-to-text model, the text-to-speech model. And speech may live elsewhere:
+  a Speech base URL row overrides the shared one when the chat rides an official provider
+  (DeepSeek carries no speech endpoints) while speech sits on another endpoint - empty follows
+  the shared, as it does for those who never need the difference. The chat's own key (ai.env)
+  wins over the shared one, for the same difference on the key side. The ai.env file still
+  works for those who set it before the rows existed.
+
+### Added
+
 - **The Weather page grows its forecast and the earth.** The next hours walk a drawn curve -
   the Prayer page's arc, for the sky - each hour its temperature, the warmest hour lit; the
   days beneath (five of them, today first, each its warmest and coldest, from met.no's

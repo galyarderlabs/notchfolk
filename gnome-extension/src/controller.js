@@ -2930,7 +2930,8 @@ export class Controller {
                 actions: actionTypes(this._settings),
                 whisper_model: this._settings.get_string('voice-speech-model'),
                 speech_engine: this._settings.get_string('voice-speech-engine'),
-                router_url: this._settings.get_string('voice-router-url'),
+                router_url: this._settings.get_string('voice-speech-url').trim()
+                    || this._settings.get_string('voice-router-url'),
                 speech_model: this._settings.get_string('voice-speech-cloud-model'),
                 stt_path: this._settings.get_string('voice-stt-path'),
                 tts_path: this._settings.get_string('voice-tts-path'),

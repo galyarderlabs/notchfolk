@@ -1273,7 +1273,7 @@ export async function voiceContext(settings, notifications, {apps = [], selected
         ...aiSettings(settings),
         whisper_model: settings.get_string('voice-speech-model'),
         speech_engine: settings.get_string('voice-speech-engine'),
-        router_url: settings.get_string('voice-router-url'),
+        router_url: settings.get_string('voice-speech-url').trim() || settings.get_string('voice-router-url'),
         speech_model: settings.get_string('voice-speech-cloud-model'),
         stt_path: settings.get_string('voice-stt-path'),
         tts_path: settings.get_string('voice-tts-path'),
