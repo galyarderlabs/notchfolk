@@ -8,18 +8,17 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
-### Added
-
-- **The world MCP: the Memory domain's Obsidian backend.** Notes, and memory's fallback:
-  16 tools over the user's own vault of Markdown notes - the overview, the guide, the sync
-  status, search, list, read, recent, backlinks, the templates and the workflow skills to
-  read; create, update, patch and move to write (create never overwrites, updates and
-  moves require the current SHA-256, there is no delete - archive or move instead). Every
-  path goes through one gate: vault-relative only, no `..`, no hidden parts, no symlinks,
-  the private internals never reachable. Offered only when a vault answers.
+## [1.4.0] - 2026-11-12
 
 ### Added
 
+- **The world MCP: the Memory domain whole.** The Hindsight backend's 39 tools (1.3.0's
+  release) now stand beside the Obsidian backend's 16 - notes, and memory's fallback: the
+  overview, the guide, the sync status, search, list, read, recent, backlinks, the templates
+  and the workflow skills to read; create, update, patch and move to write (create never
+  overwrites, updates and moves require the current SHA-256, there is no delete - archive or
+  move instead). Every path through one gate: vault-relative only, no `..`, no hidden parts,
+  no symlinks, the private internals never reachable. Offered only when a vault answers.
 - **One endpoint, one place: the Base URL and the API key are shared by the assistant's
   chat and its speech.** The compatible-API provider had a row for its model and none for its
   endpoint - the base URL and the API key lived in ~/.config/notchfolk/ai.env, edited by hand -
@@ -34,9 +33,6 @@ Isle's changelog from before the fork, kept for reference.
   the shared, as it does for those who never need the difference. The chat's own key (ai.env)
   wins over the shared one, for the same difference on the key side. The ai.env file still
   works for those who set it before the rows existed.
-
-### Added
-
 - **The Weather page grows its forecast and the earth.** The next hours walk a drawn curve -
   the Prayer page's arc, for the sky - each hour its temperature, the warmest hour lit; the
   days beneath (five of them, today first, each its warmest and coldest, from met.no's
@@ -45,6 +41,29 @@ Isle's changelog from before the fork, kept for reference.
   the page is open. The page names its sources at the foot, as the Prayer page names Kemenag.
   And the Settings catch up with the page: its switch sits in the Pages group with every other
   tab, and it takes a shortcut of its own (Settings → Shortcuts) to open from anywhere.
+
+### Fixed
+
+- **The Weather page's hero renders.** Its paint called `addColorStopRgb`, a method the
+  Cairo binding does not carry - its names are `addColorStopRGB`/`addColorStopRGBA` - so
+  every paint threw and the hero (the disc, the temperature, the summary) stayed empty
+  while the location and the facts around it rendered alone. The paint follows the Prayer
+  page's pattern now, guards first (issue #85).
+- **The Weather page's forecast has its times.** The hours were read with `get_timestamp`,
+  a method GWeather does not carry - every slice answered no hour, and the curve, its
+  labels and the days hid themselves. The slice's own update time is the hour it is for,
+  and the page grows for the sections it shows instead of cutting its bottom (the Shelf
+  page's pattern).
+- **The assistant's endpoint reaches the daemon.** Two faults under "No AI is set up" with
+  everything green in Settings: `ai.env` was chmod'ed with `GLib.chmod`, a function GJS does
+  not carry, and landed world-readable - which notchfolkd refuses to read; and the Base URL
+  row wrote the file only on its own change, so a URL that was already there never reached
+  it. The file lands 0o600 through Gio's own attribute, and the URL syncs whenever the
+  compatible provider is the one picked.
+- **The Weather tab's icon fills while its page is open**, and the quake section's
+  container is no longer shadowed by its watcher (the page crashed on open until it was).
+- **The installer restarts the daemon**, so what was just installed is what answers - and
+  a restart that fails says so instead of passing silently.
 
 ## [1.3.0] - 2026-11-11
 

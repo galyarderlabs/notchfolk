@@ -1840,7 +1840,7 @@ function pagesGroup(settings, window) {
     phone.add_prefix(new Gtk.Image({icon_name: 'phone-symbolic'}));
     group.add(phone);
     const weather = switchRow(settings, 'weather-enabled', 'Weather',
-        'The sky and the earth: the conditions, the next hours, the days, BMKG\u2019s earthquakes');
+        'Current conditions, humidity, wind, sunrise and sunset, hourly forecast, five-day forecast, and nearby earthquakes');
     weather.add_prefix(new Gtk.Image({icon_name: 'weather-clear-symbolic'}));
     group.add(weather);
     const usage = switchRow(settings, 'usage-enabled', 'AI Usage', 'Your AI plans’ limits, and warnings as one nears its end');
@@ -1981,7 +1981,7 @@ function worldClocksGroup(settings, window) {
 function weatherGroup(settings, window) {
     const group = new Adw.PreferencesGroup({
         title: 'Weather',
-        description: 'A page of its own: the location, the current conditions, and the next hours. Refreshes every 30 minutes while the page is open.',
+        description: 'Choose a city or follow the GNOME World Clock nearest your time zone. See current conditions, humidity, wind, sunrise and sunset, an hourly curve, a five-day forecast, and nearby earthquakes. Weather refreshes every 30 minutes while the page is open.',
     });
     group.add(switchRow(settings, 'weather-enabled', 'Weather page', 'The Weather page, with its tab in the open island'));
 

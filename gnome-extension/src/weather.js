@@ -15,6 +15,25 @@ const REFRESH_MS = 30 * 60 * 1000;
 const APP_ID = 'io.galyarderlabs.notchfolk';
 const CONTACT = 'https://github.com/galyarderlabs/notchfolk/issues';
 
+function sunTime(info, getter) {
+    const [valid, stamp] = info[getter]?.() ?? [false, 0];
+    if (!valid)
+        return '';
+
+    const timezone = info.get_location()?.get_timezone?.();
+    if (!timezone)
+        return '';
+
+    return GLib.DateTime.new_from_unix_utc(Number(stamp))
+        ?.to_timezone(timezone)?.format('%H:%M') ?? '';
+}
+
+function daylightRange(info) {
+    const sunrise = sunTime(info, 'get_value_sunrise');
+    const sunset = sunTime(info, 'get_value_sunset');
+    return sunrise && sunset ? `${sunrise}\u2013${sunset}` : '';
+}
+
 /** Signals `changed` when the current conditions or selected location change. */
 export const WeatherWatcher = GObject.registerClass({
     Signals: {'changed': {}},
@@ -28,7 +47,7 @@ export const WeatherWatcher = GObject.registerClass({
         this._updated = 0;
         this._refreshTimer = 0;
         this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: [],
-                    daily: [], feelsLike: '', humidity: '', wind: ''};
+                    daily: [], feelsLike: '', humidity: '', wind: '', daylight: ''};
         this._settingsIds = [
             settings.connect('changed::weather-enabled', () => this._configure()),
             settings.connect('changed::weather-location', () => this._configure()),
@@ -122,7 +141,7 @@ export const WeatherWatcher = GObject.registerClass({
         this._info = null;
         this._updated = 0;
         this.state = {temperature: '', iconName: '', summary: '', locationName: '', forecast: [],
-                    daily: [], feelsLike: '', humidity: '', wind: ''};
+                    daily: [], feelsLike: '', humidity: '', wind: '', daylight: ''};
 
         const location = this._settings.get_boolean('weather-enabled')
             ? WorldClocks.weatherLocation(this._settings, this._clocks) : null;
@@ -179,9 +198,10 @@ export const WeatherWatcher = GObject.registerClass({
         this.state = {
             forecast: this._forecast(info),
             daily: this._daily(info),
-            feelsLike: info.get_feels_like?.() ?? '',
+            feelsLike: info.get_apparent?.() ?? '',
             humidity: info.get_humidity?.() ?? '',
             wind: info.get_wind?.() ?? '',
+            daylight: daylightRange(info),
             temperature,
             iconName: info.get_symbolic_icon_name() || 'weather-clear-symbolic',
             summary: info.get_weather_summary() || '',

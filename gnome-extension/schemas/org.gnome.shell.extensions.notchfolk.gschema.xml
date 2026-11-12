@@ -202,7 +202,7 @@
     <key name="weather-enabled" type="b">
       <default>true</default>
       <summary>The Weather page</summary>
-      <description>Shows the Weather page: the location, the current conditions large, and the next hours. Its tab hides while off; the closed island shows no weather.</description>
+      <description>Shows current conditions, humidity, wind, sunrise and sunset, an hourly forecast, a five-day forecast, and nearby earthquakes. Choose a city or follow the GNOME World Clock nearest the local time zone. Its tab hides while off; the closed island shows no weather.</description>
     </key>
     <key name="weather-location" type="av">
       <default>[]</default>

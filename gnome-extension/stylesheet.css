@@ -2031,43 +2031,80 @@
   100% { opacity: 1.0; }
 }
 
-/* The Weather page: the sky and the earth as a page of its own - the hero with its drawn
-   sky disc, the three facts, the curve through the next hours, the days, BMKG's quakes. */
-.notchfolk-weather-column { spacing: 10px; padding: 14px 18px; }
-.notchfolk-weather-location { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.6); }
-.notchfolk-weather-hero { spacing: 16px; }
-.notchfolk-weather-disc { width: 64px; height: 64px; }
-.notchfolk-weather-icon { icon-size: 38px; }
-.notchfolk-weather-hero-text { spacing: 2px; }
-.notchfolk-weather-temperature { font-size: 38px; font-weight: 800; letter-spacing: -0.5px; }
-.notchfolk-weather-summary { font-size: 14px; color: rgba(255, 255, 255, 0.75); }
-.notchfolk-weather-stats { spacing: 22px; margin-top: 2px; }
-.notchfolk-weather-stat { spacing: 2px; }
-.notchfolk-weather-stat-title { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
-.notchfolk-weather-stat-value { font-size: 13.5px; font-weight: 600; }
-.notchfolk-weather-curve { height: 64px; }
-.notchfolk-weather-curve-labels { spacing: 0; }
-.notchfolk-weather-curve-mark { spacing: 2px; }
-.notchfolk-weather-hour-time { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+/* Weather keeps the dark island material, with a restrained night-sky wash. */
+.notchfolk-weather {
+  /* The base page rule pads 6px top / 0 bottom; the weather column pads its own box. */
+  padding: 4px 20px 0 20px;
+  background-image: linear-gradient(135deg, #101014 0%, #151519 58%, #1a1a20 100%);
+}
+.notchfolk-weather-scroll { -st-vfade-offset: 18px; }
+.notchfolk-weather-column { spacing: 8px; padding: 6px 20px; }
+.notchfolk-weather-row { spacing: 12px; }
+.notchfolk-weather-overview { width: 300px; spacing: 8px; padding: 0; }
+.notchfolk-weather-forecast { spacing: 4px; }
+.notchfolk-weather-days-block, .notchfolk-weather-quakes-block { spacing: 6px; }
+.notchfolk-weather-days-block { width: 300px; }
+.notchfolk-weather-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72); margin-bottom: 4px;
+}
+.notchfolk-weather-hours-title { margin-left: 40px; }
+.notchfolk-weather-quakes-title {
+  font-size: 13px; font-weight: 650; color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2px;
+}
+.notchfolk-weather-location { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.78); }
+.notchfolk-weather-hero { spacing: 10px; }
+.notchfolk-weather-disc { width: 52px; height: 52px; }
+.notchfolk-weather-icon { icon-size: 32px; }
+.notchfolk-weather-hero-text { spacing: 4px; min-width: 0; }
+.notchfolk-weather-temperature {
+  font-size: 58px; font-weight: 300; letter-spacing: -2px; font-feature-settings: "tnum";
+}
+.notchfolk-weather-summary { font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, 0.86); }
+.notchfolk-weather-stats { margin-top: 4px; }
+.notchfolk-weather-stat {
+  min-width: 0; spacing: 8px; padding: 4px 0;
+}
+.notchfolk-weather-stat-heading { spacing: 4px; min-width: 0; }
+.notchfolk-weather-stat-icon { icon-size: 14px; color: rgba(255, 255, 255, 0.78); }
+.notchfolk-weather-stat-title { font-size: 11px; color: rgba(255, 255, 255, 0.76); }
+.notchfolk-weather-stat-value {
+  min-width: 0; font-size: 12px; font-weight: 700; color: #ffffff; font-feature-settings: "tnum";
+}
+.notchfolk-weather-curve { height: 72px; }
+.notchfolk-weather-curve-mark {
+  min-width: 0; spacing: 4px; padding: 4px 0;
+}
+.notchfolk-weather-curve-mark.next .notchfolk-weather-hour-time { color: #ffffff; font-weight: 700; }
+.notchfolk-weather-hour-time { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.76); }
 .notchfolk-weather-hour-icon { icon-size: 20px; }
-.notchfolk-weather-hour-temp { font-size: 12.5px; font-weight: 600; }
-.notchfolk-weather-days { spacing: 8px; margin-top: 4px; }
-.notchfolk-weather-day { spacing: 4px; padding: 8px 12px; border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.07); }
-.notchfolk-weather-day-name { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
-.notchfolk-weather-day-high { font-size: 13px; font-weight: 700; }
-.notchfolk-weather-day-low { font-size: 11.5px; color: rgba(255, 255, 255, 0.55); }
-.notchfolk-weather-quakes-title { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.5);
-  margin-top: 6px; }
-.notchfolk-weather-quakes { spacing: 6px; }
-.notchfolk-weather-quake { spacing: 10px; padding: 8px 12px; border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.05); }
-.notchfolk-weather-quake-badge { font-size: 13px; font-weight: 800; padding: 4px 8px; border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.12); color: #ffffff; }
-.notchfolk-weather-quake-badge.strong { background-color: rgba(255, 159, 10, 0.25); color: #ffb748; }
-.notchfolk-weather-quake-badge.severe { background-color: rgba(255, 69, 58, 0.3); color: #ff8177; }
-.notchfolk-weather-quake-text { spacing: 1px; }
-.notchfolk-weather-quake-where { font-size: 12.5px; font-weight: 600; }
-.notchfolk-weather-quake-when { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
-.notchfolk-weather-sources { font-size: 11px; color: rgba(255, 255, 255, 0.45); margin-top: 6px; }
-.notchfolk-weather-empty { font-size: 13px; color: rgba(255, 255, 255, 0.55); }
+.notchfolk-weather-hour-temp { font-size: 12px; font-weight: 700; color: #ffffff; font-feature-settings: "tnum"; }
+.notchfolk-weather-day {
+  min-width: 0; spacing: 2px; padding: 2px 0;
+}
+.notchfolk-weather-day .notchfolk-weather-hour-icon { icon-size: 16px; }
+.notchfolk-weather-day-name { font-size: 11px; color: rgba(255, 255, 255, 0.76); }
+.notchfolk-weather-day-high { font-size: 13px; font-weight: 700; color: #ffffff; }
+.notchfolk-weather-day-low { font-size: 11px; color: rgba(255, 255, 255, 0.72); }
+.notchfolk-weather-quake-heading { spacing: 7px; }
+.notchfolk-weather-quakes-content { spacing: 6px; margin-left: 40px; margin-right: 40px; }
+.notchfolk-weather-quakes { spacing: 8px; }
+.notchfolk-weather-quake {
+  min-width: 0; spacing: 12px; padding: 8px 12px; border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.notchfolk-weather-quake-badge {
+  min-width: 48px; padding: 5px 8px; border-radius: 999px; font-size: 13px;
+  font-weight: 700; color: rgba(255, 255, 255, 0.9); font-feature-settings: "tnum";
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.notchfolk-weather-quake-badge.minor { background-color: rgba(255, 255, 255, 0.055); }
+.notchfolk-weather-quake-badge.moderate { background-color: rgba(255, 255, 255, 0.09); }
+.notchfolk-weather-quake-badge.major { background-color: rgba(255, 255, 255, 0.14); font-weight: 800; }
+.notchfolk-weather-quake-text { min-width: 0; spacing: 4px; }
+.notchfolk-weather-quake-icon { icon-size: 15px; color: rgba(255, 255, 255, 0.72); }
+.notchfolk-weather-quake-where { font-size: 13px; font-weight: 700; color: #ffffff; }
+.notchfolk-weather-quake-meta { font-size: 11px; color: rgba(255, 255, 255, 0.74); }
+.notchfolk-weather-empty { font-size: 13px; color: rgba(255, 255, 255, 0.78); }
