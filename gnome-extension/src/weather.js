@@ -61,10 +61,14 @@ export const WeatherWatcher = GObject.registerClass({
      * without one answers an empty list, and the page shows only the current conditions. */
     _forecast(info) {
         try {
-            return (info.get_forecast_list() ?? []).slice(1, 6).map(slice => {
+            return (info.get_forecast_list() ?? []).slice(1, 8).map(slice => {
                 const temperature = slice.get_temp?.() ?? '';
                 const iconName = slice.get_icon_name?.() ?? '';
-                const timestamp = slice.get_timestamp?.() ?? 0;
+                // The slice's own 'update' time is the time it is for (the reference's
+                // words); get_value_update answers [valid, unix seconds]. GWeather
+                // carries no get_timestamp - an hour read from nothing hid the curve.
+                const [valid, stamp] = slice.get_value_update?.() ?? [false, 0];
+                const timestamp = valid ? Number(stamp) : 0;
                 const hour = timestamp
                     ? GLib.DateTime.new_from_unix_local(timestamp).format('%H') : '';
                 return {temperature, iconName, hour, timestamp};
@@ -82,7 +86,8 @@ export const WeatherWatcher = GObject.registerClass({
         try {
             const byDate = new Map();
             for (const slice of (info.get_forecast_list() ?? [])) {
-                const timestamp = slice.get_timestamp?.() ?? 0;
+                const [valid, stamp] = slice.get_value_update?.() ?? [false, 0];
+                const timestamp = valid ? Number(stamp) : 0;
                 const temperature = Number.parseFloat(slice.get_temp?.() ?? '');
                 if (!timestamp || Number.isNaN(temperature))
                     continue;
