@@ -478,8 +478,13 @@
     </key>
     <key name="voice-router-url" type="s">
       <default>''</default>
-      <summary>The speech router's base URL</summary>
-      <description>Speech recognition and spoken replies go to its /v1/audio/transcriptions and /v1/audio/speech.</description>
+      <summary>The shared base URL</summary>
+      <description>The OpenAI-compatible endpoint both the chat models and speech go to; chat reads it from ai.env, speech from this setting.</description>
+    </key>
+    <key name="voice-speech-url" type="s">
+      <default>''</default>
+      <summary>The speech endpoint's own base URL</summary>
+      <description>Set when speech lives at another endpoint than the shared one - the chat on an official provider, speech elsewhere; empty follows the shared base URL.</description>
     </key>
     <key name="voice-speech-cloud-model" type="s">
       <default>''</default>

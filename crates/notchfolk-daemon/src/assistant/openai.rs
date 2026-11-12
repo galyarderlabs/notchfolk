@@ -94,11 +94,10 @@ impl Client {
         let base_url = config_value("NOTCHFOLK_OPENAI_BASE_URL").ok_or_else(|| {
             anyhow::anyhow!("Set the endpoint's base URL in Settings → Assistant")
         })?;
-        // One endpoint, one key: the same the speech router uses, from the desktop's
-        // secret store first, then the ai.env file for those who set it there before the
-        // shared row existed.
-        let api_key = super::cloud::key()
-            .or_else(|| config_value("NOTCHFOLK_OPENAI_API_KEY"))
+        // The chat's own key first (ai.env, for an endpoint whose key differs from the
+        // speech one), then the shared key the speech router keeps in the secret store.
+        let api_key = config_value("NOTCHFOLK_OPENAI_API_KEY")
+            .or_else(super::cloud::key)
             .ok_or_else(|| anyhow::anyhow!("Set the API key in Settings → Assistant"))?;
         Ok(Self {
             base_url,

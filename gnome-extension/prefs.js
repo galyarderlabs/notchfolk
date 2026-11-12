@@ -896,6 +896,19 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             ['cloud', 'Cloud (OpenAI-compatible router)'],
             ['local', 'Local Whisper (offline)'],
         ]));
+        // Speech elsewhere than the shared endpoint: the chat on an official provider,
+        // speech on another - empty follows the shared Base URL.
+        const speechUrl = new Adw.EntryRow({title: 'Speech base URL (empty = the shared)',
+            text: settings.get_string('voice-speech-url')});
+        speechUrl.connect('changed', () => {
+            if (speechUrl.text.trim() !== settings.get_string('voice-speech-url'))
+                settings.set_string('voice-speech-url', speechUrl.text.trim());
+        });
+        const speechUrlChanged = settings.connect('changed::voice-speech-url', () => {
+            if (speechUrl.text.trim() !== settings.get_string('voice-speech-url'))
+                speechUrl.text = settings.get_string('voice-speech-url');
+        });
+        speechUrl.connect('destroy', () => settings.disconnect(speechUrlChanged));
         const cloudModel = new Adw.EntryRow({title: 'Speech-to-text model', text: settings.get_string('voice-speech-cloud-model')});
         cloudModel.connect('changed', () => {
             if (cloudModel.text.trim() !== settings.get_string('voice-speech-cloud-model'))
@@ -959,6 +972,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         // Only the picked engine's settings show, as Hermes' endpoint rows do.
         const syncEngine = () => {
             const cloud = settings.get_string('voice-speech-engine') === 'cloud';
+            speechUrl.visible = cloud;
             cloudModel.visible = cloud;
             sttPath.visible = cloud;
             speak.visible = cloud;
@@ -969,7 +983,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         };
         settings.connect('changed::voice-speech-engine', syncEngine);
         syncEngine();
-        options.push(cloudModel, sttPath, speak, ttsModel, ttsPath, ttsVoice, whisperModel);
+        options.push(speechUrl, cloudModel, sttPath, speak, ttsModel, ttsPath, ttsVoice, whisperModel);
         options.push(choiceRow(settings, 'voice-language', 'Language', 'The language you speak', [
             ['', 'Any (detected)'],
             ['id,en', 'Indonesian or English'],
