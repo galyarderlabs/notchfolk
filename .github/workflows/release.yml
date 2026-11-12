@@ -70,7 +70,10 @@ jobs:
           tag="$GITHUB_REF_NAME"
           files=(dist/*.tar.gz dist/*.deb dist/*.rpm dist/*.sha256)
           # The version's own section of the changelog.
-          awk -v v="${tag#v}" 'index($0, "## [" v "]") == 1 {on = 1; next} /^## \[/ {on = 0} on' CHANGELOG.md > notes.md
+          # The version's own section, and only it: the reading exits at the first version
+          # heading after its own - the upstream history below carries Isle's own version
+          # numbers, and a heading that matches twice must not turn the reading back on.
+          awk -v v="${tag#v}" 'index($0, "## [" v "]") == 1 {on = 1; next} on && /^## \[/ {exit} on' CHANGELOG.md > notes.md
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "${files[@]}" --clobber
           else
