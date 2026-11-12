@@ -95,11 +95,12 @@ impl Client {
         let base_url = config_value("NOTCHFOLK_OPENAI_BASE_URL").ok_or_else(|| {
             anyhow::anyhow!("Set the endpoint's base URL in Settings → Assistant")
         })?;
-        // The key from the desktop's secret store first (Settings → Assistant), then the
-        // ai.env file for those who set it there before the row existed.
-        let api_key = endpoint_key()
+        // One endpoint, one key: the same the speech router uses, from the desktop's
+        // secret store first, then the ai.env file for those who set it there before the
+        // shared row existed.
+        let api_key = super::cloud::key()
             .or_else(|| config_value("NOTCHFOLK_OPENAI_API_KEY"))
-            .ok_or_else(|| anyhow::anyhow!("Set the endpoint's API key in Settings → Assistant"))?;
+            .ok_or_else(|| anyhow::anyhow!("Set the API key in Settings → Assistant"))?;
         Ok(Self {
             base_url,
             api_key,
@@ -448,50 +449,11 @@ fn load_history(kind: &str) -> Vec<Value> {
 
 pub fn byok_configured() -> bool {
     config_value("NOTCHFOLK_OPENAI_BASE_URL").is_some()
-        && (endpoint_key().is_some() || config_value("NOTCHFOLK_OPENAI_API_KEY").is_some())
+        && (super::cloud::key().is_some() || config_value("NOTCHFOLK_OPENAI_API_KEY").is_some())
 }
 
-/// The keyring entry's name, under the service the assistant's credentials use.
-const KEYRING_ACCOUNT: &str = "openai-compatible-key";
-
-/// The keyring entry the endpoint's API key is kept in (Settings → Assistant).
-fn keyring_entry() -> Result<keyring::Entry, keyring::Error> {
-    keyring::Entry::new("io.galyarderlabs.notchfolk", KEYRING_ACCOUNT)
-}
-
-/// The saved endpoint API key, if there is one.
-pub fn endpoint_key() -> Option<String> {
-    match keyring_entry().and_then(|entry| match entry.get_password() {
-        Ok(key) => Ok(Some(key)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(err) => Err(err),
-    }) {
-        Ok(key) => key.filter(|key| !key.is_empty()),
-        Err(err) => {
-            warn!("could not read the endpoint's API key: {err}");
-            None
-        }
-    }
-}
-
-/// Saves the endpoint's API key; an empty one removes it. The key never enters GSettings
-/// or a plain file - it lives in the desktop's secret store, as the speech router's does.
-pub fn save_endpoint_key(key: &str) -> anyhow::Result<()> {
-    let entry = keyring_entry().context("could not reach the keyring")?;
-    if key.is_empty() {
-        match entry.delete_credential() {
-            Ok(()) | Err(keyring::Error::NoEntry) => (),
-            Err(err) => return Err(err).context("could not remove the API key"),
-        }
-    } else {
-        entry
-            .set_password(key)
-            .context("could not save the API key")?;
-    }
-    Ok(())
-}
-
-/// The endpoint's base URL, as Settings last saved it (ai.env carries it, chmod 600).
+/// The endpoint's base URL, as Settings' one shared Base URL row last saved it (ai.env
+/// carries it, chmod 600; the speech side reads the same value from GSettings).
 pub fn endpoint_url() -> Option<String> {
     config_value("NOTCHFOLK_OPENAI_BASE_URL")
 }

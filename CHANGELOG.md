@@ -10,12 +10,16 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
-- **The OpenAI-compatible endpoint is set in Settings, not in a file.** The assistant's
-  compatible-API provider had a row for its model and none for its endpoint: the base URL
-  and the API key lived in ~/.config/notchfolk/ai.env, edited by hand. Settings → Assistant
-  carries both rows now - the URL into ai.env (chmod 600, written by notchfolkd, every other
-  line kept), the key into the desktop's secret store, as the speech router's key already
-  was. The file still works for those who set it before the rows existed.
+- **One endpoint, one place: the Base URL and the API key are shared by the assistant's
+  chat and its speech.** The compatible-API provider had a row for its model and none for its
+  endpoint - the base URL and the API key lived in ~/.config/notchfolk/ai.env, edited by hand -
+  and the speech side kept its own router URL and key, two of everything for what is one
+  endpoint. Settings → Assistant carries one Base URL row and one API key row, always
+  visible beside the model: the URL feeds speech from the setting it always read and chat
+  through ai.env (chmod 600, written by notchfolkd, every other line kept), the key lives in
+  the desktop's secret store as it already did. The model choices stay their own - the chat's
+  model id, the speech-to-text model, the text-to-speech model. The ai.env file still works
+  for those who set it before the row existed.
 
 ### Added
 
