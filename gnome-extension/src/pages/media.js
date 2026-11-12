@@ -251,15 +251,15 @@ class MediaPage extends Page {
         const modes = new St.BoxLayout({style_class: 'notchfolk-player-modes', y_align: Clutter.ActorAlign.START});
         // Karaoke: the line being sung in the closed island while music plays (see
         // `compact-karaoke`). A pill that lights while it is on, as the mode buttons fill.
-        const karaokeOn = () => settings.get_boolean('compact-karaoke');
+        const karaokeOn = () => this._settings.get_boolean('compact-karaoke');
         this._karaoke = pillButton('Karaoke', 'notchfolk-karaoke-toggle', () => {
-            settings.set_boolean('compact-karaoke', !karaokeOn());
+            this._settings.set_boolean('compact-karaoke', !karaokeOn());
         });
         const syncKaraoke = () => {
             this._karaoke.style_class = `notchfolk-pill notchfolk-karaoke-toggle${karaokeOn() ? ' on' : ''}`;
         };
-        this._karaokeSettingsId = settings.connect('changed::compact-karaoke', syncKaraoke);
-        this._karaoke.connect('destroy', () => settings.disconnect(this._karaokeSettingsId));
+        this._karaokeSettingsId = this._settings.connect('changed::compact-karaoke', syncKaraoke);
+        this._karaoke.connect('destroy', () => this._settings.disconnect(this._karaokeSettingsId));
         syncKaraoke();
         // With more than one player running: switch to the next, shown by its app's icon.
         this._playerIcon = new St.Icon({icon_size: 16});
