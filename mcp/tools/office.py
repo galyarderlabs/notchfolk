@@ -60,8 +60,11 @@ async def _client() -> Client:
             _STARTING = asyncio.Lock()
         async with _STARTING:
             if _CLIENT is None:
-                _CLIENT = Client(StdioTransport(_binary(), ["mcp"], keep_alive=True))
-                await _CLIENT.__aenter__()
+                client = Client(StdioTransport(_binary(), ["mcp"], keep_alive=True))
+                await client.__aenter__()
+                # Only a client that started whole is kept: a failed start leaves
+                # nothing behind to be reused as broken.
+                _CLIENT = client
     return _CLIENT
 
 
