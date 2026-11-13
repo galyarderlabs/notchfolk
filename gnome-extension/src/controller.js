@@ -3044,7 +3044,7 @@ export class Controller {
             if (this._voice.chatOpen && !state.listen) {
                 // Not once closed meanwhile (Esc, or an action that closes it first, as `write` does).
                 this._later('chat-type', CHAT_TYPE_AGAIN_MS, () => this._voiceOpen && this._voice.chatOpen && this._startTyping(''));
-            } else if (state.listen && this._autoListens < VOICE_MAX_AUTO_LISTENS) {
+            } else if (state.listen && state.reply?.endsWith('?') && this._autoListens < VOICE_MAX_AUTO_LISTENS) {
                 this._autoListens++;
                 // Asked something back: listen for the reply without a key press.
                 this._later('voice-listen', VOICE_LISTEN_AGAIN_MS, () => {
