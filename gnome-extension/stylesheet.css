@@ -178,6 +178,10 @@
 .notchfolk-compact-assistant-button:hover,
 .notchfolk-compact-assistant-button:focus { background-color: rgba(255, 255, 255, 0.08); }
 
+/* The header's pin: keep the island open when the pointer leaves; lit while it holds. */
+.notchfolk-header-pin.on { background-color: rgba(255, 159, 10, 0.25); color: #ffb748;
+  border-radius: 999px; }
+
 /* The karaoke line: the sung line in the assistant's centre while it plays, at the
    compact's own text size, capped so a long line never grows the island past its measure. */
 .notchfolk-compact-karaoke { font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
