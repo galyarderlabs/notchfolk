@@ -754,7 +754,7 @@ footer a:hover { color: var(--ink); }
           Star on GitHub
         </a>
       </div>
-      <small>Version <span class="js-ver">1.4.0</span> · GPL-3.0 · GNOME 46–51</small>
+      <small>Version <span class="js-ver">1.5.0</span> · GPL-3.0 · GNOME 46–51</small>
       <span class="dl-count js-dlcount"></span>
     </div>
   </div>
@@ -1103,24 +1103,25 @@ footer a:hover { color: var(--ink); }
   </section>
 
     <section id="new" class="wrap">
-    <h2 class="sec-title">New in Notchfolk 1.4.0.</h2>
-    <p class="sec-lede">The world remembers, the sky shows its hours, and the assistant's endpoint lives in Settings.</p>
+    <h2 class="sec-title">New in Notchfolk 1.5.0.</h2>
+    <p class="sec-lede">The world whole, the karaoke in your notch, and the island that stays when you pin it.</p>
     <div class="news">
       <div>
         <h3>What&apos;s new</h3>
         <ul>
-          <li><b>The world MCP: Memory whole</b><span>The Hindsight engine's 39 tools (1.3.0) now stand beside the Obsidian backend's 16 &mdash; your own vault of Markdown notes: search, read, create, update, patch and move, with create never overwriting and no delete by design. One gate for every path; offered only when a vault answers.</span></li>
-          <li><b>The Weather page, full</b><span>Choose a city in Settings, or follow the GNOME World Clock nearest your time zone. See current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by forecast conditions, and five days of highs and lows. Nearby earthquakes use BMKG in Indonesia and USGS elsewhere. The page grows for what it shows, and its tab fills while open.</span></li>
+          <li><b>The world MCP, whole</b><span>150 tools across eight values: your data, the machine (System), the web (Browser), memory (Hindsight + Obsidian), skills, documents, and mail and drive (Composio). A domain whose backend is absent is not offered; a restricted tool is not even visible to a key without its scope. Settings carries the world: the scope picker and the backends.</span></li>
+          <li><b>The karaoke compact</b><span>While a song with synced lyrics plays and the Music page's Karaoke is on, the closed island's centre becomes the line being sung &mdash; the cover left, the wave right, the clock waiting. The assistant keeps its click.</span></li>
+          <li><b>The pin</b><span>The open island's header carries a pin that keeps it open when the pointer leaves &mdash; for reading lyrics, watching a timer, or dragging files to the shelf while working in another window. Esc still closes; a pin lasts one opening.</span></li>
         </ul>
       </div>
       <div>
         <h3>Changed</h3>
         <ul>
-          <li><b>One endpoint, one place</b><span>The assistant's chat and its speech share one Base URL and one API key in Settings &mdash; the key in the desktop's secret store, never a plain file. The model choices stay their own, and speech may live elsewhere when the chat rides an official provider.</span></li>
+          <li><b>The fixes beneath</b><span>The Weather page's hero renders and its forecast has its times; the assistant's endpoint reaches the daemon (two faults under "No AI is set up"); plain-only lyrics are looked up again after a week; and the installer restarts the daemon so what was installed is what answers.</span></li>
         </ul>
         <div class="news-note">
           <h3>Good to know</h3>
-          <p>Version 1.4.0 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
+          <p>Version 1.5.0 is the latest release. Run the install command again to update; your settings stay as you set them.</p>
         </div>
       </div>
     </div>
@@ -1229,7 +1230,7 @@ addEventListener("scroll", barSync, { passive: true });
 // ---- Download ------------------------------------------------------------------------
 // Setiap rilis baru: ubah VERSION, dan SHA256 sesuai installer yang di-upload ke GitHub.
 const DOWNLOAD_URL = "https://github.com/galyarderlabs/notchfolk/releases";
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 document.querySelectorAll(".js-dl").forEach(a => { if (a.closest("#download")) a.href = DOWNLOAD_URL; });
 document.querySelectorAll(".js-ver").forEach(e => e.textContent = VERSION);
 
