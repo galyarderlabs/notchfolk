@@ -8,7 +8,7 @@
 use std::time::Duration;
 use tokio::time::MissedTickBehavior;
 use zbus::interface;
-use zbus::object_server::{InterfaceRef, SignalEmitter};
+use zbus::object_server::InterfaceRef;
 
 /// Sampled this often (the setting's own value); the page ticks with it.
 const SAMPLE: Duration = Duration::from_secs(2);
@@ -261,12 +261,10 @@ pub async fn run(iface: InterfaceRef<VitalsService>) {
         if !changed {
             continue;
         }
-        {
-            let mut service = iface.get_mut().await;
-            service.vitals = previous.clone().unwrap();
-        }
+        let mut service = iface.get_mut().await;
+        service.vitals = previous.clone().unwrap();
         let emitter = iface.signal_emitter();
-        if let Err(err) = VitalsService::vitals_changed(emitter).await {
+        if let Err(err) = service.vitals_changed(emitter).await {
             log::warn!("could not publish vitals: {err}");
         }
     }
