@@ -371,12 +371,18 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             ['media:read', 'Music and media'], ['focus:read', 'Focus timer'], ['apps:read', 'App usage'],
             ['system:read', 'System status'], ['shelf:read', 'Shelf'], ['clipboard:read', 'Clipboard'],
             ['router:read', 'Router usage'], ['usage:read', 'AI usage'],
+            ['browser:read', 'Browser'], ['memory:read', 'Memory (Hindsight)'],
+            ['notes:read', 'Notes (Obsidian)'], ['skills:read', 'Skills'],
+            ['composio:read', 'Mail and drive (Composio)'],
         ];
         const writeScopes = [
             ['tasks:write', 'Tasks'], ['calendar:write', 'Calendar'], ['reminders:write', 'Reminders'],
             ['calories:write', 'Calories'], ['water:write', 'Water'], ['prayer:write', 'Prayer'],
             ['media:write', 'Music and media'], ['focus:write', 'Focus timer'], ['shelf:write', 'Shelf'],
             ['clipboard:write', 'Clipboard'], ['desktop:write', 'Open links'],
+            ['system:write', 'System (the machine)'], ['browser:write', 'Browser'],
+            ['memory:write', 'Memory (Hindsight)'], ['notes:write', 'Notes (Obsidian)'],
+            ['office:write', 'Documents (Office)'], ['composio:write', 'Mail and drive (Composio)'],
         ];
         const scopeLabel = scope => {
             if (scope === '*:read')
@@ -618,6 +624,37 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         tunnel.add(domain);
         tunnel.add(setupStatus);
         page.add(tunnel);
+                // The world domains' own configuration, written to the same mcp.env the service
+        // reads (chmod 600, every other line kept - saveAiEnvValue's pattern): the daemon
+        // reads it per call, so nothing needs a restart.
+        const worldGroup = new Adw.PreferencesGroup({title: 'The world',
+            description: 'The MCP domains beyond the island\u2019s own data. Each is offered only when its own backend is on the machine.'});
+        const browserBackend = new Adw.EntryRow({title: 'Browser backend (camoufox or cdp)'});
+        browserBackend.text = aiEnvValue('NOTCHFOLK_MCP_BROWSER') || 'camoufox';
+        browserBackend.connect('changed', () =>
+            saveAiEnvValue('NOTCHFOLK_MCP_BROWSER', browserBackend.text.trim()));
+        worldGroup.add(browserBackend);
+        const cdpPort = new Adw.EntryRow({title: 'CDP debug port (9222)'});
+        cdpPort.text = aiEnvValue('NOTCHFOLK_MCP_CDP_PORT') || '9222';
+        cdpPort.connect('changed', () =>
+            saveAiEnvValue('NOTCHFOLK_MCP_CDP_PORT', cdpPort.text.trim()));
+        worldGroup.add(cdpPort);
+        const hindsight = new Adw.EntryRow({title: 'Hindsight endpoint (localhost:8888/mcp/)'});
+        hindsight.text = aiEnvValue('NOTCHFOLK_MCP_HINDSIGHT') || 'http://localhost:8888/mcp/';
+        hindsight.connect('changed', () =>
+            saveAiEnvValue('NOTCHFOLK_MCP_HINDSIGHT', hindsight.text.trim()));
+        worldGroup.add(hindsight);
+        const skillsRoots = new Adw.EntryRow({title: 'Skill trees (name:path, comma-separated)'});
+        skillsRoots.text = aiEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS') || 'agents:~/.agents/skills,hermes:~/.hermes/skills';
+        skillsRoots.connect('changed', () =>
+            saveAiEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS', skillsRoots.text.trim()));
+        worldGroup.add(skillsRoots);
+        const office = new Adw.EntryRow({title: 'OfficeCLI path (~/.local/bin/officecli)'});
+        office.text = aiEnvValue('NOTCHFOLK_MCP_OFFICE') || '~/.local/bin/officecli';
+        office.connect('changed', () =>
+            saveAiEnvValue('NOTCHFOLK_MCP_OFFICE', office.text.trim()));
+        worldGroup.add(office);
+        page.add(worldGroup);
         return page;
     }
 
