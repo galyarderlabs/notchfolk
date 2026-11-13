@@ -16,6 +16,10 @@ Isle's changelog from before the fork, kept for reference.
   whole with its files, a file read (credential-like files refused on sight), the stats, and
   the index's refresh. A tree that is not there is skipped; none at all, the domain is not
   offered.
+- **The world MCP: the Office domain.** The world makes documents: one tool,
+  office_create_document, behind its own scope - the resident OfficeCLI binary proxied over
+  stdio, its subprocess kept warm across calls; no shell, no system access, paths under the
+  user's home or /tmp. The binary absent, the domain is not offered.
 
 - **The pin: keep the open island open.** The header's pin holds the island open when the
   pointer leaves - for reading lyrics, watching a timer, or dragging files to the shelf
