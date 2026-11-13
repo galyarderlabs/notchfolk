@@ -180,7 +180,7 @@ class PrayerPage extends Page {
         this._syncProgress(info?.progress ?? 0);
 
         const footer = new St.BoxLayout({style_class: 'notchfolk-prayer-footer'});
-        footer.add_child(label(`Kemenag · ${schedule.timezone}`, 'notchfolk-prayer-source', {
+        footer.add_child(label(`Aladhan · ${schedule.timezone}`, 'notchfolk-prayer-source', {
             x_expand: true,
             x_align: Clutter.ActorAlign.CENTER,
         }));

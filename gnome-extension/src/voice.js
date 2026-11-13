@@ -58,12 +58,6 @@ const FADE_IN_MS = 220;
 const FADE_IN_DELAY_MS = 40;
 /** With no new step for this long (s), a quiet "Still working · 0:12" shows it hasn't stalled. */
 const STILL_WORKING_S = 8;
-/** What to try, under an empty field: the chip, the words it puts in, and whether it asks at once. */
-const IDEAS = [
-    ['Today’s plan', 'What’s on my calendar today?', true],
-    ['Install an app…', 'Install ', false],
-    ['Find a file…', 'Find ', false],
-];
 /** "New chat · Undo" stays this long (ms); the old chat is deleted only after it. */
 export const UNDO_MS = 5000;
 /** Answers past this many characters are cut, the panel being small. */
@@ -325,19 +319,6 @@ export const VoiceView = GObject.registerClass({
         this._steps = [];
         // Those done, below the one now: a tick and a line each.
         this._stepsBox = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-voice-steps', visible: false});
-        // Ideas under an empty field, so what it can do is never a guess: one asks at once, one starts the words.
-        this._ideas = new St.BoxLayout({style_class: 'notchfolk-voice-ideas', visible: false});
-        for (const [text, words, send] of IDEAS) {
-            const chip = new St.Button({label: text, style_class: 'notchfolk-voice-idea', can_focus: true});
-            chip.connect('clicked', () => {
-                this._entry.text = words;
-                this._entry.clutter_text.set_cursor_position(-1);
-                this._entry.grab_key_focus();
-                if (send)
-                    this._send();
-            });
-            this._ideas.add_child(chip);
-        }
         // A typed request, instead of a spoken one (see `startTyping`).
         this._entry = new St.Entry({style_class: 'notchfolk-voice-entry', hint_text: 'Ask anything…', can_focus: true,
             x_expand: true, visible: false});
@@ -358,7 +339,6 @@ export const VoiceView = GObject.registerClass({
         caret.connect('text-changed', () => {
             this._micTarget = KEY_LEVEL;
             this._syncSend();
-            this._syncIdeas();
         });
         this._face.lookAt = () => {
             const position = caret.cursor_position < 0 ? caret.text.length : caret.cursor_position;
@@ -370,7 +350,6 @@ export const VoiceView = GObject.registerClass({
         this._texts.add_child(this._undo);
         this._texts.add_child(this._heardButton);
         this._texts.add_child(this._entry);
-        this._texts.add_child(this._ideas);
         this._texts.add_child(this._text);
         this._texts.add_child(this._stepsBox);
         this._texts.add_child(this._card);
@@ -624,7 +603,6 @@ export const VoiceView = GObject.registerClass({
     setHistory(items) {
         this._history = items;
         this._chat.setItems(items);
-        this._syncIdeas();
         if (!items.length && this.chatOpen)
             this.closeChat();
         this._syncEarlier();
@@ -866,24 +844,14 @@ export const VoiceView = GObject.registerClass({
             this._entry.grab_key_focus();
         this._entry.clutter_text.set_cursor_position(-1);
         this._face.setForm('typing');
-        this._syncIdeas();
     }
 
     /** Hides the field; the answer line comes back. */
     stopTyping() {
         this._entry.hide();
         this._text.show();
-        this._syncIdeas();
     }
 
-    // The ideas show while the field is empty, until something is asked in this conversation.
-    _syncIdeas() {
-        const shown = this.typing && !this._entry.text && !this._history.length;
-        if (shown === this._ideas.visible)
-            return;
-        this._ideas.visible = shown;
-        this.emit('size-changed');
-    }
 
     /** Shows `button` (or none) at the row's end; a new one comes in with a small pop. */
     _showAction(button) {
@@ -963,7 +931,7 @@ export const VoiceView = GObject.registerClass({
             (this._chatSlot.visible ? CHAT_BUTTON_WIDTH + chatGap : 0);
         const width = this.preferredWidth - (TEXT_INSET - ends) * scale;
         // Measured per label: the box's own answer is the size set below.
-        const parts = [this._undo, this._heardButton, this._entry, this._ideas, this._text, this._card, this._stepsBox, this._still,
+        const parts = [this._text, this._heardButton, this._entry, this._stepsBox, this._card,
             this._hint, this._signIn, this._setUp];
         // Every step counted first: those a card hid last time may fit now (see `_fitCard`).
         this._stepsBox.get_children().forEach(step => step.show());

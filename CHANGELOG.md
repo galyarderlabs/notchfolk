@@ -8,6 +8,8 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-13
+
 ### Added
 
 - **The world MCP: the Skills domain.** The world knows how to do things: the skill trees on
