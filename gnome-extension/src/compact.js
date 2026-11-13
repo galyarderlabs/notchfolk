@@ -265,8 +265,10 @@ export const CompactView = GObject.registerClass({
         // No row padding anymore: the cover and the bars sit at the notch's ends, and only the pads
         // that balance the sides sit between them and the edge. The row's four gaps: pad, side,
         // assistant, side, pad.
+        // The karaoke line has a minimum width: a short line must not pull the wave
+        // off the notch's right edge - the art stays at the left, the wave at the right.
         const centre = this._karaokeActive
-            ? this._karaokeButton.get_preferred_width(-1)[1] : px(size.center);
+            ? Math.max(this._karaokeButton.get_preferred_width(-1)[1], px(200)) : px(size.center);
         return Math.ceil(4 * px(12) + leftWidth + rightWidth +
             this._rowPad.width + this._rowEndPad.width + centre);
     }
@@ -721,13 +723,18 @@ export const CompactView = GObject.registerClass({
         }
         const index = Playback.lineIndexAt(this._karaokeLines,
             Playback.positionMs(this._daemon.state.nowPlaying));
-        const text = index >= 0 ? this._karaokeLines[index].text : '';
-        if (text !== this._karaokeText.text) {
+        // Before the first line (the intro), the first line shows dimmed - the song has
+        // started, the karaoke says what is coming, not a blank centre.
+        const text = index >= 0 ? this._karaokeLines[index].text
+            : this._karaokeLines[0]?.text ?? '';
+        const dimmed = index < 0;
+        if (text !== this._karaokeText.text || dimmed !== this._karaokeDimmed) {
+            this._karaokeDimmed = dimmed;
             this._karaokeText.remove_all_transitions();
             this._karaokeText.ease({opacity: 0, duration: 180, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 onComplete: () => {
                     this._karaokeText.text = text;
-                    this._karaokeText.ease({opacity: 255, duration: 180,
+                    this._karaokeText.ease({opacity: dimmed ? 100 : 255, duration: 180,
                         mode: Clutter.AnimationMode.EASE_IN_QUAD});
                 }});
         }
