@@ -8,6 +8,12 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+### Planned
+
+- **Vitals** — the machine's own pulse in the island: CPU, memory, temperature, network,
+  disk and battery, a page in the expanded island and (optionally) one vital in the
+  closed one. The plan: `docs/vitals-spec.md`.
+
 ## [1.5.0] - 2026-11-13
 
 ### Added
