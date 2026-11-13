@@ -2188,8 +2188,9 @@ export class Controller {
         if (!this._expandWanted)
             return;
         this._expandWanted = false;
-        /** The island is pinned open: the pointer leaving does not close it (one opening). */
+        // The pin lasted this opening; the next starts unpinned.
         this._pinned = false;
+        this._expanded?.resetPin();
         this._nextAlert();
     }
 
@@ -2747,8 +2748,9 @@ export class Controller {
         this._cancel('expand');
         this._cancel('collapse');
         this._expandWanted = false;
-        /** The island is pinned open: the pointer leaving does not close it (one opening). */
+        // The pin lasted this opening; the next starts unpinned.
         this._pinned = false;
+        this._expanded?.resetPin();
         this._shelveAnswer();
         this._voiceOpen = true;
         this._voiceByHover = byHover;
@@ -2871,8 +2873,9 @@ export class Controller {
         this._cancel('expand');
         this._cancel('collapse');
         this._expandWanted = false;
-        /** The island is pinned open: the pointer leaving does not close it (one opening). */
+        // The pin lasted this opening; the next starts unpinned.
         this._pinned = false;
+        this._expanded?.resetPin();
         this._shelveAnswer();
         this._voiceOpen = true;
         this._voiceByHover = byHover;
