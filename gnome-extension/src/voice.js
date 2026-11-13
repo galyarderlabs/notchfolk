@@ -339,7 +339,6 @@ export const VoiceView = GObject.registerClass({
         caret.connect('text-changed', () => {
             this._micTarget = KEY_LEVEL;
             this._syncSend();
-            this._syncIdeas();
         });
         this._face.lookAt = () => {
             const position = caret.cursor_position < 0 ? caret.text.length : caret.cursor_position;
@@ -604,7 +603,6 @@ export const VoiceView = GObject.registerClass({
     setHistory(items) {
         this._history = items;
         this._chat.setItems(items);
-        this._syncIdeas();
         if (!items.length && this.chatOpen)
             this.closeChat();
         this._syncEarlier();
@@ -846,22 +844,14 @@ export const VoiceView = GObject.registerClass({
             this._entry.grab_key_focus();
         this._entry.clutter_text.set_cursor_position(-1);
         this._face.setForm('typing');
-        this._syncIdeas();
     }
 
     /** Hides the field; the answer line comes back. */
     stopTyping() {
         this._entry.hide();
         this._text.show();
-        this._syncIdeas();
     }
 
-    // The ideas show while the field is empty, until something is asked in this conversation.
-    _syncIdeas() {
-        const shown = this.typing && !this._entry.text && !this._history.length;
-        if (shown ===             return;
-                this.emit('size-changed');
-    }
 
     /** Shows `button` (or none) at the row's end; a new one comes in with a small pop. */
     _showAction(button) {
