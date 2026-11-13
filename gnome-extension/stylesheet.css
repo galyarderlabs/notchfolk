@@ -941,26 +941,26 @@
 .notchfolk-prayer-date { font-size: 10px; color: rgba(255, 255, 255, 0.48); }
 .notchfolk-prayer-row { spacing: 18px; padding: 0; }
 .notchfolk-prayer-hero {
-  width: 218px;
+  width: 228px;
   spacing: 4px;
   padding: 8px 13px;
   border-radius: 15px;
-  background-color: rgba(21, 25, 38, 0.9);
-  border: 1px solid rgba(108, 134, 202, 0.28);
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 .notchfolk-prayer-hero-top { spacing: 5px; }
-.notchfolk-prayer-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.9px; color: #7ecaff; }
+.notchfolk-prayer-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.9px; color: rgba(255, 211, 107, 0.7); }
 .notchfolk-prayer-next-name { font-size: 25px; font-weight: 700; letter-spacing: -0.7px; color: #ffffff; }
 .notchfolk-prayer-next-details { spacing: 10px; }
 .notchfolk-prayer-next-time { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; color: #ffd36b; }
-.notchfolk-prayer-next-countdown { font-size: 10px; font-weight: 600; color: #9dd9ff; }
+.notchfolk-prayer-next-countdown { font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
 .notchfolk-prayer-progress-track { height: 3px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.12); }
 .notchfolk-prayer-progress-fill {
   height: 3px;
   border-radius: 2px;
   background-gradient-direction: horizontal;
-  background-gradient-start: #20c7f7;
-  background-gradient-end: #7657ff;
+  background-gradient-start: #ffce5c;
+  background-gradient-end: #ff9f0a;
 }
 .notchfolk-prayer-timeline { spacing: 0; }
 .notchfolk-prayer-arc { height: 76px; }
