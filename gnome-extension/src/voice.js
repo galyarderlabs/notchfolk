@@ -931,6 +931,7 @@ export const VoiceView = GObject.registerClass({
             (this._chatSlot.visible ? CHAT_BUTTON_WIDTH + chatGap : 0);
         const width = this.preferredWidth - (TEXT_INSET - ends) * scale;
         // Measured per label: the box's own answer is the size set below.
+        const parts = [this._text, this._heardButton, this._entry, this._stepsBox, this._card,
             this._hint, this._signIn, this._setUp];
         // Every step counted first: those a card hid last time may fit now (see `_fitCard`).
         this._stepsBox.get_children().forEach(step => step.show());
