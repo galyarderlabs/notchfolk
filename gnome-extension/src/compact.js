@@ -8,6 +8,7 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {paletteFor} from './bot.js';
@@ -140,7 +141,7 @@ export const CompactView = GObject.registerClass({
         // The karaoke line: the sung line in the assistant's centre while it plays, and the
         // assistant's own click - nothing the mode shows costs the assistant its home.
         this._karaokeText = label('', 'notchfolk-compact-karaoke');
-        this._karaokeText.clutter_text.ellipsize = Clutter.EllipsizeMode.END;
+        this._karaokeText.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._karaokeButton = new St.Button({style_class: 'notchfolk-compact-karaoke-button', child: this._karaokeText,
             can_focus: true, visible: false, accessible_name: 'The line being sung', y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton = new St.Button({style_class: 'notchfolk-compact-assistant-button', child: this._assistant,
