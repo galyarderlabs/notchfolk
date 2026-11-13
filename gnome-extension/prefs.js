@@ -637,7 +637,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         browserBackend.connect('changed', () => {
             const value = browserBackend.text.trim().toLowerCase();
             if (['camoufox', 'cdp'].includes(value))
-                saveAiEnvValue('NOTCHFOLK_MCP_BROWSER', value);
+                saveMcpEnvValue('NOTCHFOLK_MCP_BROWSER', value);
         });
         worldGroup.add(browserBackend);
 
@@ -646,16 +646,16 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         cdpPort.connect('changed', () => {
             const value = cdpPort.text.trim();
             if (/^\d{1,5}$/.test(value) && Number(value) > 0 && Number(value) <= 65535)
-                saveAiEnvValue('NOTCHFOLK_MCP_CDP_PORT', value);
+                saveMcpEnvValue('NOTCHFOLK_MCP_CDP_PORT', value);
         });
         worldGroup.add(cdpPort);
 
-        const hindsight = new Adw.EntryRow({title: 'Hindsight endpoint (localhost:8888/mcp/)'});
+        const hindsight = new Adw.EntryRow({title: 'Hindsight endpoint (http://localhost:8888/mcp/)'});
         hindsight.text = aiEnvValue('NOTCHFOLK_MCP_HINDSIGHT') || 'http://localhost:8888/mcp/';
         hindsight.connect('changed', () => {
             const value = hindsight.text.trim();
             if (value === '' || /^https?:\/\/.+/.test(value))
-                saveAiEnvValue('NOTCHFOLK_MCP_HINDSIGHT', value);
+                saveMcpEnvValue('NOTCHFOLK_MCP_HINDSIGHT', value);
         });
         worldGroup.add(hindsight);
 
@@ -666,7 +666,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             // Each pair is name:path; a pair without its colon is not written.
             const pairs = value.split(',').map(pair => pair.trim()).filter(Boolean);
             if (pairs.every(pair => pair.includes(':')))
-                saveAiEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS', value);
+                saveMcpEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS', value);
         });
         worldGroup.add(skillsRoots);
 
@@ -675,8 +675,10 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         office.connect('changed', () => {
             const value = office.text.trim();
             // An absolute path or one that starts at home - anything else is not a path.
-            if (value === '' || value.startsWith('/') || value.startsWith('~/'))
-                saveAiEnvValue('NOTCHFOLK_MCP_OFFICE', value);
+            if (value.startsWith('~/'))
+                value = value.replace('~', GLib.get_home_dir());
+            if (value === '' || value.startsWith('/'))
+                saveMcpEnvValue('NOTCHFOLK_MCP_OFFICE', value);
         });
         worldGroup.add(office);
 
@@ -2422,6 +2424,29 @@ function aiEnvValue(name) {
 }
 
 /** Keeps `name` in ~/.config/notchfolk/ai.env (only this row's value; the rest stays as it is), mode 0600. */
+function saveMcpEnvValue(name, value) {
+    const dir = GLib.build_filenamev([GLib.get_user_config_dir(), 'notchfolk']);
+    const path = GLib.build_filenamev([dir, 'mcp.env']);
+    const kept = [];
+    try {
+        const [, bytes] = GLib.file_get_contents(path);
+        for (const line of new TextDecoder().decode(bytes).split('\n'))
+            if (line.trim() && !line.trim().startsWith(`${name}=`))
+                kept.push(line.trimEnd());
+    } catch {
+        // No file yet: this makes it, private.
+    }
+    if (value)
+        kept.push(`${name}=${value}`);
+    if (!kept.length && !value)
+        return;  // Nothing to keep and nothing to add: no empty file.
+    GLib.mkdir_with_parents(dir, 0o700);
+    GLib.file_set_contents(path, kept.length ? kept.join('\n') + '\n' : '');
+    const info = new Gio.FileInfo();
+    info.set_attribute_uint32(Gio.FILE_ATTRIBUTE_UNIX_MODE, 0o600);
+    Gio.File.new_for_path(path).set_attributes_from_info(info, Gio.FileQueryInfoFlags.NONE, null);
+}
+
 function saveAiEnvValue(name, value) {
     const dir = GLib.build_filenamev([GLib.get_user_config_dir(), 'notchfolk']);
     const path = GLib.build_filenamev([dir, 'ai.env']);
