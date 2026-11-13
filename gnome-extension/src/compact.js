@@ -114,6 +114,8 @@ export const CompactView = GObject.registerClass({
         this._musicArt = new Art({size: SIZES.hanging.music, radius: 4});
         // The song's two signs live in opposite corners, as the island's own music page splits them:
         // the cover at the notch's left edge, the dancing bars at its right edge.
+        // The vitals' own small number beside the wave (Settings: none, temperature, or CPU).
+        this._vitalLabel = label('', 'notchfolk-compact-vital', {visible: false});
         this._musicStatus = new St.BoxLayout({style_class: 'notchfolk-compact-status-item', y_align: Clutter.ActorAlign.CENTER});
         this._musicStatus.add_child(this._bars);
         this._notificationStatus = new St.BoxLayout({style_class: 'notchfolk-compact-status-item', y_align: Clutter.ActorAlign.CENTER});
@@ -190,6 +192,7 @@ export const CompactView = GObject.registerClass({
         this._right.add_child(this._restDate);
         this._right.add_child(this._rightStatuses);
         this._right.add_child(this._privacyDots);
+        this._right.add_child(this._vitalLabel);
         this._right.add_child(this._musicStatus);
         // The clock and the date sit beside the assistant and never move; the live statuses are
         // spread across the two sides by width, so the assistant stays in the notch's middle.
@@ -584,6 +587,16 @@ export const CompactView = GObject.registerClass({
         this._musicArt.visible = !this._isServiceDown && hasTrack;
         this._musicArt.setPath(this._isServiceDown || !hasTrack ? '' : nowPlaying.art_path);
         this._musicStatus.visible = !this._isServiceDown && hasTrack;
+        // The vitals' own number: none, the temperature, or the CPU - a visitor beside the wave.
+        const vitalWanted = this._settings.get_string('vitals-closed-island');
+        const vitals = this._daemon.state?.vitals;
+        if (vitalWanted === 'none' || !vitals) {
+            this._vitalLabel.visible = false;
+        } else {
+            this._vitalLabel.visible = true;
+            this._vitalLabel.text = vitalWanted === 'temperature'
+                ? `${Math.round(vitals.temperature_c)}°` : `${Math.round(vitals.cpu_percent)}%`;
+        }
         this._restDate.visible = !this._isServiceDown;
         // The karaoke: the sung line in the centre while the switch is on, a song plays and
         // its lyrics are synced - the clock and the date wait, the art and the wave already

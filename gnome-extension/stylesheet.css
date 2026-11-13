@@ -2122,3 +2122,21 @@
 .notchfolk-weather-quake-where { font-size: 13px; font-weight: 700; color: #ffffff; }
 .notchfolk-weather-quake-meta { font-size: 11px; color: rgba(255, 255, 255, 0.74); }
 .notchfolk-weather-empty { font-size: 13px; color: rgba(255, 255, 255, 0.78); }
+
+/* The Vitals page: the machine's own pulse. */
+.notchfolk-vitals-top { spacing: 24px; padding: 8px 0 4px; }
+.notchfolk-vitals-cpu-percent { font-size: 16px; font-weight: 700; color: rgba(255, 255, 255, 0.9); }
+.notchfolk-vitals-temp { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+.notchfolk-vitals-bar-box { spacing: 4px; margin-top: 10px; }
+.notchfolk-vitals-bar-header { spacing: 8px; }
+.notchfolk-vitals-bar-name { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
+.notchfolk-vitals-bar-value { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.75); }
+.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.12); }
+.notchfolk-vitals-bar-fill { height: 4px; border-radius: 2px;
+  background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a; }
+.notchfolk-vitals-bottom { spacing: 16px; padding-top: 10px; }
+.notchfolk-vitals-net { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.65); }
+.notchfolk-vitals-battery { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.65); }
+
+/* The closed island's own vital: a small number beside the wave. */
+.notchfolk-compact-vital { font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }

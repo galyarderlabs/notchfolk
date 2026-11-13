@@ -234,6 +234,21 @@
       <summary>The paired phone in the closed island</summary>
       <description>Shows a GSConnect-paired phone&apos;s battery beside the clock while it is connected.</description>
     </key>
+    <key name="vitals-closed-island" type="s">
+      <default>'none'</default>
+      <summary>Which vital shows in the closed island</summary>
+      <description>none, temperature, or cpu - a small number beside the wave</description>
+    </key>
+    <key name="vitals-temperature-unit" type="s">
+      <default>'C'</default>
+      <summary>The temperature's unit</summary>
+      <description>C or F</description>
+    </key>
+    <key name="vitals-sample-seconds" type="i">
+      <default>2</default>
+      <summary>How often the daemon samples the vitals</summary>
+      <description>In seconds: 1, 2, 5, or 10</description>
+    </key>
     <key name="compact-karaoke" type="b">
       <default>false</default>
       <summary>The karaoke line in the closed island</summary>

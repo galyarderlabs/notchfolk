@@ -128,7 +128,7 @@ const PILL_HEADER_TOP = 8;
 /** The pages a shortcut of their own may open from anywhere (Settings → Shortcuts; `shortcut-<page>`, none set at
  * first: the usual ones are GNOME's). As prefs.js lists them. */
 const SHORTCUT_PAGES = ['music', 'notifications', 'focus', 'reminders', 'shelf', 'calendar', 'calories', 'water',
-    'prayer', 'phone', 'apps', 'devices', 'usage', 'weather'];
+    'prayer', 'phone', 'apps', 'devices', 'usage', 'weather', 'vitals'];
 
 /** A question back is shown this long before the island listens for the reply. */
 const VOICE_LISTEN_AGAIN_MS = 900;
@@ -502,6 +502,7 @@ export class Controller {
             () => page('./pages/apps.js', 'AppsPage', [this._daemon, this._appUsage, size]),
             () => page('./pages/gsconnect.js', 'PhonePage', [this._daemon, () => this._botLook.palette.glow, size]),
             () => page('./pages/devices.js', 'DevicesPage', [this._daemon, size]),
+            () => page('./pages/vitals.js', 'VitalsPage', [this._daemon, this._settings, size]),
         ];
     }
 
