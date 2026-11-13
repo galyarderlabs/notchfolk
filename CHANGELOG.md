@@ -10,6 +10,13 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
+- **The world MCP: the Skills domain.** The world knows how to do things: the skill trees on
+  the machine (two roots of the user's own configuration), read directly - seven read-only
+  tools on the default key's skills:read: the list and the search of the catalogue, a skill
+  whole with its files, a file read (credential-like files refused on sight), the stats, and
+  the index's refresh. A tree that is not there is skipped; none at all, the domain is not
+  offered.
+
 - **The pin: keep the open island open.** The header's pin holds the island open when the
   pointer leaves - for reading lyrics, watching a timer, or dragging files to the shelf
   while working in another window. Pressed again it unpins; Esc and the pages' own closes
