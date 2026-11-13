@@ -624,36 +624,62 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         tunnel.add(domain);
         tunnel.add(setupStatus);
         page.add(tunnel);
-                // The world domains' own configuration, written to the same mcp.env the service
+
+        // The world domains' own configuration, written to the same mcp.env the service
         // reads (chmod 600, every other line kept - saveAiEnvValue's pattern): the daemon
-        // reads it per call, so nothing needs a restart.
+        // reads it per call, so nothing needs a restart. Each row validates what it is
+        // given - a wrong value is not written.
         const worldGroup = new Adw.PreferencesGroup({title: 'The world',
             description: 'The MCP domains beyond the island\u2019s own data. Each is offered only when its own backend is on the machine.'});
+
         const browserBackend = new Adw.EntryRow({title: 'Browser backend (camoufox or cdp)'});
         browserBackend.text = aiEnvValue('NOTCHFOLK_MCP_BROWSER') || 'camoufox';
-        browserBackend.connect('changed', () =>
-            saveAiEnvValue('NOTCHFOLK_MCP_BROWSER', browserBackend.text.trim()));
+        browserBackend.connect('changed', () => {
+            const value = browserBackend.text.trim().toLowerCase();
+            if (['camoufox', 'cdp'].includes(value))
+                saveAiEnvValue('NOTCHFOLK_MCP_BROWSER', value);
+        });
         worldGroup.add(browserBackend);
+
         const cdpPort = new Adw.EntryRow({title: 'CDP debug port (9222)'});
         cdpPort.text = aiEnvValue('NOTCHFOLK_MCP_CDP_PORT') || '9222';
-        cdpPort.connect('changed', () =>
-            saveAiEnvValue('NOTCHFOLK_MCP_CDP_PORT', cdpPort.text.trim()));
+        cdpPort.connect('changed', () => {
+            const value = cdpPort.text.trim();
+            if (/^\d{1,5}$/.test(value) && Number(value) > 0 && Number(value) <= 65535)
+                saveAiEnvValue('NOTCHFOLK_MCP_CDP_PORT', value);
+        });
         worldGroup.add(cdpPort);
+
         const hindsight = new Adw.EntryRow({title: 'Hindsight endpoint (localhost:8888/mcp/)'});
         hindsight.text = aiEnvValue('NOTCHFOLK_MCP_HINDSIGHT') || 'http://localhost:8888/mcp/';
-        hindsight.connect('changed', () =>
-            saveAiEnvValue('NOTCHFOLK_MCP_HINDSIGHT', hindsight.text.trim()));
+        hindsight.connect('changed', () => {
+            const value = hindsight.text.trim();
+            if (value === '' || /^https?:\/\/.+/.test(value))
+                saveAiEnvValue('NOTCHFOLK_MCP_HINDSIGHT', value);
+        });
         worldGroup.add(hindsight);
+
         const skillsRoots = new Adw.EntryRow({title: 'Skill trees (name:path, comma-separated)'});
         skillsRoots.text = aiEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS') || 'agents:~/.agents/skills,hermes:~/.hermes/skills';
-        skillsRoots.connect('changed', () =>
-            saveAiEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS', skillsRoots.text.trim()));
+        skillsRoots.connect('changed', () => {
+            const value = skillsRoots.text.trim();
+            // Each pair is name:path; a pair without its colon is not written.
+            const pairs = value.split(',').map(pair => pair.trim()).filter(Boolean);
+            if (pairs.every(pair => pair.includes(':')))
+                saveAiEnvValue('NOTCHFOLK_MCP_SKILLS_ROOTS', value);
+        });
         worldGroup.add(skillsRoots);
+
         const office = new Adw.EntryRow({title: 'OfficeCLI path (~/.local/bin/officecli)'});
         office.text = aiEnvValue('NOTCHFOLK_MCP_OFFICE') || '~/.local/bin/officecli';
-        office.connect('changed', () =>
-            saveAiEnvValue('NOTCHFOLK_MCP_OFFICE', office.text.trim()));
+        office.connect('changed', () => {
+            const value = office.text.trim();
+            // An absolute path or one that starts at home - anything else is not a path.
+            if (value === '' || value.startsWith('/') || value.startsWith('~/'))
+                saveAiEnvValue('NOTCHFOLK_MCP_OFFICE', value);
+        });
         worldGroup.add(office);
+
         page.add(worldGroup);
         return page;
     }
