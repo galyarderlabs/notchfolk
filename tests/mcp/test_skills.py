@@ -51,6 +51,11 @@ def build_trees(root: Path):
     (nested / ".archive" / "old-thing").mkdir(parents=True)
     (nested / ".archive" / "old-thing" / "SKILL.md").write_text(
         "No frontmatter here.\n\nFirst body line is the description.\n")
+    # An unreadable SKILL.md: one skill's problem, not the domain's.
+    (flat / "broken").mkdir()
+    broken = flat / "broken" / "SKILL.md"
+    broken.write_text("---\nname: Broken\n---\n")
+    broken.chmod(0)
     return flat, nested
 
 
@@ -137,11 +142,13 @@ async def main():
         check("AC-1 the 7 are offered", set(THE_7) <= listed, str(sorted(listed & set(THE_7))))
 
         listing = result(await reader.call_tool("skills_list", {}))
-        check("AC-2/3 list: three active, archive hidden",
+        check("AC-2/3 list: the active, the archive hidden, the unreadable skipped",
               listing["total"] == 2 and [s["id"] for s in listing["skills"]]
               == ["agents:apple-design", "hermes:creative/brandkit"], str(listing))
         archived = result(await reader.call_tool("skills_list", {"include_archived": True}))
         check("AC-2/3 the archive shows when asked", archived["total"] == 3, str(archived["total"]))
+        check("an unreadable SKILL.md breaks no tool",
+              all(call["ok"] for call in [archived, listing]), "the tools answered")
         bad_source = result(await reader.call_tool("skills_list", {"source": "nope"}))
         check("the source gate", not bad_source["ok"] and "source must be" in bad_source["error"])
 

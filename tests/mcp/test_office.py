@@ -51,6 +51,8 @@ mcp = FastMCP(name="officecli")
 def officecli(instructions: str = "") -> dict:
     with open(LOG, "a") as log:
         log.write(json.dumps(instructions) + chr(10))
+    if "file_exists" in instructions:
+        raise RuntimeError("file_exists: the document is already there")
     return {{"made": True, "instructions": instructions}}
 
 mcp.run(transport="stdio")
@@ -154,6 +156,11 @@ async def main():
               any("Always end with save" in call for call in calls()), str(calls())[:150])
         await admin.call_tool("office_create_document", {"instructions": "a second one"})
         check("the proxy stays warm (one subprocess, two calls)", len(calls()) == 2, str(len(calls())))
+        failed = await admin.call_tool("office_create_document",
+                                       {"instructions": "make it: file_exists"})
+        failed = failed.data if hasattr(failed, "data") else failed
+        check("a failed operation reports failure, not silent success",
+              failed["ok"] is False and "file_exists" in failed["error"], str(failed)[:150])
 
     print(f"\n{'ALL PASS' if not failures else 'FAILURES: ' + ', '.join(failures)}")
     return 1 if failures else 0
