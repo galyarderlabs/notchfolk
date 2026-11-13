@@ -173,13 +173,21 @@ pub fn fetch(query: &TrackQuery) -> Lyrics {
     if let Some(cached) = cached(&cache) {
         return cached;
     }
+    // The expired cache may still carry plain lyrics: they stay as the fallback, so a
+    // failed recheck never replaces usable lyrics with an error, nor with nothing.
+    let fallback = expired_plain(&cache);
 
     let lyrics = match lookup(query, title, artist) {
         Ok(Some(record)) => from_record(query, record),
-        Ok(None) => query.status(LyricsStatus::NotFound),
+        Ok(None) => fallback.unwrap_or_else(|| query.status(LyricsStatus::NotFound)),
         Err(err) => {
             warn!("lyrics lookup failed: {err}");
-            return query.status(err.status());
+            // The plain ones serve this play as they are, their file untouched: an error
+            // is a moment's thing, and the next play asks again.
+            return match fallback {
+                Some(plain) => plain,
+                None => query.status(err.status()),
+            };
         }
     };
     // Misses too, with the file's time saying when (see `cached`).
@@ -204,6 +212,13 @@ fn cached(path: &Path) -> Option<Lyrics> {
         }
     }
     Some(lyrics)
+}
+
+/// The plain lyrics at `path`, however old - the fallback a failed recheck serves
+/// instead of an error. Called only after `cached` said the file is expired.
+fn expired_plain(path: &Path) -> Option<Lyrics> {
+    let lyrics: Lyrics = serde_json::from_slice(&fs::read(path).ok()?).ok()?;
+    (lyrics.status == LyricsStatus::Plain).then_some(lyrics)
 }
 
 /// Asks LRCLIB in three steps, from the most exact to the loosest.
@@ -477,6 +492,9 @@ mod tests {
             .set_modified(old)
             .unwrap();
         assert!(cached(&path).is_none());
+        // The expired plain ones are still the fallback a failed recheck serves:
+        // plain however old, synced never (its expiry is not a plain recheck).
+        assert_eq!(expired_plain(&path).unwrap().status, LyricsStatus::Plain);
         // Synced lyrics stay however old they are: the best there is does not change.
         fs::write(
             &path,
