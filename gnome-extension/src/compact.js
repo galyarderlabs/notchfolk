@@ -265,10 +265,11 @@ export const CompactView = GObject.registerClass({
         // No row padding anymore: the cover and the bars sit at the notch's ends, and only the pads
         // that balance the sides sit between them and the edge. The row's four gaps: pad, side,
         // assistant, side, pad.
-        // The karaoke line has a minimum width: a short line must not pull the wave
-        // off the notch's right edge - the art stays at the left, the wave at the right.
+        // The karaoke holds one width for the whole song: the longest line's, capped at
+        // 500px - the island does not shrink and grow per line (the art would drift off the
+        // left edge, the wave off the right, on every short line).
         const centre = this._karaokeActive
-            ? Math.max(this._karaokeButton.get_preferred_width(-1)[1], px(200)) : px(size.center);
+            ? Math.min(Math.max(this._karaokeWidest, px(200)), px(500)) : px(size.center);
         return Math.ceil(4 * px(12) + leftWidth + rightWidth +
             this._rowPad.width + this._rowEndPad.width + centre);
     }
@@ -588,6 +589,12 @@ export const CompactView = GObject.registerClass({
         // in their corners. Anything else leaves the closed island as it is.
         const lyrics = this._daemon.state.lyrics;
         this._karaokeLines = lyrics?.status === 'synced' ? [...lyrics.lines ?? []] : [];
+        // The karaoke's held width: the longest line of this song, measured once.
+        this._karaokeWidest = Math.max(...this._karaokeLines.map(line => {
+            this._karaokeText.text = line.text;
+            return this._karaokeText.get_preferred_width(-1)[1];
+        }), 0);
+        this._karaokeText.text = '';
         this._karaokeActive = !this._isServiceDown && playing && this._karaokeLines.length > 0
             && this._settings.get_boolean('compact-karaoke');
         this._karaokeButton.visible = this._karaokeActive;
