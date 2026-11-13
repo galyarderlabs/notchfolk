@@ -673,8 +673,9 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         const office = new Adw.EntryRow({title: 'OfficeCLI path (~/.local/bin/officecli)'});
         office.text = aiEnvValue('NOTCHFOLK_MCP_OFFICE') || '~/.local/bin/officecli';
         office.connect('changed', () => {
-            const value = office.text.trim();
+            let value = office.text.trim();
             // An absolute path or one that starts at home - anything else is not a path.
+            // The home-relative one is expanded before it is written: the reader does not.
             if (value.startsWith('~/'))
                 value = value.replace('~', GLib.get_home_dir());
             if (value === '' || value.startsWith('/'))
