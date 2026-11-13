@@ -51,11 +51,10 @@ def build_trees(root: Path):
     (nested / ".archive" / "old-thing").mkdir(parents=True)
     (nested / ".archive" / "old-thing" / "SKILL.md").write_text(
         "No frontmatter here.\n\nFirst body line is the description.\n")
-    # An unreadable SKILL.md: one skill's problem, not the domain's.
+    # An unreadable SKILL.md: one skill's problem, not the domain's. A directory with
+    # the name raises OSError in any environment - chmod 0 is a no-op when run as root.
     (flat / "broken").mkdir()
-    broken = flat / "broken" / "SKILL.md"
-    broken.write_text("---\nname: Broken\n---\n")
-    broken.chmod(0)
+    (flat / "broken" / "SKILL.md").mkdir()
     return flat, nested
 
 
