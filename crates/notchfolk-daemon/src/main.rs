@@ -31,6 +31,7 @@ mod todo;
 mod updates;
 mod uri;
 mod usage;
+mod vitals;
 mod water;
 
 use anyhow::{Context, bail};
@@ -182,11 +183,18 @@ async fn run() -> anyhow::Result<()> {
     server.at(OBJECT_PATH, usage).await?;
     server.at(OBJECT_PATH, updates).await?;
     server.at(OBJECT_PATH, AgentsService::default()).await?;
+    server
+        .at(OBJECT_PATH, vitals::VitalsService::default())
+        .await?;
 
     let media = server.interface::<_, MediaService>(OBJECT_PATH).await?;
     let pomodoro = server.interface::<_, PomodoroService>(OBJECT_PATH).await?;
     let todo = server.interface::<_, TodoService>(OBJECT_PATH).await?;
     let system = server.interface::<_, SystemService>(OBJECT_PATH).await?;
+    let vitals = server
+        .interface::<_, vitals::VitalsService>(OBJECT_PATH)
+        .await?;
+    tokio::spawn(vitals::run(vitals));
     server
         .at(
             OBJECT_PATH,
