@@ -102,7 +102,13 @@ def _index() -> list:
         for skill_md in sorted(root.rglob(SKILL_MD)):
             directory = skill_md.parent
             rel = directory.relative_to(root).as_posix()
-            text = skill_md.read_text(encoding="utf-8-sig", errors="replace")[:SKILL_MD_CAP]
+            # An unreadable SKILL.md is one skill's problem, not the domain's: it is
+            # skipped, and the read is capped before the load, not after.
+            try:
+                with open(skill_md, "rb") as handle:
+                    text = handle.read(SKILL_MD_CAP + 1).decode("utf-8-sig", errors="replace")
+            except OSError:
+                continue
             frontmatter = text[3:].partition("\n---")[0] if text.startswith("---") else ""
             name = re.search(r"^name:\s*(.+)$", frontmatter, re.M)
             skills.append({
@@ -220,8 +226,15 @@ def register(mcp, authorize, write):
         if not skill:
             return _fail(f"unknown skill_id: {skill_id}",
                          hint="use skills_list / skills_search to find a valid id")
-        files = [{"path": path.relative_to(skill["dir"]).as_posix(), "bytes": path.stat().st_size}
-                 for path in sorted(p for p in skill["dir"].rglob("*") if p.is_file())][:LIST_CAP]
+        files = []
+        for path in sorted(p for p in skill["dir"].rglob("*") if p.is_file()):
+            try:
+                files.append({"path": path.relative_to(skill["dir"]).as_posix(),
+                              "bytes": path.stat().st_size})
+            except OSError:
+                continue
+            if len(files) >= LIST_CAP:
+                break
         return _ok(skill=skill_id, files=files)
 
     @mcp.tool
@@ -243,9 +256,12 @@ def register(mcp, authorize, write):
             return _fail("refused: credential-like file")
         if not target.is_file():
             return _fail(f"no such file: {path}")
-        data = target.read_bytes()
-        if len(data) > FILE_CAP:
-            return _fail("file too large")
+        try:
+            if target.stat().st_size > FILE_CAP:
+                return _fail("file too large")
+            data = target.read_bytes()
+        except OSError:
+            return _fail(f"not a readable text file (binary or unreadable)")
         try:
             content = data.decode("utf-8")
         except UnicodeDecodeError:
