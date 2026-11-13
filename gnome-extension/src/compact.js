@@ -207,7 +207,7 @@ export const CompactView = GObject.registerClass({
         row.add_child(this._rowEndPad);
 
         this._daemonChanged = daemon.connect('changed', (_daemon, key) => {
-            if (['nowPlaying', 'pomodoro', 'system', 'router', 'share', 'lyrics'].includes(key))
+            if (['nowPlaying', 'pomodoro', 'system', 'router', 'share', 'lyrics', 'vitals'].includes(key))
                 this._refresh();
         });
         this._settingsChanged = settings.connect('changed::privacy-indicators', () => this._refresh());

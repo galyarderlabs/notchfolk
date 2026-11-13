@@ -73,7 +73,12 @@ export const VitalsPage = GObject.registerClass({
         bottom.add_child(this._battery);
         this._box.add_child(bottom);
 
-        // The daemon's proxy: the vitals arrive as a parsed property in the state.
+        // The daemon's proxy: the vitals arrive as a parsed property in the state,
+        // and the page re-reads it every time the daemon publishes a new sample.
+        this._vitalsChanged = daemon.connect('changed', (_daemon, key) => {
+            if (key === 'vitals')
+                this._refresh();
+        });
         this._refresh();
     }
 
