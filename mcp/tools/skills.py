@@ -211,7 +211,13 @@ def register(mcp, authorize, write):
         if not skill:
             return _fail(f"unknown skill_id: {skill_id}",
                          hint="use skills_list / skills_search to find a valid id")
-        data = (skill["dir"] / SKILL_MD).read_bytes()[:SKILL_MD_CAP + 1]
+        # The cap at read time, as the index's own read (a giant SKILL.md rides no memory).
+        try:
+            with open(skill["dir"] / SKILL_MD, "rb") as handle:
+                data = handle.read(SKILL_MD_CAP + 1)
+        except OSError:
+            return _fail(f"unknown skill_id: {skill_id}",
+                         hint="use skills_list / skills_search to find a valid id")
         return _ok(skill=skill_id,
                    **{key: skill[key] for key in ("source", "rel", "name", "description", "archived")},
                    content=data[:SKILL_MD_CAP].decode("utf-8-sig", errors="replace"),
