@@ -244,10 +244,6 @@ impl VitalsService {
     fn vitals(&self) -> String {
         serde_json::to_string(&self.vitals).unwrap_or_default()
     }
-
-    /// The vitals changed; the page re-reads the property.
-    #[zbus(signal)]
-    async fn vitals_changed(emitter: &SignalEmitter<'_>) -> zbus::Result<()>;
 }
 
 /// Samples the vitals forever: the daemon's own task, started at boot.
