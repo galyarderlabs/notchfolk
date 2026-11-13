@@ -8,6 +8,15 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+### Added
+
+- **The karaoke compact.** While the Music page's Karaoke switch is on, a song plays and its
+  lyrics are synced, the closed island's centre becomes the line being sung - the cover left,
+  the wave right, the clock and the date waiting. The line fades between lines, ellipsizes
+  when one runs long, and keeps the assistant's own click: nothing the mode shows costs the
+  assistant its home. Off, paused, or a song without synced lyrics, the closed island is
+  exactly what it is without it.
+
 ## [1.4.0] - 2026-11-12
 
 ### Added

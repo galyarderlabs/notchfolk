@@ -137,9 +137,19 @@ export const CompactView = GObject.registerClass({
 
         this._assistant = new BotIcon(ASSISTANT_SIZE, this._botLook());
         this._assistant.y_align = Clutter.ActorAlign.CENTER;
+        // The karaoke line: the sung line in the assistant's centre while it plays, and the
+        // assistant's own click - nothing the mode shows costs the assistant its home.
+        this._karaokeText = label('', 'notchfolk-compact-karaoke');
+        this._karaokeText.clutter_text.ellipsize = Clutter.EllipsizeMode.END;
+        this._karaokeButton = new St.Button({style_class: 'notchfolk-compact-karaoke-button', child: this._karaokeText,
+            can_focus: true, visible: false, accessible_name: 'The line being sung', y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton = new St.Button({style_class: 'notchfolk-compact-assistant-button', child: this._assistant,
             can_focus: true, track_hover: true, accessible_name: 'AI assistant', y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton.connect('clicked', () => {
+            this._cancel('assistant-hover');
+            this.emit('assistant-requested');
+        });
+        this._karaokeButton.connect('clicked', () => {
             this._cancel('assistant-hover');
             this.emit('assistant-requested');
         });
@@ -188,11 +198,12 @@ export const CompactView = GObject.registerClass({
         row.add_child(this._rowPad);
         row.add_child(this._left);
         row.add_child(this._assistantButton);
+        row.add_child(this._karaokeButton);
         row.add_child(this._right);
         row.add_child(this._rowEndPad);
 
         this._daemonChanged = daemon.connect('changed', (_daemon, key) => {
-            if (['nowPlaying', 'pomodoro', 'system', 'router', 'share'].includes(key))
+            if (['nowPlaying', 'pomodoro', 'system', 'router', 'share', 'lyrics'].includes(key))
                 this._refresh();
         });
         this._settingsChanged = settings.connect('changed::privacy-indicators', () => this._refresh());
@@ -200,6 +211,7 @@ export const CompactView = GObject.registerClass({
         // sides; the recording dot and the service-down warning stay whatever the switches say.
         this._compactChanged = COMPACT_STATUSES.map(kind =>
             settings.connect(`changed::compact-${kind}`, () => this._refresh()));
+        this._karaokeChanged = settings.connect('changed::compact-karaoke', () => this._refresh());
         this._pagesChanged = settings.connect('changed::hidden-pages', () => this._refresh());
         this._privacyChanged = privacy.connect('changed', () => this._refresh());
         this._callChanged = call.connect('changed', () => this._refresh());
@@ -253,8 +265,10 @@ export const CompactView = GObject.registerClass({
         // No row padding anymore: the cover and the bars sit at the notch's ends, and only the pads
         // that balance the sides sit between them and the edge. The row's four gaps: pad, side,
         // assistant, side, pad.
+        const centre = this._karaokeActive
+            ? this._karaokeButton.get_preferred_width(-1)[1] : px(size.center);
         return Math.ceil(4 * px(12) + leftWidth + rightWidth +
-            this._rowPad.width + this._rowEndPad.width + px(size.center));
+            this._rowPad.width + this._rowEndPad.width + centre);
     }
 
     /**
@@ -567,6 +581,18 @@ export const CompactView = GObject.registerClass({
         this._musicArt.setPath(this._isServiceDown || !hasTrack ? '' : nowPlaying.art_path);
         this._musicStatus.visible = !this._isServiceDown && hasTrack;
         this._restDate.visible = !this._isServiceDown;
+        // The karaoke: the sung line in the centre while the switch is on, a song plays and
+        // its lyrics are synced - the clock and the date wait, the art and the wave already
+        // in their corners. Anything else leaves the closed island as it is.
+        const lyrics = this._daemon.state.lyrics;
+        this._karaokeLines = lyrics?.status === 'synced' ? [...lyrics.lines ?? []] : [];
+        this._karaokeActive = !this._isServiceDown && playing && this._karaokeLines.length > 0
+            && this._settings.get_boolean('compact-karaoke');
+        this._karaokeButton.visible = this._karaokeActive;
+        this._assistantButton.visible = !this._karaokeActive;
+        this._clockBox.visible = !this._karaokeActive && !this._isServiceDown;
+        this._restDate.visible = !this._isServiceDown && !this._karaokeActive;
+        this._tickKaraoke();
         // The dots' own update() decides their visibility from what is on; the switch
         // decides by handing it an empty set when off.
         this._notificationCount.text = this._unseen > 0 ? (this._unseen > 9 ? '9+' : `${this._unseen}`) : '';
@@ -686,6 +712,40 @@ export const CompactView = GObject.registerClass({
         this._later('recording', 1000 - (elapsedMs % 1000) + 10, () => this._tickRecording());
     }
 
+    /** The line being sung, in the karaoke's centre; its own cadence while it plays, for a
+     * line changes many times a minute. The fade between lines is the island's own ease. */
+    _tickKaraoke() {
+        if (!this._karaokeActive) {
+            this._cancelKaraokeTick();
+            return;
+        }
+        const index = Playback.lineIndexAt(this._karaokeLines,
+            Playback.positionMs(this._daemon.state.nowPlaying));
+        const text = index >= 0 ? this._karaokeLines[index].text : '';
+        if (text !== this._karaokeText.text) {
+            this._karaokeText.remove_all_transitions();
+            this._karaokeText.ease({opacity: 0, duration: 180, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    this._karaokeText.text = text;
+                    this._karaokeText.ease({opacity: 255, duration: 180,
+                        mode: Clutter.AnimationMode.EASE_IN_QUAD});
+                }});
+        }
+        this._cancelKaraokeTick();
+        this._karaokeTick = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+            this._karaokeTick = 0;
+            this._tickKaraoke();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _cancelKaraokeTick() {
+        if (this._karaokeTick) {
+            GLib.source_remove(this._karaokeTick);
+            this._karaokeTick = 0;
+        }
+    }
+
     /** Sets the clock's text; `watchClock` calls it again as the minute changes. */
     _tickClock() {
         this._clock.text = Format.timeOfDay(GLib.DateTime.new_now_local());
@@ -780,6 +840,8 @@ export const CompactView = GObject.registerClass({
         this._settings.disconnect(this._openOnChanged);
         for (const id of this._compactChanged)
             this._settings.disconnect(id);
+        this._settings.disconnect(this._karaokeChanged);
+        this._cancelKaraokeTick();
         this._settings.disconnect(this._pagesChanged);
         for (const id of this._botLookChanged)
             this._settings.disconnect(id);

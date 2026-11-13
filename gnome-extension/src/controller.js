@@ -485,7 +485,7 @@ export class Controller {
         });
         return [
             () => page('./pages/call.js', 'CallPage', [this._daemon, this._call, this._privacy, this._settings, size]),
-            () => page('./pages/media.js', 'MediaPage', [this._daemon, this._audio, size]),
+            () => page('./pages/media.js', 'MediaPage', [this._daemon, this._audio, this._settings, size]),
             () => page('./pages/notifications.js', 'NotificationsPage', [this._daemon, this._notifications, size]),
             () => page('./pages/timer.js', 'TimerPage', [this._daemon, size]),
             () => page('./pages/tasks.js', 'TasksPage', [this._daemon, size]),
