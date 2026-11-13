@@ -3,7 +3,8 @@
 // Copyright (C) 2026 Galyarder Labs
 
 //! Lyrics from LRCLIB (<https://lrclib.net>), a free database of synced lyrics,
-//! cached on disk so each song is only looked up once (a song without any, once a week).
+//! cached on disk so each song is only looked up once (a song without any, or with plain
+//! ones only, once a week - synced ones may have been added since).
 
 use std::fmt;
 use std::fs;
@@ -36,7 +37,8 @@ const BUSY_RETRIES: u32 = 2;
 /// most we wait however long it asks for.
 const BUSY_WAIT: Duration = Duration::from_secs(1);
 const BUSY_WAIT_MAX: Duration = Duration::from_secs(5);
-/// A song LRCLIB had no lyrics for is looked up again after this, as they may have been added.
+/// A song LRCLIB had no lyrics for - or plain ones only - is looked up again after this:
+/// synced ones may have been added since.
 const NOT_FOUND_RETRY: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 /// LRCLIB knows nothing longer (it refuses the length with HTTP 400): a mix, a podcast or a stream.
 const LONGEST_SONG_S: f64 = 3600.0;
@@ -171,13 +173,21 @@ pub fn fetch(query: &TrackQuery) -> Lyrics {
     if let Some(cached) = cached(&cache) {
         return cached;
     }
+    // The expired cache may still carry plain lyrics: they stay as the fallback, so a
+    // failed recheck never replaces usable lyrics with an error, nor with nothing.
+    let fallback = expired_plain(&cache);
 
     let lyrics = match lookup(query, title, artist) {
         Ok(Some(record)) => from_record(query, record),
-        Ok(None) => query.status(LyricsStatus::NotFound),
+        Ok(None) => fallback.unwrap_or_else(|| query.status(LyricsStatus::NotFound)),
         Err(err) => {
             warn!("lyrics lookup failed: {err}");
-            return query.status(err.status());
+            // The plain ones serve this play as they are, their file untouched: an error
+            // is a moment's thing, and the next play asks again.
+            return match fallback {
+                Some(plain) => plain,
+                None => query.status(err.status()),
+            };
         }
     };
     // Misses too, with the file's time saying when (see `cached`).
@@ -190,16 +200,25 @@ pub fn fetch(query: &TrackQuery) -> Lyrics {
     lyrics
 }
 
-/// The cached lyrics at `path`; a miss only while younger than [`NOT_FOUND_RETRY`].
+/// The cached lyrics at `path`. A miss only while younger than [`NOT_FOUND_RETRY`]: a song
+/// without lyrics, or with plain ones only, is looked up again after a week, for synced ones
+/// may have been added since - what is found best stays however old it is.
 fn cached(path: &Path) -> Option<Lyrics> {
     let lyrics: Lyrics = serde_json::from_slice(&fs::read(path).ok()?).ok()?;
-    if lyrics.status == LyricsStatus::NotFound {
+    if matches!(lyrics.status, LyricsStatus::NotFound | LyricsStatus::Plain) {
         let written = fs::metadata(path).and_then(|m| m.modified()).ok()?;
         if written.elapsed().unwrap_or_default() >= NOT_FOUND_RETRY {
             return None;
         }
     }
     Some(lyrics)
+}
+
+/// The plain lyrics at `path`, however old - the fallback a failed recheck serves
+/// instead of an error. Called only after `cached` said the file is expired.
+fn expired_plain(path: &Path) -> Option<Lyrics> {
+    let lyrics: Lyrics = serde_json::from_slice(&fs::read(path).ok()?).ok()?;
+    (lyrics.status == LyricsStatus::Plain).then_some(lyrics)
 }
 
 /// Asks LRCLIB in three steps, from the most exact to the loosest.
@@ -458,10 +477,36 @@ mod tests {
         let file = fs::File::options().write(true).open(&path).unwrap();
         file.set_modified(old).unwrap();
         assert!(cached(&path).is_none());
-        // Lyrics found stay, however old.
+        // Plain-only lyrics are looked up again after the week too: synced ones may have
+        // been added since. Fresh ones stay.
         fs::write(
             &path,
             serde_json::to_string(&query.status(LyricsStatus::Plain)).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(cached(&path).unwrap().status, LyricsStatus::Plain);
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(old)
+            .unwrap();
+        assert!(cached(&path).is_none());
+        // The expired plain ones are still the fallback a failed recheck serves:
+        // plain however old, synced never (its expiry is not a plain recheck).
+        assert_eq!(expired_plain(&path).unwrap().status, LyricsStatus::Plain);
+        // Synced lyrics stay however old they are: the best there is does not change.
+        fs::write(
+            &path,
+            serde_json::to_string(&Lyrics {
+                status: LyricsStatus::Synced,
+                lines: vec![LyricLine {
+                    time_ms: 0,
+                    text: "first".into(),
+                }],
+                ..query.status(LyricsStatus::Synced)
+            })
+            .unwrap(),
         )
         .unwrap();
         fs::File::options()
@@ -470,7 +515,7 @@ mod tests {
             .unwrap()
             .set_modified(old)
             .unwrap();
-        assert_eq!(cached(&path).unwrap().status, LyricsStatus::Plain);
+        assert_eq!(cached(&path).unwrap().status, LyricsStatus::Synced);
         fs::remove_dir_all(dir).unwrap();
     }
 
