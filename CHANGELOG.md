@@ -20,6 +20,12 @@ Isle's changelog from before the fork, kept for reference.
   office_create_document, behind its own scope - the resident OfficeCLI binary proxied over
   stdio, its subprocess kept warm across calls; no shell, no system access, paths under the
   user's home or /tmp. The binary absent, the domain is not offered.
+- **The world MCP: the Composio domain.** The world reaches your accounts - mail and drive,
+  the only cloud-touching value in the set. Four read-only tools (search and read mail,
+  search and read drive) on the default key; four behind composio:write (send and delete
+  mail, share and write drive). The local CLI is the only process that leaves the machine;
+  authentication is Composio's own OAuth, never a token in the keyring; slugs resolve at
+  runtime through the CLI's own search, cached. The CLI absent, the domain is not offered.
 
 - **The pin: keep the open island open.** The header's pin holds the island open when the
   pointer leaves - for reading lyrics, watching a timer, or dragging files to the shelf
