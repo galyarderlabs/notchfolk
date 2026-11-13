@@ -10,6 +10,12 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
+- **The pin: keep the open island open.** The header's pin holds the island open when the
+  pointer leaves - for reading lyrics, watching a timer, or dragging files to the shelf
+  while working in another window. Pressed again it unpins; Esc and the pages' own closes
+  still close; and a pin lasts one opening only - the next time the island opens, it is
+  unpinned (issue #91).
+
 - **The karaoke compact.** While the Music page's Karaoke switch is on, a song plays and its
   lyrics are synced, the closed island's centre becomes the line being sung - the cover left,
   the wave right, the clock and the date waiting. The line fades between lines, ellipsizes

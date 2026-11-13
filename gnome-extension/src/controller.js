@@ -191,6 +191,8 @@ export class Controller {
         /** A warm-up the island opened in the middle of, and whether it was of all (see `_warmUp`); else null. */
         this._warmHeld = null;
         this._expandWanted = false;
+        /** The island is pinned open: the pointer leaving does not close it (one opening). */
+        this._pinned = false;
         this._alert = null;
         this._queue = [];
         this._keyboardGrab = null;
@@ -534,6 +536,9 @@ export class Controller {
             });
         }
         expanded.connect('tint-changed', () => this._syncTint());
+        // The pin: the island stays open when the pointer leaves, until the pin again or
+        // a real close (Esc, the pages' own) - which resets it for the next opening.
+        expanded.connect('pin-toggled', (_view, pinned) => (this._pinned = pinned));
         expanded.connect('tint-motion', (_view, time, level) => {
             if (this._presentation === 'expanded')
                 this._island.setTintMotion(time, level);
@@ -1977,6 +1982,9 @@ export class Controller {
 
     /** Closes, unless the pointer is on the shelf helper's window over the island. */
     _collapseUnlessHeld() {
+        // Pinned open: the pointer leaving does not close it (the pin button, one opening).
+        if (this._pinned)
+            return;
         // The shelf helper window covers the island; the pointer may be on it.
         if (this._shelfHelper.containsPointer()) {
             this._later('collapse', COLLAPSE_DELAY_MS, () => this._collapseUnlessHeld());
@@ -2166,6 +2174,9 @@ export class Controller {
             return;
         this._cancel('collapse');
         this._setKeyboard(false);
+        // The pin lasted this opening; the next starts unpinned.
+        this._pinned = false;
+        this._expanded?.resetPin();
         // Once closed and settled, what changed meanwhile is laid out for next time (see `_warmUp`); the
         // alert and voice views keep their layout, unless the theme changed.
         this._later('warm', WARM_AFTER_CLOSE_MS, () => this._warmUp(!this._viewsWarm));
@@ -2177,6 +2188,9 @@ export class Controller {
         if (!this._expandWanted)
             return;
         this._expandWanted = false;
+        // The pin lasted this opening; the next starts unpinned.
+        this._pinned = false;
+        this._expanded?.resetPin();
         this._nextAlert();
     }
 
@@ -2734,6 +2748,9 @@ export class Controller {
         this._cancel('expand');
         this._cancel('collapse');
         this._expandWanted = false;
+        // The pin lasted this opening; the next starts unpinned.
+        this._pinned = false;
+        this._expanded?.resetPin();
         this._shelveAnswer();
         this._voiceOpen = true;
         this._voiceByHover = byHover;
@@ -2856,6 +2873,9 @@ export class Controller {
         this._cancel('expand');
         this._cancel('collapse');
         this._expandWanted = false;
+        // The pin lasted this opening; the next starts unpinned.
+        this._pinned = false;
+        this._expanded?.resetPin();
         this._shelveAnswer();
         this._voiceOpen = true;
         this._voiceByHover = byHover;

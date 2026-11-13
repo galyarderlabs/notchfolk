@@ -265,6 +265,12 @@ with the wheel or touchpad and never show a scrollbar.
   whatever the sides hold.
 
 ## 5. Pages
+The pin: the open island's header carries a pin that keeps it open when the pointer
+leaves - for reading lyrics, watching a timer, dragging files to the shelf while working
+in another window. Pressed again it unpins, and the island closes as usual; a real close
+(Esc, the pages' own) still closes, and a pin lasts one opening only: the next time the
+island opens, it is unpinned.
+
 The karaoke compact: while the Music page's Karaoke switch is on, a song plays and its
 lyrics are synced, the closed island's centre becomes the line being sung - the cover left,
 the wave right, the clock and the date waiting. The line fades between lines, ellipsizes

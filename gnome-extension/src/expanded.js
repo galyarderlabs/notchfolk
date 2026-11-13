@@ -90,6 +90,8 @@ export const ExpandedView = GObject.registerClass({
         'voice-requested': {},
         // The settings button beside the assistant.
         'settings-requested': {},
+        // The pin button: keep the island open when the pointer leaves (true), or not (false).
+        'pin-toggled': {param_types: [GObject.TYPE_BOOLEAN]},
     },
 }, class ExpandedView extends St.BoxLayout {
     /** `privacy` and `call` feed the header's status; `pages` are built by the island, in tab order. */
@@ -228,6 +230,13 @@ export const ExpandedView = GObject.registerClass({
         status.add_child(this._recordingButton);
         status.add_child(this._privacyDots);
         status.add_child(this._headerBars);
+        // The pin: keep the island open when the pointer leaves - reading lyrics, watching
+        // a timer, dragging files to the shelf while working in another window. It lasts
+        // this opening only (see `resetPin`); Esc and the pages' own closes still close.
+        this._pinned = false;
+        this._pinButton = iconButton('view-pin-symbolic', 'notchfolk-button-flat notchfolk-header-pin',
+            () => this.setPin(!this._pinned), {size: 15, accessibleName: 'Keep the island open'});
+        status.add_child(this._pinButton);
         // The assistant, as AI rather than a microphone: it listens, and it can be typed to.
         this._micButton = iconButton('notchfolk-sparkle-symbolic', 'notchfolk-button-flat notchfolk-header-mic',
             () => this.emit('voice-requested'), {size: 15, accessibleName: 'AI assistant'});
@@ -246,6 +255,18 @@ export const ExpandedView = GObject.registerClass({
     }
 
     /** Whether the voice assistant is on, to show its mic button. */
+    /** The pin's state, and the telling of it: lit while the island stays open.
+     * `resetPin` puts it back for the next opening - a pin lasts one opening. */
+    setPin(pinned) {
+        this._pinned = Boolean(pinned);
+        this._pinButton.style_class = `notchfolk-button notchfolk-button-flat notchfolk-header-pin${this._pinned ? ' on' : ''}`;
+        this.emit('pin-toggled', this._pinned);
+    }
+
+    resetPin() {
+        this.setPin(false);
+    }
+
     set voiceEnabled(enabled) {
         this._micButton.visible = enabled;
         // The header's width goes with it: an open island fits it now, as it would opened anew.
