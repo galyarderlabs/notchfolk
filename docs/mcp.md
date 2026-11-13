@@ -8,7 +8,7 @@ currently implemented.
 
 ## The world domains
 
-Beyond the island's own data, the MCP carries the world around it - eight domains,
+Beyond the island's own data, the MCP carries the world around it - seven domains,
 each offered only when its own backend is on the machine, each with its read-only tools
 on the default key and its sharp tools behind their own scope:
 
@@ -22,7 +22,7 @@ on the default key and its sharp tools behind their own scope:
 | **Office** | The world makes documents | 1 | `office:write` |
 | **Composio** | The world reaches your accounts: mail and drive | 8 | `composio:read` / `composio:write` |
 
-**149 tools in all** (55 island + 94 world). A domain whose backend is absent is not
+**150 tools in all** (55 island + 95 world). A domain whose backend is absent is not
 offered at all; a restricted tool is not even visible to a key without its scope. The
 domains' own configuration lives in `mcp.env` (Settings → MCP → The world): the
 browser backend and its CDP port, the Hindsight endpoint, the skill trees' roots, and
