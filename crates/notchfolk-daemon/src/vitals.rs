@@ -6,7 +6,9 @@
 //! `docs/vitals-spec.md`.
 
 use std::time::Duration;
-use tokio::time::{MissedTickBehavior, sleep};
+use tokio::time::MissedTickBehavior;
+use zbus::interface;
+use zbus::object_server::{InterfaceRef, SignalEmitter};
 
 /// Sampled this often (the setting's own value); the page ticks with it.
 const SAMPLE: Duration = Duration::from_secs(2);
@@ -235,7 +237,7 @@ pub struct VitalsService {
     pub vitals: Vitals,
 }
 
-#[zbus::interface(name = "io.galyarderlabs.notchfolk.Vitals1")]
+#[interface(name = "io.galyarderlabs.notchfolk.Vitals1")]
 impl VitalsService {
     /// JSON `Vitals`.
     #[zbus(property)]
@@ -245,14 +247,11 @@ impl VitalsService {
 
     /// The vitals changed; the page re-reads the property.
     #[zbus(signal)]
-    async fn vitals_changed(emitter: &zbus::SignalEmitter<'_>) -> zbus::Result<()> {
-        let _ = emitter;
-        Ok(())
-    }
+    async fn vitals_changed(emitter: &SignalEmitter<'_>) -> zbus::Result<()>;
 }
 
 /// Samples the vitals forever: the daemon's own task, started at boot.
-pub async fn run(iface: zbus::InterfaceRef<VitalsService>) {
+pub async fn run(iface: InterfaceRef<VitalsService>) {
     let mut previous: Option<Vitals> = None;
     let mut net_totals: Option<(u64, u64)> = None;
     let mut ticker = tokio::time::interval(SAMPLE);
