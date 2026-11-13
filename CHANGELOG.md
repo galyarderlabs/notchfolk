@@ -8,11 +8,14 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
-### Planned
+### Added
 
-- **Vitals** — the machine's own pulse in the island: CPU, memory, temperature, network,
-  disk and battery, a page in the expanded island and (optionally) one vital in the
-  closed one. The plan: `docs/vitals-spec.md`.
+- **Vitals — the machine's own pulse in the island.** A page in the expanded island
+  (CPU ring, temperature colour-coded, memory and disk bars, network rates, battery),
+  and (optionally, off by default) one vital in the closed island beside the wave. The
+  daemon samples the vitals itself every 2 s from `/proc`, `sysfs` and `df` — the
+  sources it already knows — and publishes them over D-Bus as the weather is
+  (issues #104-#109, plan: `docs/vitals-spec.md`).
 
 ## [1.5.0] - 2026-11-13
 

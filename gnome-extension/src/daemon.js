@@ -133,6 +133,12 @@ const INTERFACES = {
             <property name="State" type="s" access="read"/>`),
         properties: {State: 'system'},
     },
+    vitals: {
+        xml: node('Vitals1', `
+            <signal name="VitalsChanged"/>
+            <property name="Vitals" type="s" access="read"/>`),
+        properties: {Vitals: 'vitals'},
+    },
     reminders: {
         xml: node('Reminders1', `
             <method name="Add"><arg name="delay_ms" type="t" direction="in"/><arg name="text" type="s" direction="in"/><arg type="t" direction="out"/></method>

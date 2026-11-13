@@ -131,7 +131,8 @@ def register(mcp, authorize, write):
 
     @mcp.tool
     async def system_stats() -> dict:
-        """The machine at a glance: uptime, memory, disk, listening ports, busiest processes."""
+        """The machine at a glance: uptime, memory, disk, listening ports, busiest processes,
+        and the vitals' own live numbers (CPU, temperature, network) from the daemon's sampling."""
         await authorize("system_stats")
         return {"ok": True,
                 "uptime": run("uptime")["stdout"].strip(),

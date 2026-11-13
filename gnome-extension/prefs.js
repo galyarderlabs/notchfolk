@@ -1241,6 +1241,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         waits();
         look.add(hideDelay);
         page.add(look);
+        page.add(vitalsGroup(settings));
         page.add(pagesGroup(settings, window));
         page.add(compactGroup(settings));
         page.add(shortcutsGroup(settings));
@@ -1878,8 +1879,32 @@ function compactGroup(settings) {
     return group;
 }
 
+/** The machine's vitals: what the closed island shows, the unit, how often to sample. */
+function vitalsGroup(settings) {
+    const group = new Adw.PreferencesGroup({title: 'Vitals',
+        description: 'The machine\u2019s own pulse - CPU, memory, temperature, network, disk. The Vitals page shows them all; one may live in the closed island.'});
+    const closedVital = new Adw.ComboRow({title: 'In the closed island',
+        model: Gtk.StringList.new(['None', 'Temperature', 'CPU']),
+        selected: Math.max(0, ['none', 'temperature', 'cpu'].indexOf(settings.get_string('vitals-closed-island')))});
+    closedVital.connect('notify::selected', () =>
+        settings.set_string('vitals-closed-island', ['none', 'temperature', 'cpu'][closedVital.selected]));
+    group.add(closedVital);
+    const tempUnit = new Adw.ComboRow({title: 'Temperature unit',
+        model: Gtk.StringList.new(['\u00b0C', '\u00b0F']), selected: settings.get_string('vitals-temperature-unit') === 'F' ? 1 : 0});
+    tempUnit.connect('notify::selected', () =>
+        settings.set_string('vitals-temperature-unit', tempUnit.selected === 1 ? 'F' : 'C'));
+    group.add(tempUnit);
+    const sampleEvery = new Adw.ComboRow({title: 'Sample every',
+        model: Gtk.StringList.new(['1 second', '2 seconds', '5 seconds', '10 seconds']),
+        selected: Math.max(0, [1, 2, 5, 10].indexOf(settings.get_int('vitals-sample-seconds')))});
+    sampleEvery.connect('notify::selected', () =>
+        settings.set_int('vitals-sample-seconds', [1, 2, 5, 10][sampleEvery.selected]));
+    group.add(sampleEvery);
+    return group;
+}
+
 function pagesGroup(settings, window) {
-    const group = new Adw.PreferencesGroup({title: 'Pages', description: 'The tabs of the open island. Turn off the ones you don’t use.'});
+    const group = new Adw.PreferencesGroup({title: 'Pages', description: 'The tabs of the open island. Turn off the ones you don\u2019t use.'});
     const rows = PAGES.map(([name, title, iconName, subtitle]) => {
         const row = new Adw.SwitchRow({title, subtitle});
         row.add_prefix(new Gtk.Image({icon_name: iconName}));
