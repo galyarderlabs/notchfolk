@@ -6,6 +6,28 @@ Antigravity, or Codex) point to this service; this is not a provider or internal
 the assistant inside Notchfolk. This page documents the external service that is
 currently implemented.
 
+## The world domains
+
+Beyond the island's own data, the MCP carries the world around it - seven domains,
+each offered only when its own backend is on the machine, each with its read-only tools
+on the default key and its sharp tools behind their own scope:
+
+| Domain | Value | Tools | Scope |
+|---|---|---|---|
+| **System** | The machine itself: stats, logs, files, processes, updates | 14 | `system:read` / `system:write` |
+| **Browser** | The web through a real browser: Camoufox or your own Chromium over CDP | 10 | `browser:read` / `browser:write` |
+| **Memory** | The world remembers: the Hindsight engine's 39 tools | 39 | `memory:read` / `memory:write` |
+| **Notes** | Your own vault of Markdown notes, and memory's fallback | 16 | `notes:read` / `notes:write` |
+| **Skills** | The world knows how to do things: the skill trees on the machine | 7 | `skills:read` |
+| **Office** | The world makes documents | 1 | `office:write` |
+| **Composio** | The world reaches your accounts: mail and drive | 8 | `composio:read` / `composio:write` |
+
+**150 tools in all** (55 island + 95 world). A domain whose backend is absent is not
+offered at all; a restricted tool is not even visible to a key without its scope. The
+domains' own configuration lives in `mcp.env` (Settings → MCP → The world): the
+browser backend and its CDP port, the Hindsight endpoint, the skill trees' roots, and
+the OfficeCLI path.
+
 ## Current implementation boundary
 
 This is the optional **external** MCP service. It is not the tool interface
