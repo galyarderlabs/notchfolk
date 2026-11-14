@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Galyarder Labs
 
-// The Vitals page: the machine's own pulse, in the island. The daemon samples the vitals
-// every 2 s (the plan: docs/vitals-spec.md) and the page shows them the way the island's
-// own pages do - the two that change what you do next (CPU and temperature) as the page's
-// own heroes, centred and big; the storage that fills slowly as flat rows; the network
-// and the battery as the footer.
+// The Vitals page: the machine's own pulse, drawn like the Prayer page - a heading, a
+// row that fills the height (the hero card with the CPU ring and the temperature on the
+// left, the storage and the network on the right), and the cores as the arc beneath
+// the heroes. The daemon samples every 2 s (the plan: docs/vitals-spec.md).
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {VERTICAL} from '../compat.js';
-import * as Page from './page.js';
-import {Ring, label} from '../widgets.js';
+import {VERTICAL, px} from '../compat.js';
+import * as Format from '../format.js';
+import {icon, label, Ring} from '../widgets.js';
+import {Page} from './page.js';
 
 /** The temperature's colour: green, amber, red - the one vital that can hurt. */
 function tempColor(celsius) {
@@ -61,7 +61,7 @@ function share(used, total) {
 }
 
 export const VitalsPage = GObject.registerClass({
-}, class VitalsPage extends Page.Page {
+}, class VitalsPage extends Page {
     _init(daemon, settings, {height}) {
         super._init(daemon, {
             style_class: 'notchfolk-page notchfolk-vitals',
@@ -73,58 +73,70 @@ export const VitalsPage = GObject.registerClass({
         this._vitals = null;
         this._cores = [];
         this._coreSignature = '';
-        // The vitals need more than the base 150px: the heroes, the cores, the storage
-        // and the footer - the page grows for them, as the weather's own does.
-        this.pageHeight = height + 90;
 
-        const column = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-column',
-            x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(column);
+        this._column = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
+            style_class: 'notchfolk-vitals-column'});
+        this.add_child(this._column);
 
-        // ── The heroes: the CPU's ring and the temperature's number, centred as a pair ──
-        // The two that change what you do next, at the page's own focal weight: the ring
-        // with its % inside, the temperature big and colour-coded, generous space between.
-        const heroes = new St.BoxLayout({style_class: 'notchfolk-vitals-heroes'});
-        column.add_child(heroes);
+        // ── The heading, as every page's own: the icon, the title, the date ──
+        const heading = new St.BoxLayout({style_class: 'notchfolk-vitals-heading'});
+        heading.add_child(new St.Icon({gicon: icon('notchfolk-heartbeat'), icon_size: 15,
+            style_class: 'notchfolk-vitals-heading-icon'}));
+        heading.add_child(label('Vitals', 'notchfolk-vitals-title', {x_expand: true}));
+        heading.add_child(label(Format.longDate(), 'notchfolk-vitals-date'));
+        this._column.add_child(heading);
 
-        const cpu = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero'});
-        this._cpuRing = new Ring({size: 72, lineWidth: 5});
-        this._cpuPercent = label('—', 'notchfolk-vitals-hero-value');
+        // ── The row: the hero card on the left, the storage on the right ──
+        const row = new St.BoxLayout({style_class: 'notchfolk-vitals-row', x_expand: true, y_expand: true});
+
+        // The hero card: the CPU ring and the temperature, the two that change what
+        // you do next, in the glass card the prayer page's own hero uses.
+        const hero = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero',
+            y_align: Clutter.ActorAlign.CENTER});
+        const heroTop = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-top'});
+        heroTop.add_child(label('THE PULSE', 'notchfolk-vitals-eyebrow'));
+        hero.add_child(heroTop);
+
+        // The CPU: the ring with its % inside, the cores under it.
+        const cpuBox = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-cpu'});
+        this._cpuRing = new Ring({size: 52, lineWidth: 4.5});
+        this._cpuPercent = label('—', 'notchfolk-vitals-hero-cpu-value');
         this._cpuRing.add_child(this._cpuPercent);
-        cpu.add_child(this._cpuRing);
-        cpu.add_child(label('CPU', 'notchfolk-vitals-hero-name'));
-        heroes.add_child(cpu);
+        cpuBox.add_child(this._cpuRing);
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
+        cpuBox.add_child(this._coresBox);
+        hero.add_child(cpuBox);
+        hero.add_child(label('CPU load', 'notchfolk-vitals-hero-label'));
 
-        heroes.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
+        hero.add_child(new St.Widget({style_class: 'notchfolk-vitals-hero-sep'}));
 
-        const heat = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero'});
+        // The temperature: the big number, colour-coded, its band beside it.
+        const heatBox = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-heat'});
         this._tempLabel = label('—', 'notchfolk-vitals-hero-temp');
-        heat.add_child(this._tempLabel);
+        heatBox.add_child(this._tempLabel);
         this._tempNote = label('', 'notchfolk-vitals-hero-band');
-        heat.add_child(this._tempNote);
-        heat.add_child(label('Temperature', 'notchfolk-vitals-hero-name'));
-        heroes.add_child(heat);
+        heatBox.add_child(this._tempNote);
+        hero.add_child(heatBox);
+        hero.add_child(label('Temperature', 'notchfolk-vitals-hero-label'));
+        row.add_child(hero);
 
-        // ── The cores: one thin bar per core, a strip across the page's width ──
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores', x_expand: true});
-        column.add_child(this._coresBox);
-
-        // ── Storage: the three that fill up slowly, one row each ──
-        column.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
-        this._memBar = this._row('Memory', column);
-        this._swapBar = this._row('Swap', column);
-        this._diskBar = this._row('Disk', column);
-
-        // ── The footer: the network's rates, the battery when there is one ──
-        column.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
-        const moving = new St.BoxLayout({style_class: 'notchfolk-vitals-moving', x_expand: true});
+        // The right side: the storage that fills slowly, the network and the battery.
+        const data = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
+            style_class: 'notchfolk-vitals-data', y_align: Clutter.ActorAlign.CENTER});
+        this._memBar = this._storageRow('Memory', data);
+        this._swapBar = this._storageRow('Swap', data);
+        this._diskBar = this._storageRow('Disk', data);
+        data.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
+        const net = new St.BoxLayout({style_class: 'notchfolk-vitals-net-row'});
         this._netDown = label('', 'notchfolk-vitals-net');
         this._netUp = label('', 'notchfolk-vitals-net');
-        moving.add_child(this._netDown);
-        moving.add_child(this._netUp);
+        net.add_child(this._netDown);
+        net.add_child(this._netUp);
         this._battery = label('', 'notchfolk-vitals-battery');
-        moving.add_child(this._battery);
-        column.add_child(moving);
+        net.add_child(this._battery);
+        data.add_child(net);
+        row.add_child(data);
+        this._column.add_child(row);
 
         this._unit = settings.get_string('vitals-temperature-unit');
         this._unitChanged = settings.connect('changed::vitals-temperature-unit', () => {
@@ -136,15 +148,15 @@ export const VitalsPage = GObject.registerClass({
         this._refresh();
     }
 
-    /** One storage row: the name, the bar, and the share with the bytes - on one line. */
-    _row(name, parent) {
-        const box = new St.BoxLayout({style_class: 'notchfolk-vitals-row', x_expand: true});
-        box.add_child(label(name, 'notchfolk-vitals-row-name'));
+    /** One storage row: the name above, the bar and the value under it. */
+    _storageRow(name, parent) {
+        const box = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-storage'});
+        box.add_child(label(name, 'notchfolk-vitals-storage-name'));
         const fill = new St.Widget({style_class: 'notchfolk-vitals-bar-fill'});
         const track = new St.Widget({style_class: 'notchfolk-vitals-bar-track', x_expand: true});
         track.add_child(fill);
         box.add_child(track);
-        const value = label('', 'notchfolk-vitals-row-value', {x_align: Clutter.ActorAlign.END});
+        const value = label('', 'notchfolk-vitals-storage-value');
         box.add_child(value);
         parent.add_child(box);
         return {value, fill, track, box};
@@ -170,7 +182,6 @@ export const VitalsPage = GObject.registerClass({
                 return;
             const percent = Math.max(0, Math.min(100, Math.round(usage)));
             core.fill.height = Math.max(1, Math.round(percent / 100 * 20));
-            // A core near its ceiling is the one to look at.
             core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
             core.track.tooltip_text = `Core ${index}: ${percent}%`;
         });
