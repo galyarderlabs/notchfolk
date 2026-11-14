@@ -73,6 +73,9 @@ export const VitalsPage = GObject.registerClass({
         this._vitals = null;
         this._cores = [];
         this._coreSignature = '';
+        // The vitals need more than the base 150px: the heroes, the cores, the storage
+        // and the footer - the page grows for them, as the weather's own does.
+        this.pageHeight = height + 90;
 
         const column = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-column',
             x_expand: true, y_align: Clutter.ActorAlign.CENTER});
@@ -85,7 +88,7 @@ export const VitalsPage = GObject.registerClass({
         column.add_child(heroes);
 
         const cpu = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero'});
-        this._cpuRing = new Ring({size: 56, lineWidth: 4.5});
+        this._cpuRing = new Ring({size: 72, lineWidth: 5});
         this._cpuPercent = label('—', 'notchfolk-vitals-hero-value');
         this._cpuRing.add_child(this._cpuPercent);
         cpu.add_child(this._cpuRing);
@@ -166,7 +169,7 @@ export const VitalsPage = GObject.registerClass({
             if (!core)
                 return;
             const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * 14));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 20));
             // A core near its ceiling is the one to look at.
             core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
             core.track.tooltip_text = `Core ${index}: ${percent}%`;
