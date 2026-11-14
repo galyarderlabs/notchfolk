@@ -2184,6 +2184,13 @@
   font-feature-settings: "tnum";
 }
 
+/* The machine's own story: uptime, load, processes, frequency. */
+.notchfolk-vitals-story { spacing: 2px; margin-top: 2px; }
+.notchfolk-vitals-story-value {
+  font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.5);
+  font-feature-settings: "tnum";
+}
+
 /* The focused modes: each vital fills the page. */
 .notchfolk-vitals-focus { spacing: 4px; y_align: center; padding: 0 6px; }
 .notchfolk-vitals-focus-top { spacing: 8px; y_align: center; }

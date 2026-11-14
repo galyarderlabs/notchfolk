@@ -137,6 +137,19 @@ export const VitalsPage = GObject.registerClass({
         detail.add_child(net);
         this._battery = label('', 'notchfolk-vitals-battery-value');
         detail.add_child(this._battery);
+        // The machine's own story: uptime, load, processes, frequency - the numbers
+        // a real system monitor carries.
+        detail.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
+        const story = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-story'});
+        this._uptime = label('', 'notchfolk-vitals-story-value');
+        story.add_child(this._uptime);
+        this._loadAvg = label('', 'notchfolk-vitals-story-value');
+        story.add_child(this._loadAvg);
+        this._processes = label('', 'notchfolk-vitals-story-value');
+        story.add_child(this._processes);
+        this._frequency = label('', 'notchfolk-vitals-story-value');
+        story.add_child(this._frequency);
+        detail.add_child(story);
         this._allView.add_child(detail);
         this._column.add_child(this._allView);
 
@@ -155,6 +168,10 @@ export const VitalsPage = GObject.registerClass({
         this._cpuView.add_child(this._cpuSpark);
         this._coresBoxBig = new St.BoxLayout({style_class: 'notchfolk-vitals-cores-big'});
         this._cpuView.add_child(this._coresBoxBig);
+        this._cpuFreqLabel = label('', 'notchfolk-vitals-story-value');
+        this._cpuView.add_child(this._cpuFreqLabel);
+        this._cpuLoadLabel = label('', 'notchfolk-vitals-story-value');
+        this._cpuView.add_child(this._cpuLoadLabel);
         this._column.add_child(this._cpuView);
 
         // ── Memory: each storage a big bar with its bytes under it ──
@@ -357,6 +374,20 @@ export const VitalsPage = GObject.registerClass({
         const battery = this.daemon.state?.system?.battery;
         this._battery.text = battery ? `\u26a1 ${battery.percent}%${battery.charging ? ' charging' : ''}` : '';
         this._battery.visible = Boolean(battery);
+
+        // The machine's own story.
+        const up = vitals.uptime_seconds ?? 0;
+        const upDays = Math.floor(up / 86400);
+        const upHours = Math.floor((up % 86400) / 3600);
+        const upMins = Math.floor((up % 3600) / 60);
+        this._uptime.text = `Uptime  ${upDays > 0 ? `${upDays}d ` : ''}${upHours}h ${upMins}m`;
+        this._loadAvg.text = `Load  ${(vitals.load_1 ?? 0).toFixed(2)}  ${(vitals.load_5 ?? 0).toFixed(2)}  ${(vitals.load_15 ?? 0).toFixed(2)}`;
+        this._processes.text = `Processes  ${vitals.process_count ?? 0}`;
+        this._frequency.text = vitals.cpu_frequency_mhz > 0 ? `CPU  ${(vitals.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : '';
+        this._frequency.visible = vitals.cpu_frequency_mhz > 0;
+        this._cpuFreqLabel.text = vitals.cpu_frequency_mhz > 0 ? `${(vitals.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : '';
+        this._cpuFreqLabel.visible = vitals.cpu_frequency_mhz > 0;
+        this._cpuLoadLabel.text = `Load  ${(vitals.load_1 ?? 0).toFixed(2)} · ${(vitals.load_5 ?? 0).toFixed(2)} · ${(vitals.load_15 ?? 0).toFixed(2)}`;
     }
 
     _syncCores(cores) {
