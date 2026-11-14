@@ -83,7 +83,8 @@ export const VitalsPage = GObject.registerClass({
         cpuCard.add_child(cpuRow);
         hero.add_child(cpuCard);
 
-        const tempCard = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-card', x_expand: true});
+        const tempCard = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-card', x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER});
         tempCard.add_child(label('Temperature', 'notchfolk-vitals-card-title'));
         this._tempLabel = label('—', 'notchfolk-vitals-temp');
         tempCard.add_child(this._tempLabel);
@@ -118,20 +119,20 @@ export const VitalsPage = GObject.registerClass({
         this._refresh();
     }
 
-    /** A labelled gauge: the name and value on one line, the bar under; added to `parent`. */
+    /** A gauge: the name, its share, then the bytes under it, and the bar; added to `parent`. */
     _bar(name, parent) {
         const box = new St.BoxLayout({style_class: 'notchfolk-vitals-gauge', ...VERTICAL, x_expand: true});
-        const header = new St.BoxLayout({style_class: 'notchfolk-vitals-bar-header'});
-        header.add_child(label(name, 'notchfolk-vitals-bar-name'));
+        box.add_child(label(name, 'notchfolk-vitals-bar-name'));
         const value = label('', 'notchfolk-vitals-bar-value');
-        header.add_child(value);
-        box.add_child(header);
+        box.add_child(value);
+        const detail = label('', 'notchfolk-vitals-bar-detail');
+        box.add_child(detail);
         const fill = new St.Widget({style_class: 'notchfolk-vitals-bar-fill'});
         const track = new St.Widget({style_class: 'notchfolk-vitals-bar-track'});
         track.add_child(fill);
         box.add_child(track);
         parent.add_child(box);
-        return {value, fill, track, box};
+        return {value, detail, fill, track, box};
     }
 
     /** One bar per core, made again only when the machine's core count changes. */
@@ -194,10 +195,11 @@ export const VitalsPage = GObject.registerClass({
         this._battery.visible = Boolean(battery);
     }
 
-    /** One bar: the value (used / total) and its share, the fill's width. */
+    /** One gauge: its share, the bytes under it, and the fill's width. */
     _setBar(bar, used, total) {
         const percent = share(used, total);
-        bar.value.text = total > 0 ? `${percent}% · ${size(used)} / ${size(total)}` : '—';
+        bar.value.text = total > 0 ? `${percent}%` : '—';
+        bar.detail.text = total > 0 ? `${size(used)} of ${size(total)}` : '';
         bar.fill.width = Math.round(percent);
     }
 });
