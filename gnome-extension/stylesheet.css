@@ -2128,7 +2128,7 @@
 
 /* The Vitals page: the machine's own pulse. Flat, on the island's own surface: the two
    figures that matter at a glance, then a row per storage, then the network. */
-.notchfolk-vitals-column { spacing: 6px; }
+.notchfolk-vitals-column { spacing: 4px; }
 
 /* The heading, as every page's own. */
 .notchfolk-vitals-heading { height: 22px; spacing: 7px; }
@@ -2138,10 +2138,10 @@
 
 /* The pulse: the CPU and the temperature above the sparkline, the two that
  * change what you do next, at the page's own focal weight. */
-.notchfolk-vitals-pulse { spacing: 20px; padding: 2px 4px 0 4px; }
+.notchfolk-vitals-pulse { spacing: 16px; padding: 0 4px; }
 .notchfolk-vitals-figure { spacing: 1px; x_expand: true; }
 .notchfolk-vitals-figure-value {
-  font-size: 26px; font-weight: 300; letter-spacing: -1px;
+  font-size: 22px; font-weight: 300; letter-spacing: -0.8px;
   font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
 }
 .notchfolk-vitals-figure-name {
@@ -2152,20 +2152,20 @@
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
   text-transform: uppercase; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-rule { width: 1px; height: 36px; background-color: rgba(255, 255, 255, 0.08); }
+.notchfolk-vitals-rule { width: 1px; height: 30px; background-color: rgba(255, 255, 255, 0.08); }
 
 /* The sparkline: the last minute of CPU activity, drawn as the weather's own curve. */
-.notchfolk-vitals-spark { height: 36px; }
+.notchfolk-vitals-spark { height: 28px; }
 
 /* The storage rows: one line each. */
 .notchfolk-vitals-storage { spacing: 8px; margin: 1px 0; }
 .notchfolk-vitals-storage-name {
-  width: 52px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  width: 48px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
   text-transform: uppercase; color: rgba(255, 255, 255, 0.42);
 }
 .notchfolk-vitals-storage-value {
-  width: 130px; font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
-  font-feature-settings: "tnum"; text-align: right;
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
+  font-feature-settings: "tnum";
 }
 .notchfolk-vitals-bar-track { height: 5px; border-radius: 2.5px; background-color: rgba(255, 255, 255, 0.08); }
 .notchfolk-vitals-bar-fill {
