@@ -773,23 +773,15 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             if (!entry && current.models) {
                 const mine = ++fillToken;
                 const list = await current.models();
-                if (mine !== fillToken || !list.length)
+                if (mine !== fillToken)
                     return;
                 if (settings.get_string('voice-provider') !== wanted)
                     return;
-                modelChoices = [['', def], ...list];
-                if (!modelChoices.some(([id]) => id === value))
-                    modelChoices.push([value, value]);
-                // Off the D-Bus callback, and only when no popup is open: swapping a combo's model
-                // while its list is showing leaves GTK holding a row it has already freed.
-                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                    if (mine !== fillToken || model.popup_shown)
-                        return GLib.SOURCE_REMOVE;
-                    model.enable_search = modelChoices.length > 12;
-                    model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
-                    model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
-                    return GLib.SOURCE_REMOVE;
-                });
+                if (list.length) {
+                    modelChoices = [['', def], ...list];
+                    if (!modelChoices.some(([id]) => id === value))
+                        modelChoices.push([value, value]);
+                }
             }
             // A pick the plan no longer allows stays (it comes back once allowed), marked as not used now.
             if (!modelChoices.some(([id]) => id === value)) {
@@ -807,6 +799,10 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const checking = current.noPlan ? 'Finding your providers’ models…' : 'Checking which models your plan includes…';
             model.subtitle = current.models && !entry ? current.about
                 : entry || catalog.loaded ? about : checking;
+            // The row is rebuilt only when it is not on screen: swapping a combo's model while its
+            // popup is open leaves GTK holding a row it has already freed.
+            if (model.popup_shown)
+                return;
             model.enable_search = modelChoices.length > 12;
             model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
             model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
