@@ -2128,52 +2128,62 @@
 
 /* The Vitals page: the machine's own pulse. Flat, on the island's own surface: the two
    figures that matter at a glance, then a row per storage, then the network. */
-.notchfolk-vitals-column { spacing: 9px; padding: 4px 6px 0 6px; }
+.notchfolk-vitals-column { spacing: 10px; padding: 2px 6px 0 6px; }
 
-.notchfolk-vitals-glance { spacing: 14px; }
-.notchfolk-vitals-figure { spacing: 10px; }
-.notchfolk-vitals-figure-text { spacing: 1px; }
-.notchfolk-vitals-figure-title {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+/* The heroes: the CPU's ring and the temperature's number, centred as a pair
+ * with generous space between - the two that change what you do next. */
+.notchfolk-vitals-heroes {
+  spacing: 28px; x_expand: true; x_align: center; padding: 6px 0 2px 0;
 }
-.notchfolk-vitals-figure-value {
-  font-size: 15px; font-weight: 700; letter-spacing: -0.3px;
+.notchfolk-vitals-hero { spacing: 3px; y_align: center; }
+.notchfolk-vitals-hero-value {
+  font-size: 15px; font-weight: 700; letter-spacing: -0.4px;
   color: #ffffff; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-figure-note { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.6); }
-.notchfolk-vitals-rule { width: 1px; height: 44px; background-color: rgba(255, 255, 255, 0.09); }
-.notchfolk-vitals-hairline { height: 1px; background-color: rgba(255, 255, 255, 0.07); margin: 1px 0; }
-
-.notchfolk-vitals-temp {
-  font-size: 30px; font-weight: 700; letter-spacing: -1px;
+.notchfolk-vitals-hero-temp {
+  font-size: 32px; font-weight: 300; letter-spacing: -1px;
   font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
 }
-.notchfolk-vitals-cores { spacing: 2px; height: 20px; }
-.notchfolk-vitals-core-track {
-  width: 4px; height: 20px; border-radius: 2px;
-  background-color: rgba(255, 255, 255, 0.10);
+.notchfolk-vitals-hero-band {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-core-fill { width: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.68); }
+.notchfolk-vitals-hero-name {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38); text-align: center;
+}
+.notchfolk-vitals-divider { width: 1px; height: 52px; background-color: rgba(255, 255, 255, 0.08); }
 
+/* The cores: one thin bar per core, a strip across the page. */
+.notchfolk-vitals-cores { spacing: 2px; height: 14px; x_align: center; }
+.notchfolk-vitals-core-track {
+  width: 3px; height: 14px; border-radius: 1.5px;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.notchfolk-vitals-core-fill { width: 3px; border-radius: 1.5px; background-color: rgba(255, 255, 255, 0.55); }
+
+.notchfolk-vitals-hairline { height: 1px; background-color: rgba(255, 255, 255, 0.06); margin: 3px 0; }
+
+/* The storage rows: flat, one line each. */
 .notchfolk-vitals-row { spacing: 10px; }
 .notchfolk-vitals-row-name {
-  width: 62px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-  text-transform: uppercase; color: rgba(255, 255, 255, 0.45);
+  width: 58px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.42);
 }
 .notchfolk-vitals-row-value {
   width: 148px; font-size: 11px; font-weight: 600;
-  color: rgba(255, 255, 255, 0.82); font-feature-settings: "tnum";
+  color: rgba(255, 255, 255, 0.78); font-feature-settings: "tnum";
 }
-.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.10); }
+.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.08); }
 .notchfolk-vitals-bar-fill {
   height: 4px; border-radius: 2px;
   background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a;
 }
 
-.notchfolk-vitals-moving { spacing: 14px; }
+/* The footer: the network's rates, the battery when there is one. */
+.notchfolk-vitals-moving { spacing: 16px; x_align: center; }
 .notchfolk-vitals-net, .notchfolk-vitals-battery {
-  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.7);
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.62);
   font-feature-settings: "tnum";
 }
 

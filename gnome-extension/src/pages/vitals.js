@@ -2,13 +2,10 @@
 // Copyright (C) 2026 Galyarder Labs
 
 // The Vitals page: the machine's own pulse, in the island. The daemon samples the vitals
-// every 2 s (CPU, memory, swap, temperature, network, disk - docs/vitals-spec.md) and
-// publishes them as the weather is.
-//
-// The page reads in one glance, left to right: the two numbers that can change what you do
-// next (the CPU's load and the temperature) as large figures, then the storage that fills up
-// slowly, then what the machine is moving over the network. Nothing is a card inside a card;
-// the island's own background is the surface, and a hairline says where one band ends.
+// every 2 s (the plan: docs/vitals-spec.md) and the page shows them the way the island's
+// own pages do - the two that change what you do next (CPU and temperature) as the page's
+// own heroes, centred and big; the storage that fills slowly as flat rows; the network
+// and the battery as the footer.
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -27,18 +24,18 @@ function tempColor(celsius) {
     return '#7dd87d';
 }
 
-/** What the temperature's colour means, in words, so the colour is never the only signal. */
+/** The temperature's band, the word for how it feels. */
 function tempBand(celsius) {
-    if (celsius <= 0)
-        return 'No sensor';
     if (celsius >= 75)
-        return 'Running hot';
+        return 'Hot';
     if (celsius >= 60)
         return 'Warm';
-    return 'Cool';
+    if (celsius > 0)
+        return 'Cool';
+    return '—';
 }
 
-/** A rate in bytes/s, as a human's own words (KB/s, MB/s). */
+/** A rate in bytes/s, as a human's own words. */
 function rate(bytesPerSecond) {
     if (bytesPerSecond < 1024)
         return `${Math.round(bytesPerSecond)} B/s`;
@@ -47,7 +44,7 @@ function rate(bytesPerSecond) {
     return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
 }
 
-/** A size in bytes, as a human's own words (MB, GB, TB). */
+/** A size in bytes, as a human's own words. */
 function size(bytes) {
     if (bytes < 1024 ** 3)
         return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
@@ -56,9 +53,11 @@ function size(bytes) {
     return `${(bytes / 1024 ** 4).toFixed(1)} TB`;
 }
 
-/** A share of a whole, as a whole percent (0 when the whole is nothing). */
+/** A share as a whole number, 0-100. */
 function share(used, total) {
-    return total > 0 ? Math.round(used / total * 100) : 0;
+    if (total <= 0)
+        return 0;
+    return Math.max(0, Math.min(100, Math.round(used / total * 100)));
 }
 
 export const VitalsPage = GObject.registerClass({
@@ -79,34 +78,33 @@ export const VitalsPage = GObject.registerClass({
             x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         this.add_child(column);
 
-        // ── The glance: CPU load and temperature, the two that change what you do next ──
-        const glance = new St.BoxLayout({style_class: 'notchfolk-vitals-glance', x_expand: true});
-        column.add_child(glance);
+        // ── The heroes: the CPU's ring and the temperature's number, centred as a pair ──
+        // The two that change what you do next, at the page's own focal weight: the ring
+        // with its % inside, the temperature big and colour-coded, generous space between.
+        const heroes = new St.BoxLayout({style_class: 'notchfolk-vitals-heroes'});
+        column.add_child(heroes);
 
-        const load = new St.BoxLayout({style_class: 'notchfolk-vitals-figure', x_expand: true});
-        this._cpuRing = new Ring({size: 52, lineWidth: 4.5});
-        this._cpuPercent = label('—', 'notchfolk-vitals-figure-value');
+        const cpu = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero'});
+        this._cpuRing = new Ring({size: 56, lineWidth: 4.5});
+        this._cpuPercent = label('—', 'notchfolk-vitals-hero-value');
         this._cpuRing.add_child(this._cpuPercent);
-        load.add_child(this._cpuRing);
-        const loadText = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure-text',
-            y_align: Clutter.ActorAlign.CENTER});
-        loadText.add_child(label('CPU load', 'notchfolk-vitals-figure-title'));
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores',
-            y_align: Clutter.ActorAlign.CENTER});
-        loadText.add_child(this._coresBox);
-        load.add_child(loadText);
-        glance.add_child(load);
+        cpu.add_child(this._cpuRing);
+        cpu.add_child(label('CPU', 'notchfolk-vitals-hero-name'));
+        heroes.add_child(cpu);
 
-        glance.add_child(new St.Widget({style_class: 'notchfolk-vitals-rule'}));
+        heroes.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
 
-        const heat = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure-text',
-            x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-        heat.add_child(label('Temperature', 'notchfolk-vitals-figure-title'));
-        this._tempLabel = label('—', 'notchfolk-vitals-temp');
+        const heat = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero'});
+        this._tempLabel = label('—', 'notchfolk-vitals-hero-temp');
         heat.add_child(this._tempLabel);
-        this._tempNote = label('', 'notchfolk-vitals-figure-note');
+        this._tempNote = label('', 'notchfolk-vitals-hero-band');
         heat.add_child(this._tempNote);
-        glance.add_child(heat);
+        heat.add_child(label('Temperature', 'notchfolk-vitals-hero-name'));
+        heroes.add_child(heat);
+
+        // ── The cores: one thin bar per core, a strip across the page's width ──
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores', x_expand: true});
+        column.add_child(this._coresBox);
 
         // ── Storage: the three that fill up slowly, one row each ──
         column.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
@@ -114,10 +112,9 @@ export const VitalsPage = GObject.registerClass({
         this._swapBar = this._row('Swap', column);
         this._diskBar = this._row('Disk', column);
 
-        // ── The network, and the battery when the machine has one ──
+        // ── The footer: the network's rates, the battery when there is one ──
         column.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
         const moving = new St.BoxLayout({style_class: 'notchfolk-vitals-moving', x_expand: true});
-        moving.add_child(label('Network', 'notchfolk-vitals-row-name'));
         this._netDown = label('', 'notchfolk-vitals-net');
         this._netUp = label('', 'notchfolk-vitals-net');
         moving.add_child(this._netDown);
@@ -169,7 +166,7 @@ export const VitalsPage = GObject.registerClass({
             if (!core)
                 return;
             const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * 20));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 14));
             // A core near its ceiling is the one to look at.
             core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
             core.track.tooltip_text = `Core ${index}: ${percent}%`;
@@ -188,9 +185,10 @@ export const VitalsPage = GObject.registerClass({
         const celsius = vitals.temperature_c;
         const unit = this._unit === 'F' ? 'F' : 'C';
         const shown = unit === 'F' ? celsius * 9 / 5 + 32 : celsius;
-        this._tempLabel.text = celsius > 0 ? `${Math.round(shown)}°${unit}` : '—';
+        this._tempLabel.text = celsius > 0 ? `${Math.round(shown)}°` : '—';
         this._tempLabel.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
         this._tempNote.text = tempBand(celsius);
+        this._tempNote.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
 
         this._syncCores(vitals.cpu_cores ?? []);
 
