@@ -13,7 +13,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {VERTICAL, px, uiScale} from '../compat.js';
+import {VERTICAL, px} from '../compat.js';
 import {Page} from './page.js';
 import {label} from '../widgets.js';
 
@@ -84,8 +84,6 @@ export const VitalsPage = GObject.registerClass({
         this._cpuHistory = [];
         this._cores = [];
         this._coreSignature = '';
-        this._baseHeight = height;
-        this._syncHeight();
 
         const column = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-column',
             x_expand: true, y_align: Clutter.ActorAlign.CENTER});
@@ -125,13 +123,9 @@ export const VitalsPage = GObject.registerClass({
         loadRow.add_child(label('Load', 'notchfolk-vitals-info-name'));
         this._loadNote = label('', 'notchfolk-vitals-info-value');
         loadRow.add_child(this._loadNote);
+        this._procNote = label('', 'notchfolk-vitals-info-proc');
+        loadRow.add_child(this._procNote);
         column.add_child(loadRow);
-
-        const procRow = new St.BoxLayout({style_class: 'notchfolk-vitals-info-row', x_expand: true});
-        procRow.add_child(label('Processes', 'notchfolk-vitals-info-name'));
-        this._procNote = label('', 'notchfolk-vitals-info-value');
-        procRow.add_child(this._procNote);
-        column.add_child(procRow);
 
         // ── The storage that fills slowly, a row each ──
         column.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
@@ -172,8 +166,6 @@ export const VitalsPage = GObject.registerClass({
     }
 
     onPageHeight(height) {
-        this._baseHeight = height;
-        this._syncHeight();
     }
 
     /** One storage row: the name, the bar, the value - one line. */
@@ -275,7 +267,7 @@ export const VitalsPage = GObject.registerClass({
         this._freqNote.text = vitals.cpu_frequency_mhz > 0
             ? `${(vitals.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : '\u2014';
         this._loadNote.text = `${(vitals.load_1 ?? 0).toFixed(2)} \u00b7 ${(vitals.load_5 ?? 0).toFixed(2)} \u00b7 ${(vitals.load_15 ?? 0).toFixed(2)}`;
-        this._procNote.text = `${vitals.process_count ?? 0}`;
+                this._procNote.text = ` \u00b7 ${vitals.process_count ?? 0} proc`;
 
         this._setRow(this._memBar, vitals.memory_used_bytes, vitals.memory_total_bytes);
         this._setRow(this._swapBar, vitals.swap_used_bytes, vitals.swap_total_bytes);
