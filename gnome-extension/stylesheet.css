@@ -952,7 +952,7 @@
   border: 1px solid rgba(255, 255, 255, 0.10);
 }
 .notchfolk-prayer-hero-top { spacing: 5px; }
-.notchfolk-prayer-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.9px; color: rgba(255, 211, 107, 0.7); }
+.notchfolk-prayer-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.4px; color: rgba(255, 211, 107, 0.7); }
 .notchfolk-prayer-next-name { font-size: 25px; font-weight: 700; letter-spacing: -0.7px; color: #ffffff; }
 .notchfolk-prayer-next-details { spacing: 10px; }
 .notchfolk-prayer-next-time { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; color: #ffd36b; }
