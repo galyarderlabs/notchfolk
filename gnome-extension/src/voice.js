@@ -667,6 +667,25 @@ export const VoiceView = GObject.registerClass({
 
     // Open, the conversation shows above and the row below becomes the field to write in (the face still
     // listens when tapped), so nothing shows twice.
+    /** The chat layout for a fresh conversation: the header, the empty list, the
+     * entry field as the input - the same face the chat always has, so a new chat
+     * does not look like a different thing. */
+    openChatForNew() {
+        if (this.chatOpen)
+            return;
+        this._chat.showArchive(false);
+        this._chat.visible = true;
+        this._refreshAction();
+        this._syncClose();
+        this._heardButton.visible = false;
+        this._syncChatButton();
+        if (St.Settings.get().enable_animations) {
+            this._chat.opacity = 0;
+            this._chat.ease({opacity: 255, duration: 260, delay: 80, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+        }
+        this.emit('size-changed');
+    }
+
     openChat() {
         if (this.chatOpen || !this._history.length)
             return;
