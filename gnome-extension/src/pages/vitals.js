@@ -100,57 +100,59 @@ export const VitalsPage = GObject.registerClass({
         heading.add_child(toggle);
         this._column.add_child(heading);
 
-        // ── All: the pulse left, the detail right ──
-        this._allView = new St.BoxLayout({style_class: 'notchfolk-vitals-row', x_expand: true, y_expand: true});
-        const pulse = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-pulse', x_expand: true});
-        const cpuHeat = new St.BoxLayout({style_class: 'notchfolk-vitals-cpuheat'});
-        const cpuFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        // ── All: full-width sections, stacked - the pulse, the sparkline,
+        // the storage, the footer. No cramped columns; everything breathes. ──
+        this._allView = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-all',
+            x_expand: true, y_expand: true});
+
+        // The pulse: CPU and temperature side by side, full width.
+        const cpuHeat = new St.BoxLayout({style_class: 'notchfolk-vitals-all-pulse', x_expand: true});
+        const cpuFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure', x_expand: true});
         this._cpuValue = label('\u2014', 'notchfolk-vitals-figure-value');
         cpuFig.add_child(this._cpuValue);
-        cpuFig.add_child(label('CPU', 'notchfolk-vitals-figure-name'));
+        cpuFig.add_child(label('CPU load', 'notchfolk-vitals-figure-name'));
         cpuHeat.add_child(cpuFig);
-        const heatFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        cpuHeat.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
+        const heatFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure', x_expand: true});
         this._tempValue = label('\u2014', 'notchfolk-vitals-figure-value notchfolk-vitals-temp');
         heatFig.add_child(this._tempValue);
         this._tempBand = label('', 'notchfolk-vitals-figure-band');
         heatFig.add_child(this._tempBand);
         cpuHeat.add_child(heatFig);
-        pulse.add_child(cpuHeat);
+        cpuHeat.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
+        const freqFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure', x_expand: true});
+        this._allFreq = label('', 'notchfolk-vitals-figure-value notchfolk-vitals-freq');
+        freqFig.add_child(this._allFreq);
+        freqFig.add_child(label('CPU speed', 'notchfolk-vitals-figure-name'));
+        cpuHeat.add_child(freqFig);
+        this._allView.add_child(cpuHeat);
+
+        // The sparkline: the last minute, full width.
         this._spark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark', x_expand: true});
         this._spark.connect('repaint', area => this._paintSpark(area, this._cpuHistory));
-        pulse.add_child(this._spark);
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
-        pulse.add_child(this._coresBox);
-        this._allView.add_child(pulse);
-        this._allView.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
-        const detail = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
-            style_class: 'notchfolk-vitals-detail', y_align: Clutter.ActorAlign.CENTER});
-        this._memBar = this._storageRow('Memory', detail);
-        this._swapBar = this._storageRow('Swap', detail);
-        this._diskBar = this._storageRow('Disk', detail);
-        detail.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
-        const net = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-net'});
+        this._allView.add_child(this._spark);
+
+        // The cores: a strip across the full width.
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores', x_expand: true});
+        this._allView.add_child(this._coresBox);
+
+        // The storage: Memory and Disk, full-width bars.
+        this._memBar = this._storageRow('Memory', this._allView);
+        this._swapBar = this._storageRow('Swap', this._allView);
+        this._diskBar = this._storageRow('Disk', this._allView);
+
+        // The footer: the network, the battery, the machine's story.
+        this._allView.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
+        const footer = new St.BoxLayout({style_class: 'notchfolk-vitals-all-footer', x_expand: true});
         this._netDown = label('', 'notchfolk-vitals-net-value');
-        net.add_child(this._netDown);
+        footer.add_child(this._netDown);
         this._netUp = label('', 'notchfolk-vitals-net-value');
-        net.add_child(this._netUp);
-        detail.add_child(net);
+        footer.add_child(this._netUp);
         this._battery = label('', 'notchfolk-vitals-battery-value');
-        detail.add_child(this._battery);
-        // The machine's own story: uptime, load, processes, frequency - the numbers
-        // a real system monitor carries.
-        detail.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
-        const story = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-story'});
+        footer.add_child(this._battery);
         this._uptime = label('', 'notchfolk-vitals-story-value');
-        story.add_child(this._uptime);
-        this._loadAvg = label('', 'notchfolk-vitals-story-value');
-        story.add_child(this._loadAvg);
-        this._processes = label('', 'notchfolk-vitals-story-value');
-        story.add_child(this._processes);
-        this._frequency = label('', 'notchfolk-vitals-story-value');
-        story.add_child(this._frequency);
-        detail.add_child(story);
-        this._allView.add_child(detail);
+        footer.add_child(this._uptime);
+        this._allView.add_child(footer);
         this._column.add_child(this._allView);
 
         // ── CPU: the numbers big, the sparkline, each core a labeled bar ──
@@ -380,11 +382,8 @@ export const VitalsPage = GObject.registerClass({
         const upDays = Math.floor(up / 86400);
         const upHours = Math.floor((up % 86400) / 3600);
         const upMins = Math.floor((up % 3600) / 60);
-        this._uptime.text = `Uptime  ${upDays > 0 ? `${upDays}d ` : ''}${upHours}h ${upMins}m`;
-        this._loadAvg.text = `Load  ${(vitals.load_1 ?? 0).toFixed(2)}  ${(vitals.load_5 ?? 0).toFixed(2)}  ${(vitals.load_15 ?? 0).toFixed(2)}`;
-        this._processes.text = `Processes  ${vitals.process_count ?? 0}`;
-        this._frequency.text = vitals.cpu_frequency_mhz > 0 ? `CPU  ${(vitals.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : '';
-        this._frequency.visible = vitals.cpu_frequency_mhz > 0;
+        this._uptime.text = `Up ${upDays > 0 ? `${upDays}d ` : ''}${upHours}h ${upMins}m`;
+        this._allFreq.text = vitals.cpu_frequency_mhz > 0 ? `${(vitals.cpu_frequency_mhz / 1000).toFixed(1)}` : '—';
         this._cpuFreqLabel.text = vitals.cpu_frequency_mhz > 0 ? `${(vitals.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : '';
         this._cpuFreqLabel.visible = vitals.cpu_frequency_mhz > 0;
         this._cpuLoadLabel.text = `Load  ${(vitals.load_1 ?? 0).toFixed(2)} · ${(vitals.load_5 ?? 0).toFixed(2)} · ${(vitals.load_15 ?? 0).toFixed(2)}`;
