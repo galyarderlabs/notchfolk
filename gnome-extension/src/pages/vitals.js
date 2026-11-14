@@ -110,6 +110,9 @@ export const VitalsPage = GObject.registerClass({
         this._cpuValue = label('\u2014', 'notchfolk-vitals-figure-value');
         cpuFig.add_child(this._cpuValue);
         cpuFig.add_child(label('CPU load', 'notchfolk-vitals-figure-name'));
+        this._spark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark', x_expand: true});
+        this._spark.connect('repaint', area => this._paintSpark(area, this._cpuHistory));
+        cpuFig.add_child(this._spark);
         cpuHeat.add_child(cpuFig);
         cpuHeat.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
         const heatFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure', x_expand: true});
@@ -126,16 +129,14 @@ export const VitalsPage = GObject.registerClass({
         cpuHeat.add_child(freqFig);
         this._allView.add_child(cpuHeat);
 
-        // The sparkline: the last minute, full width.
-        this._spark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark', x_expand: true});
-        this._spark.connect('repaint', area => this._paintSpark(area, this._cpuHistory));
-        this._allView.add_child(this._spark);
-
-        // The cores: a strip across the full width.
+        // The cores: a strip across the full width, said what it is.
+        const coresRow = new St.BoxLayout({style_class: 'notchfolk-vitals-all-cores', x_expand: true});
+        coresRow.add_child(label('Cores', 'notchfolk-vitals-storage-name'));
         this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores', x_expand: true});
-        this._allView.add_child(this._coresBox);
+        coresRow.add_child(this._coresBox);
+        this._allView.add_child(coresRow);
 
-        // The storage: Memory and Disk, full-width bars.
+        // The storage: Memory, Swap and Disk, full-width bars, each with its bytes.
         this._memBar = this._storageRow('Memory', this._allView);
         this._swapBar = this._storageRow('Swap', this._allView);
         this._diskBar = this._storageRow('Disk', this._allView);
