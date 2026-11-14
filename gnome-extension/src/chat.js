@@ -503,17 +503,8 @@ export const ChatView = GObject.registerClass({
             accessible_name: 'Chat history'});
         this._historyButton.connect('clicked', () => this.showArchive(!this._showingArchive));
         header.add_child(this._historyButton);
-        // The header's own Close: the voice view hides its close button while the
-        // conversation is open (its row becomes the field), so this is the one close
-        // there is - without it, the chat cannot be closed at all.
-        const closeContent = new St.BoxLayout({style_class: 'notchfolk-chat-control-content'});
-        closeContent.add_child(new St.Icon({gicon: icon('notchfolk-close-symbolic'), icon_size: 12,
-            y_align: Clutter.ActorAlign.CENTER}));
-        this._closeButton = new St.Button({child: closeContent,
-            style_class: 'notchfolk-button notchfolk-chat-control notchfolk-chat-close', can_focus: true,
-            accessible_name: 'Close conversation'});
-        this._closeButton.connect('clicked', () => this.emit('close'));
-        header.add_child(this._closeButton);
+        // No Close of its own: the voice view's close button (beside the field) owns closing,
+        // and a second one beside the agent's chat was a double (Galih's eye).
         this.add_child(header);
         this._archive = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-chat-archive-view', x_expand: true});
         this._list = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-chat-list', x_expand: true});
