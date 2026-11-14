@@ -2,11 +2,9 @@
 // Copyright (C) 2026 Galyarder Labs
 
 // The Vitals page: the machine's own pulse, with a mode switch like the Apps page's
-// own (All / CPU / Memory / Network) - each mode gives its vital the page's whole
-// space. All: the pulse left (CPU and temperature, the sparkline, the cores), the
-// detail right (Memory, Swap, Disk, the network, the battery). CPU: the big number,
-// the sparkline full width, each core a bar. Memory: the big share, Memory and Swap
-// full-width bars. Network: the rates, big.
+// own. Every mode fills the page: All (the pulse left, the detail right), CPU (the
+// numbers big, the sparkline, each core a labeled bar), Memory (each storage a big
+// bar with its bytes), Network (both rates big with their own sparklines).
 
 import Cairo from 'cairo';
 import Clutter from 'gi://Clutter';
@@ -18,10 +16,8 @@ import * as Format from '../format.js';
 import {icon, label} from '../widgets.js';
 import {Page} from './page.js';
 
-/** How many samples the sparkline walks (2 s each: the last minute). */
 const SPARK_POINTS = 30;
 
-/** The modes the page switches between, as the Apps page's own periods. */
 const MODES = [
     {name: 'all', label: 'All'},
     {name: 'cpu', label: 'CPU'},
@@ -29,7 +25,6 @@ const MODES = [
     {name: 'network', label: 'Net'},
 ];
 
-/** The temperature's colour: green, amber, red - the one vital that can hurt. */
 function tempColor(celsius) {
     if (celsius >= 75)
         return '#ff6961';
@@ -38,7 +33,6 @@ function tempColor(celsius) {
     return '#7dd87d';
 }
 
-/** The temperature's band, the word for how it feels. */
 function tempBand(celsius) {
     if (celsius >= 75)
         return 'Hot';
@@ -49,7 +43,6 @@ function tempBand(celsius) {
     return '\u2014';
 }
 
-/** A rate in bytes/s, as a human's own words. */
 function rate(bytesPerSecond) {
     if (bytesPerSecond < 1024)
         return `${Math.round(bytesPerSecond)} B/s`;
@@ -58,7 +51,6 @@ function rate(bytesPerSecond) {
     return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
 }
 
-/** A size in bytes, as a human's own words. */
 function size(bytes) {
     if (bytes < 1024 ** 3)
         return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
@@ -67,7 +59,6 @@ function size(bytes) {
     return `${(bytes / 1024 ** 4).toFixed(1)} TB`;
 }
 
-/** A share as a whole number, 0-100. */
 function share(used, total) {
     if (total <= 0)
         return 0;
@@ -84,20 +75,20 @@ export const VitalsPage = GObject.registerClass({
         });
         this.name = 'vitals';
         this._settings = settings;
-        this._history = [];
-        this._cores = [];
-        this._coreSignature = '';
+        this._cpuHistory = [];
+        this._downHistory = [];
+        this._upHistory = [];
         this._mode = 'all';
 
         this._column = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
             style_class: 'notchfolk-vitals-column'});
         this.add_child(this._column);
 
-        // \u2500\u2500 The heading: the icon, the title, the mode switch on the right \u2500\u2500
+        // The heading: the icon, the title, the mode switch (its labels fit).
         const heading = new St.BoxLayout({style_class: 'notchfolk-vitals-heading'});
         heading.add_child(new St.Icon({gicon: icon('notchfolk-heartbeat'), icon_size: 15,
             style_class: 'notchfolk-vitals-heading-icon'}));
-        heading.add_child(label('Vitals', 'notchfolk-vitals-title', {x_expand: true}));
+        heading.add_child(label('Vitals', 'notchfolk-vitals-title'));
         const toggle = new St.BoxLayout({style_class: 'notchfolk-segmented notchfolk-vitals-toggle'});
         this._modeButtons = new Map();
         for (const {name, label: text} of MODES) {
@@ -109,22 +100,24 @@ export const VitalsPage = GObject.registerClass({
         heading.add_child(toggle);
         this._column.add_child(heading);
 
-        // \u2500\u2500 The All view: the pulse left, the detail right \u2500\u2500
+        // ── All: the pulse left, the detail right ──
         this._allView = new St.BoxLayout({style_class: 'notchfolk-vitals-row', x_expand: true, y_expand: true});
         const pulse = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-pulse', x_expand: true});
-        const cpu = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        const cpuHeat = new St.BoxLayout({style_class: 'notchfolk-vitals-cpuheat'});
+        const cpuFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
         this._cpuValue = label('\u2014', 'notchfolk-vitals-figure-value');
-        cpu.add_child(this._cpuValue);
-        cpu.add_child(label('CPU load', 'notchfolk-vitals-figure-name'));
-        pulse.add_child(cpu);
-        const heat = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        cpuFig.add_child(this._cpuValue);
+        cpuFig.add_child(label('CPU', 'notchfolk-vitals-figure-name'));
+        cpuHeat.add_child(cpuFig);
+        const heatFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
         this._tempValue = label('\u2014', 'notchfolk-vitals-figure-value notchfolk-vitals-temp');
-        heat.add_child(this._tempValue);
+        heatFig.add_child(this._tempValue);
         this._tempBand = label('', 'notchfolk-vitals-figure-band');
-        heat.add_child(this._tempBand);
-        pulse.add_child(heat);
+        heatFig.add_child(this._tempBand);
+        cpuHeat.add_child(heatFig);
+        pulse.add_child(cpuHeat);
         this._spark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark', x_expand: true});
-        this._spark.connect('repaint', area => this._paintSpark(area));
+        this._spark.connect('repaint', area => this._paintSpark(area, this._cpuHistory));
         pulse.add_child(this._spark);
         this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
         pulse.add_child(this._coresBox);
@@ -147,40 +140,55 @@ export const VitalsPage = GObject.registerClass({
         this._allView.add_child(detail);
         this._column.add_child(this._allView);
 
-        // \u2500\u2500 The CPU view: the big number, the sparkline full width, each core \u2500\u2500
+        // ── CPU: the numbers big, the sparkline, each core a labeled bar ──
         this._cpuView = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-focus', x_expand: true,
             y_expand: true, visible: false});
+        const cpuTop = new St.BoxLayout({style_class: 'notchfolk-vitals-focus-top'});
         this._cpuBig = label('\u2014', 'notchfolk-vitals-big');
-        this._cpuView.add_child(this._cpuBig);
-        this._cpuView.add_child(label('CPU load', 'notchfolk-vitals-figure-name'));
+        cpuTop.add_child(this._cpuBig);
+        cpuTop.add_child(label('CPU load', 'notchfolk-vitals-figure-name', {y_align: Clutter.ActorAlign.END}));
+        this._cpuTempSmall = label('', 'notchfolk-vitals-focus-side');
+        cpuTop.add_child(this._cpuTempSmall);
+        this._cpuView.add_child(cpuTop);
         this._cpuSpark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark-tall', x_expand: true});
-        this._cpuSpark.connect('repaint', area => this._paintSpark(area));
+        this._cpuSpark.connect('repaint', area => this._paintSpark(area, this._cpuHistory));
         this._cpuView.add_child(this._cpuSpark);
         this._coresBoxBig = new St.BoxLayout({style_class: 'notchfolk-vitals-cores-big'});
         this._cpuView.add_child(this._coresBoxBig);
         this._column.add_child(this._cpuView);
 
-        // \u2500\u2500 The Memory view: the big share, Memory and Swap full-width bars \u2500\u2500
+        // ── Memory: each storage a big bar with its bytes under it ──
         this._memView = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-focus', x_expand: true,
             y_expand: true, visible: false});
+        this._memHead = new St.BoxLayout({style_class: 'notchfolk-vitals-focus-top'});
         this._memBig = label('\u2014', 'notchfolk-vitals-big');
-        this._memView.add_child(this._memBig);
-        this._memView.add_child(label('Memory', 'notchfolk-vitals-figure-name'));
-        this._memWideBar = this._storageRow('Memory', this._memView);
-        this._swapWideBar = this._storageRow('Swap', this._memView);
-        this._diskWideBar = this._storageRow('Disk', this._memView);
+        this._memHead.add_child(this._memBig);
+        this._memDetail = label('', 'notchfolk-vitals-focus-side');
+        this._memHead.add_child(this._memDetail);
+        this._memView.add_child(this._memHead);
+        this._memWide = this._bigBar('Memory', this._memView);
+        this._swapWide = this._bigBar('Swap', this._memView);
+        this._diskWide = this._bigBar('Disk', this._memView);
         this._column.add_child(this._memView);
 
-        // \u2500\u2500 The Network view: the rates, big \u2500\u2500
+        // ── Network: both rates big, each its own sparkline ──
         this._netView = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-focus', x_expand: true,
             y_expand: true, visible: false});
-        this._netBig = label('\u2014', 'notchfolk-vitals-big notchfolk-vitals-net-big');
-        this._netView.add_child(this._netBig);
-        this._netView.add_child(label('Network', 'notchfolk-vitals-figure-name'));
-        this._netDownBig = label('', 'notchfolk-vitals-net-line');
-        this._netView.add_child(this._netDownBig);
-        this._netUpBig = label('', 'notchfolk-vitals-net-line');
-        this._netView.add_child(this._netUpBig);
+        const netTop = new St.BoxLayout({style_class: 'notchfolk-vitals-netview-top'});
+        const downFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        this._netDownBig = label('\u2014', 'notchfolk-vitals-big notchfolk-vitals-net-big');
+        downFig.add_child(this._netDownBig);
+        downFig.add_child(label('Download', 'notchfolk-vitals-figure-name'));
+        netTop.add_child(downFig);
+        const upFig = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        this._netUpBig = label('\u2014', 'notchfolk-vitals-big notchfolk-vitals-net-big');
+        upFig.add_child(this._netUpBig);
+        upFig.add_child(label('Upload', 'notchfolk-vitals-figure-name'));
+        netTop.add_child(upFig);
+        this._netView.add_child(netTop);
+        this._downSpark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark-tall', x_expand: true});
+        this._downSpark.connect('repaint', area => this._paintNetSpark(area, this._downHistory));
+        this._netView.add_child(this._downSpark);
         this._column.add_child(this._netView);
 
         this._unit = settings.get_string('vitals-temperature-unit');
@@ -194,7 +202,6 @@ export const VitalsPage = GObject.registerClass({
         this._refresh();
     }
 
-    /** The mode switch: each vital its own view, the page's whole space. */
     _showMode(mode) {
         this._mode = mode;
         for (const [name, button] of this._modeButtons)
@@ -206,7 +213,6 @@ export const VitalsPage = GObject.registerClass({
         this._refresh();
     }
 
-    /** One storage row: the name left, the bar across, the value right - one line. */
     _storageRow(name, parent) {
         const box = new St.BoxLayout({style_class: 'notchfolk-vitals-storage', x_expand: true});
         box.add_child(label(name, 'notchfolk-vitals-storage-name'));
@@ -220,19 +226,35 @@ export const VitalsPage = GObject.registerClass({
         return {value, fill, track, box};
     }
 
-    /** The sparkline: the history as a smooth curve with a warm gradient area under it. */
-    _paintSpark(area) {
+    /** A big bar with its name above and its bytes under - the memory view's own row. */
+    _bigBar(name, parent) {
+        const box = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-bigbar', x_expand: true});
+        const header = new St.BoxLayout({style_class: 'notchfolk-vitals-bigbar-header'});
+        header.add_child(label(name, 'notchfolk-vitals-bigbar-name'));
+        const value = label('', 'notchfolk-vitals-bigbar-value');
+        header.add_child(value);
+        box.add_child(header);
+        const fill = new St.Widget({style_class: 'notchfolk-vitals-bar-fill'});
+        const track = new St.Widget({style_class: 'notchfolk-vitals-bar-track-tall', x_expand: true});
+        track.add_child(fill);
+        box.add_child(track);
+        parent.add_child(box);
+        return {value, fill, track, box};
+    }
+
+    _paintSpark(area, history) {
         const cr = area.get_context();
         const [width, height] = area.get_surface_size();
-        if (width <= 0 || height <= 0 || this._history.length < 2) {
+        if (width <= 0 || height <= 0 || history.length < 2) {
             cr.$dispose();
             return;
         }
-        const points = this._history.slice(-SPARK_POINTS);
+        const points = history.slice(-SPARK_POINTS);
         const x = i => width * i / (points.length - 1);
         const top = px(2);
         const bottom = height - px(2);
-        const y = value => bottom - (bottom - top) * (value / 100);
+        const max = Math.max(...points, 1);
+        const y = value => bottom - (bottom - top) * (value / max);
         cr.setLineCap(Cairo.LineCap.ROUND);
         cr.setLineJoin(Cairo.LineJoin.ROUND);
         const drawCurve = () => {
@@ -271,29 +293,8 @@ export const VitalsPage = GObject.registerClass({
         cr.$dispose();
     }
 
-    /** One bar per core, made again only when the machine's core count changes. */
-    _syncCores(cores, box, maxHeight) {
-        const signature = `${cores.length}:${box.style_class}`;
-        if (signature !== this._coreSignature) {
-            this._coreSignature = signature;
-            box.destroy_all_children();
-            this._cores = cores.map(() => {
-                const fill = new St.Widget({style_class: 'notchfolk-vitals-core-fill'});
-                const track = new St.Widget({style_class: 'notchfolk-vitals-core-track'});
-                track.add_child(fill);
-                box.add_child(track);
-                return {fill, track};
-            });
-        }
-        cores.forEach((usage, index) => {
-            const core = this._cores[index];
-            if (!core)
-                return;
-            const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * maxHeight));
-            core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
-            core.track.tooltip_text = `Core ${index}: ${percent}%`;
-        });
+    _paintNetSpark(area, history) {
+        this._paintSpark(area, history);
     }
 
     _refresh() {
@@ -301,47 +302,92 @@ export const VitalsPage = GObject.registerClass({
         if (!vitals)
             return;
 
-        this._cpuValue.text = `${Math.round(vitals.cpu_percent)}%`;
-        this._cpuBig.text = `${Math.round(vitals.cpu_percent)}%`;
+        const cpuPercent = Math.round(vitals.cpu_percent);
         const celsius = vitals.temperature_c;
         const unit = this._unit === 'F' ? 'F' : 'C';
         const shown = unit === 'F' ? celsius * 9 / 5 + 32 : celsius;
-        this._tempValue.text = celsius > 0 ? `${Math.round(shown)}\u00b0` : '\u2014';
-        this._tempValue.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
-        this._tempBand.text = tempBand(celsius);
-        this._tempBand.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
+        const tempText = celsius > 0 ? `${Math.round(shown)}\u00b0` : '\u2014';
+        const tempColorValue = celsius > 0 ? tempColor(celsius) : null;
 
-        this._history.push(vitals.cpu_percent);
-        if (this._history.length > SPARK_POINTS)
-            this._history.shift();
+        this._cpuValue.text = `${cpuPercent}%`;
+        this._cpuBig.text = `${cpuPercent}%`;
+        this._tempValue.text = tempText;
+        this._tempValue.style = tempColorValue ? `color: ${tempColorValue};` : null;
+        this._tempBand.text = tempBand(celsius);
+        this._tempBand.style = tempColorValue ? `color: ${tempColorValue};` : null;
+        this._cpuTempSmall.text = `${tempText} ${tempBand(celsius)}`;
+        this._cpuTempSmall.style = tempColorValue ? `color: ${tempColorValue};` : null;
+
+        this._cpuHistory.push(vitals.cpu_percent);
+        if (this._cpuHistory.length > SPARK_POINTS)
+            this._cpuHistory.shift();
         this._spark.queue_repaint();
         this._cpuSpark.queue_repaint();
 
-        this._syncCores(vitals.cpu_cores ?? [], this._coresBox, 18);
-        this._syncCores(vitals.cpu_cores ?? [], this._coresBoxBig, 28);
+        const down = vitals.network_down_bytes_per_s;
+        const up = vitals.network_up_bytes_per_s;
+        this._downHistory.push(down);
+        this._upHistory.push(up);
+        if (this._downHistory.length > SPARK_POINTS)
+            this._downHistory.shift();
+        if (this._upHistory.length > SPARK_POINTS)
+            this._upHistory.shift();
+        this._downSpark.queue_repaint();
+
+        this._netDown.text = `\u2193 ${rate(down)}`;
+        this._netUp.text = `\u2191 ${rate(up)}`;
+        this._netDownBig.text = rate(down);
+        this._netUpBig.text = rate(up);
 
         const memPercent = share(vitals.memory_used_bytes, vitals.memory_total_bytes);
         this._memBig.text = `${memPercent}%`;
+        this._memDetail.text = `${size(vitals.memory_used_bytes)} of ${size(vitals.memory_total_bytes)}`;
+
         this._setRow(this._memBar, vitals.memory_used_bytes, vitals.memory_total_bytes);
         this._setRow(this._swapBar, vitals.swap_used_bytes, vitals.swap_total_bytes);
         this._swapBar.box.visible = vitals.swap_total_bytes > 0;
         this._setRow(this._diskBar, vitals.disk_used_bytes, vitals.disk_total_bytes);
-        this._setRow(this._memWideBar, vitals.memory_used_bytes, vitals.memory_total_bytes);
-        this._setRow(this._swapWideBar, vitals.swap_used_bytes, vitals.swap_total_bytes);
-        this._swapWideBar.box.visible = vitals.swap_total_bytes > 0;
-        this._setRow(this._diskWideBar, vitals.disk_used_bytes, vitals.disk_total_bytes);
+        this._setBigBar(this._memWide, vitals.memory_used_bytes, vitals.memory_total_bytes);
+        this._setBigBar(this._swapWide, vitals.swap_used_bytes, vitals.swap_total_bytes);
+        this._swapWide.box.visible = vitals.swap_total_bytes > 0;
+        this._setBigBar(this._diskWide, vitals.disk_used_bytes, vitals.disk_total_bytes);
 
-        const down = rate(vitals.network_down_bytes_per_s);
-        const up = rate(vitals.network_up_bytes_per_s);
-        this._netDown.text = `\u2193 ${down}`;
-        this._netUp.text = `\u2191 ${up}`;
-        this._netBig.text = `\u2193 ${down}`;
-        this._netDownBig.text = `\u2193  ${down}`;
-        this._netUpBig.text = `\u2191  ${up}`;
+        this._syncCores(vitals.cpu_cores ?? []);
 
         const battery = this.daemon.state?.system?.battery;
         this._battery.text = battery ? `\u26a1 ${battery.percent}%${battery.charging ? ' charging' : ''}` : '';
         this._battery.visible = Boolean(battery);
+    }
+
+    _syncCores(cores) {
+        const signature = cores.length.toString();
+        if (signature !== this._coreSignature) {
+            this._coreSignature = signature;
+            this._coresBox.destroy_all_children();
+            this._coresBoxBig.destroy_all_children();
+            this._cores = cores.map((_, index) => {
+                const fill = new St.Widget({style_class: 'notchfolk-vitals-core-fill'});
+                const track = new St.Widget({style_class: 'notchfolk-vitals-core-track'});
+                track.add_child(fill);
+                this._coresBox.add_child(track);
+                const fillBig = new St.Widget({style_class: 'notchfolk-vitals-core-fill'});
+                const trackBig = new St.Widget({style_class: 'notchfolk-vitals-core-track-big'});
+                trackBig.add_child(fillBig);
+                this._coresBoxBig.add_child(trackBig);
+                return {fill, track, fillBig, trackBig, index};
+            });
+        }
+        cores.forEach((usage, index) => {
+            const core = this._cores[index];
+            if (!core)
+                return;
+            const percent = Math.max(0, Math.min(100, Math.round(usage)));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 16));
+            core.fillBig.height = Math.max(1, Math.round(percent / 100 * 24));
+            core.fillBig.style = percent >= 85 ? 'background-color: #ff6961;' : null;
+            core.track.tooltip_text = `Core ${index}: ${percent}%`;
+            core.trackBig.tooltip_text = `Core ${index}: ${percent}%`;
+        });
     }
 
     _setRow(row, used, total) {
@@ -350,6 +396,14 @@ export const VitalsPage = GObject.registerClass({
         row.box.tooltip_text = total > 0 ? `${size(used)} of ${size(total)}` : null;
         row.fill.width = Math.round(percent);
         row.fill.style = percent >= 90 ? 'background-color: #ff6961;'
+            : percent >= 75 ? 'background-color: #ffb748;' : null;
+    }
+
+    _setBigBar(bar, used, total) {
+        const percent = share(used, total);
+        bar.value.text = total > 0 ? `${percent}%  \u00b7  ${size(used)} of ${size(total)}` : '\u2014';
+        bar.fill.width = Math.round(percent);
+        bar.fill.style = percent >= 90 ? 'background-color: #ff6961;'
             : percent >= 75 ? 'background-color: #ffb748;' : null;
     }
 });

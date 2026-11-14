@@ -2130,17 +2130,17 @@
    figures that matter at a glance, then a row per storage, then the network. */
 .notchfolk-vitals-column { spacing: 4px; }
 
-/* The heading */
-.notchfolk-vitals-heading { height: 22px; spacing: 7px; }
+/* The heading: the icon, the title, the mode switch. */
+.notchfolk-vitals-heading { height: 26px; spacing: 7px; }
 .notchfolk-vitals-heading-icon { opacity: 0.82; color: #f4c869; }
-.notchfolk-vitals-title { font-size: 14px; font-weight: 700; letter-spacing: -0.1px; }
-.notchfolk-vitals-date { font-size: 10px; color: rgba(255, 255, 255, 0.48); }
+.notchfolk-vitals-title { font-size: 14px; font-weight: 700; letter-spacing: -0.1px; x_expand: true; }
+.notchfolk-vitals-toggle { x_align: end; }
+.notchfolk-vitals-toggle .notchfolk-segment { font-size: 10px; padding: 3px 8px; }
 
-/* The row: the pulse left, the detail right, filling the page's width. */
+/* All: the pulse left, the detail right. */
 .notchfolk-vitals-row { spacing: 14px; padding: 2px 4px; }
-
-/* LEFT: the pulse */
 .notchfolk-vitals-pulse { spacing: 4px; }
+.notchfolk-vitals-cpuheat { spacing: 16px; }
 .notchfolk-vitals-figure { spacing: 1px; }
 .notchfolk-vitals-figure-value {
   font-size: 24px; font-weight: 300; letter-spacing: -1px;
@@ -2155,16 +2155,13 @@
   text-transform: uppercase; font-feature-settings: "tnum";
 }
 .notchfolk-vitals-spark { height: 30px; }
-.notchfolk-vitals-cores { spacing: 2px; height: 18px; margin-top: 3px; }
+.notchfolk-vitals-cores { spacing: 2px; height: 16px; margin-top: 3px; }
 .notchfolk-vitals-core-track {
-  width: 3px; height: 18px; border-radius: 1.5px;
+  width: 3px; height: 16px; border-radius: 1.5px;
   background-color: rgba(255, 255, 255, 0.10);
 }
 .notchfolk-vitals-core-fill { width: 3px; border-radius: 1.5px; background-color: rgba(255, 255, 255, 0.55); }
-
 .notchfolk-vitals-divider { width: 1px; background-color: rgba(255, 255, 255, 0.08); }
-
-/* RIGHT: the detail */
 .notchfolk-vitals-detail { spacing: 6px; }
 .notchfolk-vitals-storage { spacing: 6px; }
 .notchfolk-vitals-storage-name {
@@ -2182,25 +2179,39 @@
 }
 .notchfolk-vitals-hairline { height: 1px; background-color: rgba(255, 255, 255, 0.07); margin: 3px 0; }
 .notchfolk-vitals-net { spacing: 1px; }
-/* The mode views: each vital its own whole space. */
-.notchfolk-vitals-toggle { margin-left: auto; }
-.notchfolk-vitals-focus { spacing: 4px; y_align: center; padding: 0 8px; }
-.notchfolk-vitals-big {
-  font-size: 34px; font-weight: 300; letter-spacing: -1.5px;
-  font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
-}
-.notchfolk-vitals-net-big { color: #ffce5c; }
-.notchfolk-vitals-spark-tall { height: 44px; margin: 4px 0; }
-.notchfolk-vitals-cores-big { spacing: 3px; height: 28px; x_align: center; margin-top: 4px; }
-.notchfolk-vitals-net-line {
-  font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
-  font-feature-settings: "tnum";
-}
-
 .notchfolk-vitals-net-value, .notchfolk-vitals-battery-value {
   font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.62);
   font-feature-settings: "tnum";
 }
 
-/* The closed island's own vital: a small number beside the wave. */
-.notchfolk-compact-vital { font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
+/* The focused modes: each vital fills the page. */
+.notchfolk-vitals-focus { spacing: 4px; y_align: center; padding: 0 6px; }
+.notchfolk-vitals-focus-top { spacing: 8px; y_align: center; }
+.notchfolk-vitals-big {
+  font-size: 32px; font-weight: 300; letter-spacing: -1.2px;
+  font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
+}
+.notchfolk-vitals-focus-side {
+  font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.6);
+  font-feature-settings: "tnum"; x_expand: true; text-align: right;
+}
+.notchfolk-vitals-net-big { color: #ffce5c; }
+.notchfolk-vitals-spark-tall { height: 38px; margin: 4px 0; }
+.notchfolk-vitals-cores-big { spacing: 3px; height: 24px; x_align: center; margin-top: 4px; }
+.notchfolk-vitals-core-track-big {
+  width: 4px; height: 24px; border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.10);
+}
+.notchfolk-vitals-netview-top { spacing: 24px; x_align: center; }
+.notchfolk-vitals-bigbar { spacing: 3px; margin: 2px 0; }
+.notchfolk-vitals-bigbar-header { spacing: 8px; }
+.notchfolk-vitals-bigbar-name {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.42); x_expand: true;
+}
+.notchfolk-vitals-bigbar-value {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
+  font-feature-settings: "tnum";
+}
+.notchfolk-vitals-bar-track-tall { height: 7px; border-radius: 3.5px; background-color: rgba(255, 255, 255, 0.08); }
+.notchfolk-vitals-bar-track-tall .notchfolk-vitals-bar-fill { height: 7px; border-radius: 3.5px; }
