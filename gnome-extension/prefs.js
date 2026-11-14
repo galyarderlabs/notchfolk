@@ -938,6 +938,10 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         const urlChanged = settings.connect('changed::voice-router-url', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
                 routerUrl.text = settings.get_string('voice-router-url');
+            // Another router lists other models: the cached list is stale.
+            modelLists.delete('openai-compatible');
+            if (settings.get_string('voice-provider') === 'openai-compatible')
+                syncModel();
         });
         routerUrl.connect('destroy', () => settings.disconnect(urlChanged));
 
@@ -2174,6 +2178,15 @@ function chooseCity(window, onPick, title = 'Add a City') {
 }
 
 /** The AI CLIs the voice assistant can ask, in the order "Automatic" tries them, signed-in ones first (as notchfolkd does). */
+/** A provider's models, asked for once per Settings window: the row is rebuilt on every keystroke
+ * in the model-id field, and each rebuild would otherwise cost another round trip to the router. */
+const modelLists = new Map();
+const modelList = id => {
+    if (!modelLists.has(id))
+        modelLists.set(id, apiModels(id));
+    return modelLists.get(id);
+};
+
 const AI_PROVIDERS = [
     {id: 'claude', name: 'Claude Code', planName: 'Claude', command: 'claude', modelKey: 'voice-claude-model',
         about: 'what Claude answers with'},
@@ -2184,10 +2197,10 @@ const AI_PROVIDERS = [
     {id: 'hermes', name: 'Hermes Agent', command: '', modelKey: 'voice-hermes-model',
         available: () => signedIn('hermes'),
         about: 'Hermes keeps its own personality and memory; Notchfolk adds its desktop instructions. A Hermes elsewhere: its endpoint and key below',
-        models: async () => [['', 'Hermes default'], ...await apiModels('hermes')]},
+        models: async () => [['', 'Hermes default'], ...await modelList('hermes')]},
     {id: 'openai-compatible', name: 'OpenAI-compatible API', command: '', modelKey: 'voice-openai-model',
         available: () => signedIn('openai-compatible'), about: 'The endpoint base URL and its API key, set in the rows below',
-        models: () => apiModels('openai-compatible')},
+        models: () => modelList('openai-compatible')},
     {id: 'oh-my-pi', name: 'Oh My Pi', command: 'omp', modelKey: 'voice-omp-model',
         about: 'Oh My Pi coding agent, with its own provider settings and Notchfolk desktop actions',
         // OMP discovers a large provider catalog in its own CLI. Fetching that from Settings
