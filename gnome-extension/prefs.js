@@ -733,17 +733,17 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         });
         // Swapping the list moves the selection; that must not write a model of its own.
         let syncing = false;
-        const syncModel = () => {
+        const syncModel = async () => {
             syncing = true;
             try {
-                fillModel();
+                await fillModel();
             } finally {
                 syncing = false;
             }
         };
         // Each AI's plan and the models it allows, as notchfolkd last found them (`Assistant1.Models`).
         const catalog = new ModelCatalog(settings);
-        const fillModel = () => {
+        const fillModel = async () => {
             const wanted = settings.get_string('voice-provider');
             const current = installed.find(p => p.id === wanted) ?? automatic;
             model.visible = Boolean(current);
@@ -772,24 +772,23 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             // meanwhile (another AI, another model id): its list belongs to a row that is gone.
             if (!entry && current.models) {
                 const mine = ++fillToken;
-                current.models().then(list => {
-                    if (mine !== fillToken || !list.length)
-                        return;
-                    if (settings.get_string('voice-provider') !== wanted)
-                        return;
-                    // Off the D-Bus callback: rebuilding a row's model from inside its own
-                    // completion re-enters GTK's list handling and takes the window down.
-                    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                        if (mine !== fillToken)
-                            return GLib.SOURCE_REMOVE;
-                        modelChoices = [['', def], ...list];
-                        if (!modelChoices.some(([id]) => id === value))
-                            modelChoices.push([value, value]);
-                        model.enable_search = modelChoices.length > 12;
-                        model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
-                        model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
+                const list = await current.models();
+                if (mine !== fillToken || !list.length)
+                    return;
+                if (settings.get_string('voice-provider') !== wanted)
+                    return;
+                modelChoices = [['', def], ...list];
+                if (!modelChoices.some(([id]) => id === value))
+                    modelChoices.push([value, value]);
+                // Off the D-Bus callback, and only when no popup is open: swapping a combo's model
+                // while its list is showing leaves GTK holding a row it has already freed.
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    if (mine !== fillToken || model.popup_shown)
                         return GLib.SOURCE_REMOVE;
-                    });
+                    model.enable_search = modelChoices.length > 12;
+                    model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
+                    model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
+                    return GLib.SOURCE_REMOVE;
                 });
             }
             // A pick the plan no longer allows stays (it comes back once allowed), marked as not used now.
