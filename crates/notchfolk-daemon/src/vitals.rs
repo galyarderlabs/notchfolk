@@ -256,7 +256,7 @@ fn uptime_seconds() -> u64 {
     std::fs::read_to_string("/proc/uptime")
         .ok()
         .and_then(|text| text.split_whitespace().next()?.parse().ok())
-        .map(|seconds| seconds as u64)
+        .map(|seconds: f64| seconds as u64)
         .unwrap_or(0)
 }
 
