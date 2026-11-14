@@ -2128,60 +2128,7 @@
 
 /* The Vitals page: the machine's own pulse. Flat, on the island's own surface: the two
    figures that matter at a glance, then a row per storage, then the network. */
-.notchfolk-vitals-column { spacing: 10px; padding: 4px 6px 0 6px; }
-
-/* The pulse: the CPU's ring and the temperature's number, side by side. */
-.notchfolk-vitals-pulse { spacing: 18px; }
-.notchfolk-vitals-load { spacing: 6px; y_align: center; }
-.notchfolk-vitals-cpu-value {
-  font-size: 16px; font-weight: 700; letter-spacing: -0.4px;
-  color: #ffffff; font-feature-settings: "tnum";
-}
-.notchfolk-vitals-cores { spacing: 2px; height: 18px; }
-.notchfolk-vitals-core-track {
-  width: 4px; height: 18px; border-radius: 2px;
-  background-color: rgba(255, 255, 255, 0.10);
-}
-.notchfolk-vitals-core-fill { width: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.68); }
-
-/* The eyebrow: the small gold word above what it names, as the prayer page's own. */
-.notchfolk-vitals-eyebrow {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase;
-  color: rgba(255, 211, 107, 0.7); text-align: center;
-}
-
-/* The temperature: the island's own big number, colour-coded. */
-.notchfolk-vitals-heat { spacing: 2px; x_expand: true; }
-.notchfolk-vitals-heat-band { margin-bottom: 2px; }
-.notchfolk-vitals-temp {
-  font-size: 34px; font-weight: 300; letter-spacing: -1.5px;
-  font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
-}
-
-.notchfolk-vitals-hairline { height: 1px; background-color: rgba(255, 255, 255, 0.07); margin: 2px 0; }
-
-/* The storage rows: flat, one line each. */
-.notchfolk-vitals-row { spacing: 10px; }
-.notchfolk-vitals-row-name {
-  width: 62px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-  text-transform: uppercase; color: rgba(255, 255, 255, 0.45);
-}
-.notchfolk-vitals-row-value {
-  width: 148px; font-size: 11px; font-weight: 600;
-  color: rgba(255, 255, 255, 0.82); font-feature-settings: "tnum";
-}
-.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.10); }
-.notchfolk-vitals-bar-fill {
-  height: 4px; border-radius: 2px;
-  background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a;
-}
-
-/* The footer: the network's rates, the battery when there is one. */
-.notchfolk-vitals-moving { spacing: 14px; }
-.notchfolk-vitals-net, .notchfolk-vitals-battery {
-  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.7);
-  font-feature-settings: "tnum";
-}
+.notchfolk-vitals-column { spacing: 9px; padding: 4px 6px 0 6px; }
 
 .notchfolk-vitals-glance { spacing: 14px; }
 .notchfolk-vitals-figure { spacing: 10px; }
