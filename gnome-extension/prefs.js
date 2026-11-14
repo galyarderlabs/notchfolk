@@ -765,11 +765,19 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const def = entry?.default_name ? `Default (${entry.default_name})` : `${current.name}’s default`;
             const fromCatalog = [['', def], ...(entry?.models ?? []).map(({id, name}) => [id, name])];
             modelChoices = fromCatalog;
-            // A provider that lists its models over D-Bus answers later; the row fills in then.
+            // A provider that lists its models over D-Bus answers later: the row fills in then,
+            // with those models, not just the default.
             if (!entry && current.models) {
                 current.models().then(list => {
-                    if (list.length && settings.get_string('voice-provider') === wanted)
-                        syncModel();
+                    if (!list.length || settings.get_string('voice-provider') !== wanted)
+                        return;
+                    modelChoices = [['', def], ...list];
+                    if (!modelChoices.some(([id]) => id === value))
+                        modelChoices.push([value, value]);
+                    model.subtitle = current.about;
+                    model.enable_search = modelChoices.length > 12;
+                    model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
+                    model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
                 });
             }
             // A pick the plan no longer allows stays (it comes back once allowed), marked as not used now.
@@ -2176,7 +2184,7 @@ const AI_PROVIDERS = [
     {id: 'hermes', name: 'Hermes Agent', command: '', modelKey: 'voice-hermes-model',
         available: () => signedIn('hermes'),
         about: 'Hermes keeps its own personality and memory; Notchfolk adds its desktop instructions. A Hermes elsewhere: its endpoint and key below',
-        models: () => [['', 'Hermes default'], ...apiModels('hermes')]},
+        models: async () => [['', 'Hermes default'], ...await apiModels('hermes')]},
     {id: 'openai-compatible', name: 'OpenAI-compatible API', command: '', modelKey: 'voice-openai-model',
         available: () => signedIn('openai-compatible'), about: 'The endpoint base URL and its API key, set in the rows below',
         models: () => apiModels('openai-compatible')},
@@ -2184,7 +2192,7 @@ const AI_PROVIDERS = [
         about: 'Oh My Pi coding agent, with its own provider settings and Notchfolk desktop actions',
         // OMP discovers a large provider catalog in its own CLI. Fetching that from Settings
         // synchronously can block this window for seconds; use OMP's default or a manual id.
-        models: () => [['', 'Oh My Pi default']]},
+        models: async () => [['', 'Oh My Pi default']]},
     // Its plan is named whole ("OpenCode Go", "Free models"); its list: recent, free and plan models.
     {id: 'opencode', name: 'opencode', planName: '', command: 'opencode', modelKey: 'voice-opencode-model',
         about: 'your recent opencode models, your providers’, the free ones and your plan’s', noPlan: true},
