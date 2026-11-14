@@ -97,27 +97,33 @@ export const VitalsPage = GObject.registerClass({
         heroTop.add_child(label('THE PULSE', 'notchfolk-vitals-eyebrow'));
         hero.add_child(heroTop);
 
-        // The CPU: the ring with its % inside, the cores under it.
-        const cpuBox = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-cpu'});
+        // The pulse: the ring and the temperature side by side (the card is wide
+        // enough), the cores strip under them - as compact as the prayer's own hero.
+        const pulse = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-pulse'});
+        const cpuBox = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero-cpu',
+            y_align: Clutter.ActorAlign.CENTER});
         this._cpuRing = new Ring({size: 44, lineWidth: 4});
         this._cpuPercent = label('—', 'notchfolk-vitals-hero-cpu-value');
         this._cpuRing.add_child(this._cpuPercent);
         cpuBox.add_child(this._cpuRing);
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
-        cpuBox.add_child(this._coresBox);
-        hero.add_child(cpuBox);
-        hero.add_child(label('CPU load', 'notchfolk-vitals-hero-label'));
+        cpuBox.add_child(label('CPU', 'notchfolk-vitals-hero-label'));
+        pulse.add_child(cpuBox);
 
-        hero.add_child(new St.Widget({style_class: 'notchfolk-vitals-hero-sep'}));
+        pulse.add_child(new St.Widget({style_class: 'notchfolk-vitals-hero-sep'}));
 
-        // The temperature: the big number, colour-coded, its band beside it.
-        const heatBox = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-heat'});
+        const heatBox = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero-heat',
+            y_align: Clutter.ActorAlign.CENTER});
         this._tempLabel = label('—', 'notchfolk-vitals-hero-temp');
         heatBox.add_child(this._tempLabel);
         this._tempNote = label('', 'notchfolk-vitals-hero-band');
         heatBox.add_child(this._tempNote);
-        hero.add_child(heatBox);
-        hero.add_child(label('Temperature', 'notchfolk-vitals-hero-label'));
+        heatBox.add_child(label('Temperature', 'notchfolk-vitals-hero-label'));
+        pulse.add_child(heatBox);
+        hero.add_child(pulse);
+
+        // The cores: a strip under the pulse, one thin bar per core.
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
+        hero.add_child(this._coresBox);
         row.add_child(hero);
 
         // The right side: the storage that fills slowly, the network and the battery.
@@ -181,7 +187,7 @@ export const VitalsPage = GObject.registerClass({
             if (!core)
                 return;
             const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * 16));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 14));
             core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
             core.track.tooltip_text = `Core ${index}: ${percent}%`;
         });

@@ -2141,23 +2141,24 @@
 
 /* The hero card: the glass card the prayer page's own hero uses. */
 .notchfolk-vitals-hero {
-  width: 218px;
-  spacing: 3px;
-  padding: 6px 12px;
+  width: 228px;
+  spacing: 4px;
+  padding: 8px 13px;
   border-radius: 15px;
   background-color: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.10);
 }
-.notchfolk-vitals-hero-top { spacing: 3px; margin-bottom: 2px; }
+.notchfolk-vitals-hero-top { spacing: 5px; }
 .notchfolk-vitals-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.9px; color: rgba(255, 211, 107, 0.7); }
-.notchfolk-vitals-hero-cpu { spacing: 7px; y_align: center; }
+.notchfolk-vitals-hero-pulse { spacing: 14px; y_align: center; }
+.notchfolk-vitals-hero-cpu { spacing: 2px; y_align: center; }
 .notchfolk-vitals-hero-cpu-value {
   font-size: 14px; font-weight: 700; letter-spacing: -0.3px;
   color: #ffffff; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-cores { spacing: 2px; height: 16px; }
+.notchfolk-vitals-cores { spacing: 2px; height: 14px; x_align: center; margin-top: 4px; }
 .notchfolk-vitals-core-track {
-  width: 3px; height: 16px; border-radius: 1.5px;
+  width: 3px; height: 14px; border-radius: 1.5px;
   background-color: rgba(255, 255, 255, 0.10);
 }
 .notchfolk-vitals-core-fill { width: 3px; border-radius: 1.5px; background-color: rgba(255, 255, 255, 0.68); }
@@ -2165,10 +2166,10 @@
   font-size: 9px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase;
   color: rgba(255, 255, 255, 0.38);
 }
-.notchfolk-vitals-hero-sep { height: 1px; background-color: rgba(255, 255, 255, 0.08); margin: 4px 0; }
+.notchfolk-vitals-hero-sep { width: 1px; height: 40px; background-color: rgba(255, 255, 255, 0.08); }
 
 /* The temperature: the big number, colour-coded, its band beside it. */
-.notchfolk-vitals-hero-heat { spacing: 4px; y_align: center; }
+.notchfolk-vitals-hero-heat { spacing: 2px; y_align: center; }
 .notchfolk-vitals-hero-temp {
   font-size: 24px; font-weight: 300; letter-spacing: -0.8px;
   font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
