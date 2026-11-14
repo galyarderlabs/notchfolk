@@ -1915,16 +1915,11 @@ function compactGroup(settings) {
     return group;
 }
 
-/** The machine's vitals: what the closed island shows, the unit, how often to sample. */
+/** The machine's vitals: the unit and how often to sample. The page keeps them; the closed
+ * island does not - it is a notch, not a system tray. */
 function vitalsGroup(settings) {
     const group = new Adw.PreferencesGroup({title: 'Vitals',
-        description: 'The machine\u2019s own pulse - CPU, memory, temperature, network, disk. The Vitals page shows them all; one may live in the closed island.'});
-    const closedVital = new Adw.ComboRow({title: 'In the closed island',
-        model: Gtk.StringList.new(['None', 'Temperature', 'CPU']),
-        selected: Math.max(0, ['none', 'temperature', 'cpu'].indexOf(settings.get_string('vitals-closed-island')))});
-    closedVital.connect('notify::selected', () =>
-        settings.set_string('vitals-closed-island', ['none', 'temperature', 'cpu'][closedVital.selected]));
-    group.add(closedVital);
+        description: 'The machine\u2019s own pulse - CPU, memory, temperature, network, disk - on the Vitals page.'});
     const tempUnit = new Adw.ComboRow({title: 'Temperature unit',
         model: Gtk.StringList.new(['\u00b0C', '\u00b0F']), selected: settings.get_string('vitals-temperature-unit') === 'F' ? 1 : 0});
     tempUnit.connect('notify::selected', () =>

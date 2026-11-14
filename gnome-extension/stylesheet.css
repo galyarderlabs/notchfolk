@@ -2185,6 +2185,3 @@
   font-feature-settings: "tnum";
 }
 .notchfolk-vitals-uptime { x_align: end; x_expand: true; color: rgba(255, 255, 255, 0.45); }
-
-/* The closed island's own vital: a small number beside the wave. */
-.notchfolk-compact-vital { font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
