@@ -774,10 +774,14 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
                     modelChoices = [['', def], ...list];
                     if (!modelChoices.some(([id]) => id === value))
                         modelChoices.push([value, value]);
-                    model.subtitle = current.about;
-                    model.enable_search = modelChoices.length > 12;
-                    model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
-                    model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
+                    // Off the D-Bus callback: rebuilding a row's model from inside its own
+                    // completion re-enters GTK's list handling and takes the window down.
+                    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                        model.enable_search = modelChoices.length > 12;
+                        model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
+                        model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
+                        return GLib.SOURCE_REMOVE;
+                    });
                 });
             }
             // A pick the plan no longer allows stays (it comes back once allowed), marked as not used now.
