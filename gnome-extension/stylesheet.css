@@ -2130,18 +2130,20 @@
    figures that matter at a glance, then a row per storage, then the network. */
 .notchfolk-vitals-column { spacing: 4px; }
 
-/* The heading, as every page's own. */
+/* The heading */
 .notchfolk-vitals-heading { height: 22px; spacing: 7px; }
 .notchfolk-vitals-heading-icon { opacity: 0.82; color: #f4c869; }
 .notchfolk-vitals-title { font-size: 14px; font-weight: 700; letter-spacing: -0.1px; }
 .notchfolk-vitals-date { font-size: 10px; color: rgba(255, 255, 255, 0.48); }
 
-/* The pulse: the CPU and the temperature above the sparkline, the two that
- * change what you do next, at the page's own focal weight. */
-.notchfolk-vitals-pulse { spacing: 16px; padding: 0 4px; }
-.notchfolk-vitals-figure { spacing: 1px; x_expand: true; }
+/* The row: the pulse left, the detail right, filling the page's width. */
+.notchfolk-vitals-row { spacing: 14px; padding: 2px 4px; }
+
+/* LEFT: the pulse */
+.notchfolk-vitals-pulse { spacing: 4px; }
+.notchfolk-vitals-figure { spacing: 1px; }
 .notchfolk-vitals-figure-value {
-  font-size: 22px; font-weight: 300; letter-spacing: -0.8px;
+  font-size: 24px; font-weight: 300; letter-spacing: -1px;
   font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
 }
 .notchfolk-vitals-figure-name {
@@ -2152,15 +2154,21 @@
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
   text-transform: uppercase; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-rule { width: 1px; height: 30px; background-color: rgba(255, 255, 255, 0.08); }
+.notchfolk-vitals-spark { height: 30px; }
+.notchfolk-vitals-cores { spacing: 2px; height: 18px; margin-top: 3px; }
+.notchfolk-vitals-core-track {
+  width: 3px; height: 18px; border-radius: 1.5px;
+  background-color: rgba(255, 255, 255, 0.10);
+}
+.notchfolk-vitals-core-fill { width: 3px; border-radius: 1.5px; background-color: rgba(255, 255, 255, 0.55); }
 
-/* The sparkline: the last minute of CPU activity, drawn as the weather's own curve. */
-.notchfolk-vitals-spark { height: 28px; }
+.notchfolk-vitals-divider { width: 1px; background-color: rgba(255, 255, 255, 0.08); }
 
-/* The storage rows: one line each. */
-.notchfolk-vitals-storage { spacing: 8px; margin: 1px 0; }
+/* RIGHT: the detail */
+.notchfolk-vitals-detail { spacing: 6px; }
+.notchfolk-vitals-storage { spacing: 6px; }
 .notchfolk-vitals-storage-name {
-  width: 48px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  width: 44px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
   text-transform: uppercase; color: rgba(255, 255, 255, 0.42);
 }
 .notchfolk-vitals-storage-value {
@@ -2172,10 +2180,9 @@
   height: 5px; border-radius: 2.5px;
   background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a;
 }
-
-/* The footer: the network's rates, the battery when there is one. */
-.notchfolk-vitals-footer { spacing: 16px; padding: 0 4px; }
-.notchfolk-vitals-net, .notchfolk-vitals-battery {
+.notchfolk-vitals-hairline { height: 1px; background-color: rgba(255, 255, 255, 0.07); margin: 3px 0; }
+.notchfolk-vitals-net { spacing: 1px; }
+.notchfolk-vitals-net-value, .notchfolk-vitals-battery-value {
   font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.62);
   font-feature-settings: "tnum";
 }
