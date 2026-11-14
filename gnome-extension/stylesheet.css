@@ -2145,6 +2145,7 @@
   font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
   font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.9);
 }
+.notchfolk-vitals-cores-row { spacing: 10px; }
 .notchfolk-vitals-cores { spacing: 3px; height: 26px; }
 .notchfolk-vitals-core-track {
   width: 5px; height: 26px; border-radius: 2px;

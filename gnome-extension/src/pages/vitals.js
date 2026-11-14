@@ -87,8 +87,13 @@ export const VitalsPage = GObject.registerClass({
         const right = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-right', x_expand: true});
         row.add_child(right);
 
+        // The cores, each a bar of its own: a caption says what the bars are, so a lone tall
+        // one reads as a busy core and not as decoration.
+        const coresRow = new St.BoxLayout({style_class: 'notchfolk-vitals-cores-row'});
+        coresRow.add_child(label('CORES', 'notchfolk-vitals-bar-name'));
         this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
-        right.add_child(this._coresBox);
+        coresRow.add_child(this._coresBox);
+        right.add_child(coresRow);
 
         this._memBar = this._bar('Memory');
         this._swapBar = this._bar('Swap');
