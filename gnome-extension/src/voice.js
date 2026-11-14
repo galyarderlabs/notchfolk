@@ -405,6 +405,9 @@ export const VoiceView = GObject.registerClass({
         this._column.add_child(this._chat);
         this._column.add_child(row);
         this.add_child(this._column);
+        // The chat showing (however it opens: a new chat, a history resume) hides the
+        // voice view's own close - the chat header's close is the one there is.
+        this._chat.connect('notify::visible', () => this._refreshAction());
         this._row = row;
         this._boost = 0;
         this._workingAt = 0;
