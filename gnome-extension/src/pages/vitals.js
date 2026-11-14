@@ -65,16 +65,21 @@ export const VitalsPage = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER});
         this.add_child(row);
 
-        // Left: the CPU ring, its percentage, and the temperature under it.
+        // Left: the CPU ring with its percentage in the middle, the word under it, and the
+        // temperature as the one number that can hurt - all in one column, centred on the ring.
         const left = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-left',
             y_align: Clutter.ActorAlign.CENTER});
-        this._cpuRing = new Ring({size: 78, lineWidth: 6});
+        this._cpuRing = new Ring({size: 84, lineWidth: 6});
         this._cpuPercent = label('—', 'notchfolk-vitals-cpu-percent');
+        this._cpuPercent.x_align = Clutter.ActorAlign.CENTER;
         this._cpuRing.add_child(this._cpuPercent);
         left.add_child(this._cpuRing);
-        left.add_child(label('CPU', 'notchfolk-vitals-caption'));
+        left.add_child(label('CPU LOAD', 'notchfolk-vitals-caption'));
+        const tempRow = new St.BoxLayout({style_class: 'notchfolk-vitals-temp-row',
+            x_align: Clutter.ActorAlign.CENTER});
         this._tempLabel = label('—', 'notchfolk-vitals-temp');
-        left.add_child(this._tempLabel);
+        tempRow.add_child(this._tempLabel);
+        left.add_child(tempRow);
         row.add_child(left);
         row.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
 
