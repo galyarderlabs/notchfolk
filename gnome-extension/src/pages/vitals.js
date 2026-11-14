@@ -247,7 +247,8 @@ export const VitalsPage = GObject.registerClass({
      * filling up says so - amber past three quarters, red past nine tenths. */
     _setRow(row, used, total) {
         const percent = share(used, total);
-        row.value.text = total > 0 ? `${percent}%  \u00b7  ${size(used)} / ${size(total)}` : '\u2014';
+        row.value.text = total > 0 ? `${percent}%` : '\u2014';
+        row.box.tooltip_text = total > 0 ? `${size(used)} of ${size(total)}` : null;
         row.fill.width = Math.round(percent);
         row.fill.style = percent >= 90 ? 'background-color: #ff6961;'
             : percent >= 75 ? 'background-color: #ffb748;' : null;
