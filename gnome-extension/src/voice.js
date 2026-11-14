@@ -866,6 +866,9 @@ export const VoiceView = GObject.registerClass({
             this._entry.grab_key_focus();
         this._entry.clutter_text.set_cursor_position(-1);
         this._face.setForm('typing');
+        // The phase moved: the island's width follows it (listening is narrow,
+        // typing wide) and must be re-measured.
+        this.emit('size-changed');
     }
 
     /** Hides the field; the answer line comes back. */
