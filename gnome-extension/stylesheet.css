@@ -2126,59 +2126,72 @@
 .notchfolk-weather-quake-meta { font-size: 11px; color: rgba(255, 255, 255, 0.74); }
 .notchfolk-weather-empty { font-size: 13px; color: rgba(255, 255, 255, 0.78); }
 
-/* The Vitals page: the machine's own pulse. The two that matter at a glance in one column
-   on the left, the rest as rows on the right, and the cores as a bar each. */
-.notchfolk-vitals-layout { spacing: 18px; }
-.notchfolk-vitals-left { width: 140px; spacing: 5px; }
-.notchfolk-vitals-divider { width: 1px; height: 130px; background-color: rgba(255, 255, 255, 0.07); margin: 4px 0; }
-.notchfolk-vitals-right { spacing: 9px; }
-.notchfolk-vitals-cpu-percent {
-  font-size: 21px; font-weight: 700; letter-spacing: -0.5px;
+/* The Vitals page: the machine's own pulse. A card per vital, the way the island's other
+   pages group theirs: the CPU and the temperature as the two that matter at a glance, the
+   memory, swap and disk as gauges, the network and the battery as a line of their own. */
+.notchfolk-vitals {
+  padding: 4px 20px 0 20px;
+  background-image: linear-gradient(135deg, #101014 0%, #151519 58%, #1a1a20 100%);
+}
+.notchfolk-vitals-layout { spacing: 12px; }
+.notchfolk-vitals-hero { spacing: 12px; }
+.notchfolk-vitals-card {
+  spacing: 6px; padding: 10px 12px; border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.notchfolk-vitals-card-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.9px; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.notchfolk-vitals-card-value {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.6px;
   color: #ffffff; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-caption {
-  font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45); margin-top: 1px;
+.notchfolk-vitals-card-note {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.6);
+  font-feature-settings: "tnum";
 }
-.notchfolk-vitals-temp-row { spacing: 0; margin-top: 3px; }
-.notchfolk-vitals-temp {
-  font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
-  font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.9);
+.notchfolk-vitals-cpu-percent {
+  font-size: 19px; font-weight: 700; letter-spacing: -0.4px;
+  color: #ffffff; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-cores-row { spacing: 10px; }
-.notchfolk-vitals-cores { spacing: 3px; height: 26px; }
+.notchfolk-vitals-cores { spacing: 3px; height: 30px; }
 .notchfolk-vitals-core-track {
-  width: 5px; height: 26px; border-radius: 2px;
-  background-color: rgba(255, 255, 255, 0.09);
+  width: 5px; height: 30px; border-radius: 2px;
+  background-color: rgba(255, 255, 255, 0.10);
 }
-.notchfolk-vitals-core-fill {
-  width: 5px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.66);
+.notchfolk-vitals-core-fill { width: 5px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.7); }
+.notchfolk-vitals-temp {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.6px;
+  font-feature-settings: "tnum"; color: rgba(255, 255, 255, 0.92);
 }
-.notchfolk-vitals-bar-box { spacing: 4px; }
+.notchfolk-vitals-gauges { spacing: 12px; }
+.notchfolk-vitals-gauge {
+  spacing: 5px; padding: 9px 12px; border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
 .notchfolk-vitals-bar-header { spacing: 8px; }
 .notchfolk-vitals-bar-name {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
 }
 .notchfolk-vitals-bar-value {
-  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.85);
+  font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.88);
   font-feature-settings: "tnum";
 }
-.notchfolk-vitals-bar-track { height: 3px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.10); }
+.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.11); }
 .notchfolk-vitals-bar-fill {
-  height: 3px; border-radius: 2px;
+  height: 4px; border-radius: 2px;
   background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a;
 }
 .notchfolk-vitals-bottom {
-  spacing: 16px; padding-top: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  spacing: 18px; padding: 8px 12px; border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.03);
 }
-.notchfolk-vitals-net {
-  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.68);
-  font-feature-settings: "tnum";
-}
-.notchfolk-vitals-battery {
-  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.68);
+.notchfolk-vitals-net, .notchfolk-vitals-battery {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.72);
   font-feature-settings: "tnum";
 }
 

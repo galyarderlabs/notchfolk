@@ -61,46 +61,44 @@ export const VitalsPage = GObject.registerClass({
         this._cores = [];
         this._coreSignature = '';
 
-        const row = new St.BoxLayout({style_class: 'notchfolk-vitals-layout', x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(row);
+        const layout = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-layout',
+            x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        this.add_child(layout);
 
-        // Left: the CPU ring with its percentage in the middle, the word under it, and the
-        // temperature as the one number that can hurt - all in one column, centred on the ring.
-        const left = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-left',
-            y_align: Clutter.ActorAlign.CENTER});
-        this._cpuRing = new Ring({size: 84, lineWidth: 6});
+        // The two that matter at a glance, side by side: the CPU (its ring, its cores) and the
+        // temperature, each in a card of its own as the island's other pages group their facts.
+        const hero = new St.BoxLayout({style_class: 'notchfolk-vitals-hero', x_expand: true});
+        layout.add_child(hero);
+
+        const cpuCard = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-card', x_expand: true});
+        cpuCard.add_child(label('CPU', 'notchfolk-vitals-card-title'));
+        const cpuRow = new St.BoxLayout({style_class: 'notchfolk-vitals-hero', x_expand: true});
+        this._cpuRing = new Ring({size: 56, lineWidth: 5});
         this._cpuPercent = label('—', 'notchfolk-vitals-cpu-percent');
-        this._cpuPercent.x_align = Clutter.ActorAlign.CENTER;
         this._cpuRing.add_child(this._cpuPercent);
-        left.add_child(this._cpuRing);
-        left.add_child(label('CPU LOAD', 'notchfolk-vitals-caption'));
-        const tempRow = new St.BoxLayout({style_class: 'notchfolk-vitals-temp-row',
-            x_align: Clutter.ActorAlign.CENTER});
+        cpuRow.add_child(this._cpuRing);
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores',
+            y_align: Clutter.ActorAlign.CENTER});
+        cpuRow.add_child(this._coresBox);
+        cpuCard.add_child(cpuRow);
+        hero.add_child(cpuCard);
+
+        const tempCard = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-card', x_expand: true});
+        tempCard.add_child(label('Temperature', 'notchfolk-vitals-card-title'));
         this._tempLabel = label('—', 'notchfolk-vitals-temp');
-        tempRow.add_child(this._tempLabel);
-        left.add_child(tempRow);
-        row.add_child(left);
-        row.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
+        tempCard.add_child(this._tempLabel);
+        this._tempNote = label('', 'notchfolk-vitals-card-note');
+        tempCard.add_child(this._tempNote);
+        hero.add_child(tempCard);
 
-        // Right: the cores, then memory, swap, disk, the network and the battery.
-        const right = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-right', x_expand: true});
-        row.add_child(right);
+        // The three gauges, a row of their own.
+        const gauges = new St.BoxLayout({style_class: 'notchfolk-vitals-gauges', x_expand: true});
+        this._memBar = this._bar('Memory', gauges);
+        this._swapBar = this._bar('Swap', gauges);
+        this._diskBar = this._bar('Disk', gauges);
+        layout.add_child(gauges);
 
-        // The cores, each a bar of its own: a caption says what the bars are, so a lone tall
-        // one reads as a busy core and not as decoration.
-        const coresRow = new St.BoxLayout({style_class: 'notchfolk-vitals-cores-row'});
-        coresRow.add_child(label('CORES', 'notchfolk-vitals-bar-name'));
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
-        coresRow.add_child(this._coresBox);
-        right.add_child(coresRow);
-
-        this._memBar = this._bar('Memory');
-        this._swapBar = this._bar('Swap');
-        this._diskBar = this._bar('Disk');
-        for (const bar of [this._memBar, this._swapBar, this._diskBar])
-            right.add_child(bar.box);
-
+        // The network and the battery, one quiet line under them.
         const bottom = new St.BoxLayout({style_class: 'notchfolk-vitals-bottom', x_expand: true});
         this._netDown = label('', 'notchfolk-vitals-net');
         this._netUp = label('', 'notchfolk-vitals-net');
@@ -108,7 +106,7 @@ export const VitalsPage = GObject.registerClass({
         bottom.add_child(this._netDown);
         bottom.add_child(this._netUp);
         bottom.add_child(this._battery);
-        right.add_child(bottom);
+        layout.add_child(bottom);
 
         this._unit = settings.get_string('vitals-temperature-unit');
         this._unitChanged = settings.connect('changed::vitals-temperature-unit', () => {
@@ -120,9 +118,9 @@ export const VitalsPage = GObject.registerClass({
         this._refresh();
     }
 
-    /** A labelled bar: the name and value on one line, the bar under. */
-    _bar(name) {
-        const box = new St.BoxLayout({style_class: 'notchfolk-vitals-bar-box', ...VERTICAL});
+    /** A labelled gauge: the name and value on one line, the bar under; added to `parent`. */
+    _bar(name, parent) {
+        const box = new St.BoxLayout({style_class: 'notchfolk-vitals-gauge', ...VERTICAL, x_expand: true});
         const header = new St.BoxLayout({style_class: 'notchfolk-vitals-bar-header'});
         header.add_child(label(name, 'notchfolk-vitals-bar-name'));
         const value = label('', 'notchfolk-vitals-bar-value');
@@ -132,6 +130,7 @@ export const VitalsPage = GObject.registerClass({
         const track = new St.Widget({style_class: 'notchfolk-vitals-bar-track'});
         track.add_child(fill);
         box.add_child(track);
+        parent.add_child(box);
         return {value, fill, track, box};
     }
 
@@ -154,7 +153,7 @@ export const VitalsPage = GObject.registerClass({
             if (!core)
                 return;
             const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * 22));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 30));
             // A core near its ceiling is the one to look at.
             core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
             core.track.tooltip_text = `Core ${index}: ${percent}%`;
@@ -176,6 +175,9 @@ export const VitalsPage = GObject.registerClass({
         const shown = unit === 'F' ? celsius * 9 / 5 + 32 : celsius;
         this._tempLabel.text = celsius > 0 ? `${Math.round(shown)}°${unit}` : '—';
         this._tempLabel.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
+        this._tempNote.text = celsius > 0
+            ? (celsius >= 75 ? 'Running hot' : celsius >= 60 ? 'Warm' : 'Cool')
+            : 'No sensor';
 
         this._syncCores(vitals.cpu_cores ?? []);
 
