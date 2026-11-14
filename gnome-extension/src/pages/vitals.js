@@ -155,20 +155,6 @@ export const VitalsPage = GObject.registerClass({
         this.watch(['vitals', 'system'], () => this._refresh());
         this._refresh();
     }
-
-    /** The page grows for its content, as the Weather page does. */
-    _syncHeight() {
-        const screenLimit = Math.floor(global.stage.height / uiScale() * 0.62);
-        const wanted = Math.min(this._baseHeight + 75, Math.max(this._baseHeight, screenLimit));
-        if (wanted === this.pageHeight)
-            return;
-        this.pageHeight = wanted;
-    }
-
-    onPageHeight(height) {
-    }
-
-    /** One storage row: the name, the bar, the value - one line. */
     _storageRow(name, parent) {
         const box = new St.BoxLayout({style_class: 'notchfolk-vitals-storage', x_expand: true});
         box.add_child(label(name, 'notchfolk-vitals-storage-name'));
