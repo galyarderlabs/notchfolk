@@ -721,6 +721,8 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         modelId.text = settings.get_string('voice-openai-model');
         let modelChoices = [];
         let modelKey = null;
+        /** Which fillModel call is the current one: a late answer from an older one is ignored. */
+        let fillToken = 0;
         modelId.connect('changed', () => {
             if (syncing)
                 return;
@@ -766,17 +768,23 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const fromCatalog = [['', def], ...(entry?.models ?? []).map(({id, name}) => [id, name])];
             modelChoices = fromCatalog;
             // A provider that lists its models over D-Bus answers later: the row fills in then,
-            // with those models, not just the default.
+            // with those models, not just the default. The answer is dropped if the row was rebuilt
+            // meanwhile (another AI, another model id): its list belongs to a row that is gone.
             if (!entry && current.models) {
+                const mine = ++fillToken;
                 current.models().then(list => {
-                    if (!list.length || settings.get_string('voice-provider') !== wanted)
+                    if (mine !== fillToken || !list.length)
                         return;
-                    modelChoices = [['', def], ...list];
-                    if (!modelChoices.some(([id]) => id === value))
-                        modelChoices.push([value, value]);
+                    if (settings.get_string('voice-provider') !== wanted)
+                        return;
                     // Off the D-Bus callback: rebuilding a row's model from inside its own
                     // completion re-enters GTK's list handling and takes the window down.
                     GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                        if (mine !== fillToken)
+                            return GLib.SOURCE_REMOVE;
+                        modelChoices = [['', def], ...list];
+                        if (!modelChoices.some(([id]) => id === value))
+                            modelChoices.push([value, value]);
                         model.enable_search = modelChoices.length > 12;
                         model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
                         model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
