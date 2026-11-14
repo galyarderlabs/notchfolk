@@ -37,6 +37,16 @@ pub struct Vitals {
     /// The root filesystem's used and total (bytes).
     pub disk_used_bytes: u64,
     pub disk_total_bytes: u64,
+    /// The machine's uptime (seconds), from /proc/uptime.
+    pub uptime_seconds: u64,
+    /// The load averages (1, 5, 15 minutes), from /proc/loadavg.
+    pub load_1: f64,
+    pub load_5: f64,
+    pub load_15: f64,
+    /// The running processes (count), from /proc's own numeric directories.
+    pub process_count: u64,
+    /// The CPU's current frequency (MHz), from /proc/cpuinfo; 0 when it does not say.
+    pub cpu_frequency_mhz: f64,
 }
 
 impl Vitals {
@@ -49,7 +59,17 @@ impl Vitals {
         let temperature = temperature();
         let (down, up) = network(net_totals);
         let (disk_used, disk_total) = disk();
+        let uptime = uptime_seconds();
+        let (load_1, load_5, load_15) = load_average();
+        let process_count = processes();
+        let cpu_frequency = cpu_frequency();
         Vitals {
+            uptime_seconds: uptime,
+            load_1,
+            load_5,
+            load_15,
+            process_count,
+            cpu_frequency_mhz: cpu_frequency,
             cpu_percent,
             cpu_cores,
             memory_used_bytes: memory_used,
@@ -229,6 +249,66 @@ fn disk() -> (u64, u64) {
         }
     }
     (0, 0)
+}
+
+/// The machine's uptime (seconds), from /proc/uptime.
+fn uptime_seconds() -> u64 {
+    std::fs::read_to_string("/proc/uptime")
+        .ok()
+        .and_then(|text| text.split_whitespace().next()?.parse().ok())
+        .map(|seconds: f64| seconds as u64)
+        .unwrap_or(0)
+}
+
+/// The load averages (1, 5, 15 minutes), from /proc/loadavg.
+fn load_average() -> (f64, f64, f64) {
+    std::fs::read_to_string("/proc/loadavg")
+        .map(|text| {
+            let mut fields = text.split_whitespace();
+            let one = fields.next().and_then(|f| f.parse().ok()).unwrap_or(0.0);
+            let five = fields.next().and_then(|f| f.parse().ok()).unwrap_or(0.0);
+            let fifteen = fields.next().and_then(|f| f.parse().ok()).unwrap_or(0.0);
+            (one, five, fifteen)
+        })
+        .unwrap_or((0.0, 0.0, 0.0))
+}
+
+/// The running processes (count): /proc's own numeric directories.
+fn processes() -> u64 {
+    std::fs::read_dir("/proc")
+        .map(|entries| {
+            entries
+                .flatten()
+                .filter(|entry| {
+                    entry
+                        .file_name()
+                        .to_string_lossy()
+                        .chars()
+                        .all(|c| c.is_ascii_digit())
+                })
+                .count() as u64
+        })
+        .unwrap_or(0)
+}
+
+/// The CPU's current frequency (MHz), from /proc/cpuinfo; 0 when it does not say.
+fn cpu_frequency() -> f64 {
+    let Ok(text) = std::fs::read_to_string("/proc/cpuinfo") else {
+        return 0.0;
+    };
+    let mut total = 0.0;
+    let mut count = 0;
+    for line in text.lines() {
+        if let Some(value) = line.strip_prefix("cpu MHz") {
+            if let Some((_, number)) = value.split_once(':') {
+                if let Ok(mhz) = number.trim().parse::<f64>() {
+                    total += mhz;
+                    count += 1;
+                }
+            }
+        }
+    }
+    if count > 0 { total / count as f64 } else { 0.0 }
 }
 
 /// The vitals' own D-Bus interface, the shape the system's own state uses.
