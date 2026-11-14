@@ -776,10 +776,12 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
                 if (!modelLists.has(current.id)) {
                     model.subtitle = `Fetching the models from ${current.name}…`;
                     // Laid out before the wait: the row says it is working while the router thinks.
-                    await new Promise(resolve => GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                        resolve();
-                        return GLib.SOURCE_REMOVE;
-                    }));
+                    await new Promise(resolve => {
+                        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                            resolve();
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    });
                 }
                 const list = await current.models();
                 if (mine !== fillToken)
