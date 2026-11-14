@@ -8,6 +8,8 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-13
+
 ### Added
 
 - **Vitals — the machine's own pulse in the island.** A page in the expanded island
@@ -15,12 +17,7 @@ Isle's changelog from before the fork, kept for reference.
   and (optionally, off by default) one vital in the closed island beside the wave. The
   daemon samples the vitals itself every 2 s from `/proc`, `sysfs` and `df` — the
   sources it already knows — and publishes them over D-Bus as the weather is
-  (issues #104-#109, plan: `docs/vitals-spec.md`).
-
-## [1.5.0] - 2026-11-13
-
-### Added
-
+  (issues #104-#109, plan: `docs/vitals-spec.md`). One less extension on the machine.
 - **The world MCP: the Skills domain.** The world knows how to do things: the skill trees on
   the machine (two roots of the user's own configuration), read directly - seven read-only
   tools on the default key's skills:read: the list and the search of the catalogue, a skill
