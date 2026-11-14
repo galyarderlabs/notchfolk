@@ -99,7 +99,7 @@ export const VitalsPage = GObject.registerClass({
 
         // The CPU: the ring with its % inside, the cores under it.
         const cpuBox = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-cpu'});
-        this._cpuRing = new Ring({size: 52, lineWidth: 4.5});
+        this._cpuRing = new Ring({size: 44, lineWidth: 4});
         this._cpuPercent = label('—', 'notchfolk-vitals-hero-cpu-value');
         this._cpuRing.add_child(this._cpuPercent);
         cpuBox.add_child(this._cpuRing);
@@ -181,7 +181,7 @@ export const VitalsPage = GObject.registerClass({
             if (!core)
                 return;
             const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * 20));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 16));
             core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
             core.track.tooltip_text = `Core ${index}: ${percent}%`;
         });
