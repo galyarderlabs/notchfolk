@@ -2128,7 +2128,7 @@
 
 /* The Vitals page: the machine's own pulse. Flat, on the island's own surface: the two
    figures that matter at a glance, then a row per storage, then the network. */
-.notchfolk-vitals-column { spacing: 5px; padding: 0 6px; }
+.notchfolk-vitals-column { spacing: 4px; padding: 0 6px; }
 
 /* The pulse: the load big left, the sparkline across, the temperature big right. */
 .notchfolk-vitals-pulse { spacing: 10px; padding: 2px 4px; }
@@ -2145,7 +2145,7 @@
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
   text-transform: uppercase; font-feature-settings: "tnum";
 }
-.notchfolk-vitals-spark { height: 36px; }
+.notchfolk-vitals-spark { height: 28px; }
 
 /* The info rows: the cores, the load, the processes. */
 .notchfolk-vitals-info-row { spacing: 8px; padding: 0 4px; }
@@ -2156,6 +2156,10 @@
 .notchfolk-vitals-info-value {
   font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
   font-feature-settings: "tnum"; x_expand: true; text-align: right;
+}
+.notchfolk-vitals-info-proc {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.5);
+  font-feature-settings: "tnum";
 }
 .notchfolk-vitals-cores { spacing: 2px; height: 18px; x_align: center; }
 .notchfolk-vitals-core-track {
