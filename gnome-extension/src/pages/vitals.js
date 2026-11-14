@@ -1,19 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Galyarder Labs
 
-// The Vitals page: the machine's own pulse, drawn like the Prayer page - a heading, a
-// row that fills the height (the hero card with the CPU ring and the temperature on the
-// left, the storage and the network on the right), and the cores as the arc beneath
-// the heroes. The daemon samples every 2 s (the plan: docs/vitals-spec.md).
+// The Vitals page: the machine's own pulse, drawn like the island's own pages - a
+// heading, the sparkline (the last minute of CPU activity, drawn as the weather's own
+// curve: smooth cubic, warm gradient area, alive with every sample), the two that
+// change what you do next (CPU and temperature) as the numbers above it, the storage
+// that fills slowly as flat rows, the network and the battery as the footer.
 
+import Cairo from 'cairo';
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
 import * as Format from '../format.js';
-import {icon, label, Ring} from '../widgets.js';
+import {icon, label} from '../widgets.js';
 import {Page} from './page.js';
+
+/** How many samples the sparkline walks (2 s each: the last minute). */
+const SPARK_POINTS = 30;
 
 /** The temperature's colour: green, amber, red - the one vital that can hurt. */
 function tempColor(celsius) {
@@ -32,7 +37,7 @@ function tempBand(celsius) {
         return 'Warm';
     if (celsius > 0)
         return 'Cool';
-    return '—';
+    return '\u2014';
 }
 
 /** A rate in bytes/s, as a human's own words. */
@@ -70,15 +75,13 @@ export const VitalsPage = GObject.registerClass({
         });
         this.name = 'vitals';
         this._settings = settings;
-        this._vitals = null;
-        this._cores = [];
-        this._coreSignature = '';
+        this._history = [];
 
         this._column = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
             style_class: 'notchfolk-vitals-column'});
         this.add_child(this._column);
 
-        // ── The heading, as every page's own: the icon, the title, the date ──
+        // \u2500\u2500 The heading, as every page's own \u2500\u2500
         const heading = new St.BoxLayout({style_class: 'notchfolk-vitals-heading'});
         heading.add_child(new St.Icon({gicon: icon('notchfolk-heartbeat'), icon_size: 15,
             style_class: 'notchfolk-vitals-heading-icon'}));
@@ -86,63 +89,43 @@ export const VitalsPage = GObject.registerClass({
         heading.add_child(label(Format.longDate(), 'notchfolk-vitals-date'));
         this._column.add_child(heading);
 
-        // ── The row: the hero card on the left, the storage on the right ──
-        const row = new St.BoxLayout({style_class: 'notchfolk-vitals-row', x_expand: true, y_expand: true});
+        // \u2500\u2500 The pulse: the two that change what you do next, above the sparkline \u2500\u2500
+        const pulse = new St.BoxLayout({style_class: 'notchfolk-vitals-pulse', x_expand: true});
+        const cpu = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        this._cpuValue = label('\u2014', 'notchfolk-vitals-figure-value');
+        cpu.add_child(this._cpuValue);
+        cpu.add_child(label('CPU load', 'notchfolk-vitals-figure-name'));
+        pulse.add_child(cpu);
+        pulse.add_child(new St.Widget({style_class: 'notchfolk-vitals-rule'}));
+        const heat = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-figure'});
+        this._tempValue = label('\u2014', 'notchfolk-vitals-figure-value notchfolk-vitals-temp');
+        heat.add_child(this._tempValue);
+        this._tempBand = label('', 'notchfolk-vitals-figure-band');
+        heat.add_child(this._tempBand);
+        pulse.add_child(heat);
+        this._column.add_child(pulse);
 
-        // The hero card: the CPU ring and the temperature, the two that change what
-        // you do next, in the glass card the prayer page's own hero uses.
-        const hero = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero',
-            y_align: Clutter.ActorAlign.CENTER});
-        const heroTop = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-top'});
-        heroTop.add_child(label('THE PULSE', 'notchfolk-vitals-eyebrow'));
-        hero.add_child(heroTop);
+        // \u2500\u2500 The sparkline: the last minute of CPU activity, drawn as the weather's
+        // own curve - smooth cubic, warm gradient area, alive with every sample \u2500\u2500
+        this._spark = new St.DrawingArea({style_class: 'notchfolk-vitals-spark', x_expand: true});
+        this._spark.connect('repaint', area => this._paintSpark(area));
+        this._column.add_child(this._spark);
 
-        // The pulse: the ring and the temperature side by side (the card is wide
-        // enough), the cores strip under them - as compact as the prayer's own hero.
-        const pulse = new St.BoxLayout({style_class: 'notchfolk-vitals-hero-pulse'});
-        const cpuBox = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero-cpu',
-            y_align: Clutter.ActorAlign.CENTER});
-        this._cpuRing = new Ring({size: 44, lineWidth: 4});
-        this._cpuPercent = label('—', 'notchfolk-vitals-hero-cpu-value');
-        this._cpuRing.add_child(this._cpuPercent);
-        cpuBox.add_child(this._cpuRing);
-        cpuBox.add_child(label('CPU', 'notchfolk-vitals-hero-label'));
-        pulse.add_child(cpuBox);
+        // \u2500\u2500 Storage: the two that fill slowly, one line each \u2500\u2500
+        this._memBar = this._storageRow('Memory');
+        this._column.add_child(this._memBar.box);
+        this._diskBar = this._storageRow('Disk');
+        this._column.add_child(this._diskBar.box);
 
-        pulse.add_child(new St.Widget({style_class: 'notchfolk-vitals-hero-sep'}));
-
-        const heatBox = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-hero-heat',
-            y_align: Clutter.ActorAlign.CENTER});
-        this._tempLabel = label('—', 'notchfolk-vitals-hero-temp');
-        heatBox.add_child(this._tempLabel);
-        this._tempNote = label('', 'notchfolk-vitals-hero-band');
-        heatBox.add_child(this._tempNote);
-        heatBox.add_child(label('Temperature', 'notchfolk-vitals-hero-label'));
-        pulse.add_child(heatBox);
-        hero.add_child(pulse);
-
-        // The cores: a strip under the pulse, one thin bar per core.
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
-        hero.add_child(this._coresBox);
-        row.add_child(hero);
-
-        // The right side: the storage that fills slowly, the network and the battery.
-        const data = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
-            style_class: 'notchfolk-vitals-data', y_align: Clutter.ActorAlign.CENTER});
-        this._memBar = this._storageRow('Memory', data);
-        this._swapBar = this._storageRow('Swap', data);
-        this._diskBar = this._storageRow('Disk', data);
-        data.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
-        const net = new St.BoxLayout({style_class: 'notchfolk-vitals-net-row'});
+        // \u2500\u2500 The footer: the network's rates, the battery when there is one \u2500\u2500
+        const footer = new St.BoxLayout({style_class: 'notchfolk-vitals-footer', x_expand: true});
         this._netDown = label('', 'notchfolk-vitals-net');
         this._netUp = label('', 'notchfolk-vitals-net');
-        net.add_child(this._netDown);
-        net.add_child(this._netUp);
+        footer.add_child(this._netDown);
+        footer.add_child(this._netUp);
         this._battery = label('', 'notchfolk-vitals-battery');
-        net.add_child(this._battery);
-        data.add_child(net);
-        row.add_child(data);
-        this._column.add_child(row);
+        footer.add_child(this._battery);
+        this._column.add_child(footer);
 
         this._unit = settings.get_string('vitals-temperature-unit');
         this._unitChanged = settings.connect('changed::vitals-temperature-unit', () => {
@@ -155,7 +138,7 @@ export const VitalsPage = GObject.registerClass({
     }
 
     /** One storage row: the name left, the bar across, the value right - one line. */
-    _storageRow(name, parent) {
+    _storageRow(name) {
         const box = new St.BoxLayout({style_class: 'notchfolk-vitals-storage', x_expand: true});
         box.add_child(label(name, 'notchfolk-vitals-storage-name'));
         const fill = new St.Widget({style_class: 'notchfolk-vitals-bar-fill'});
@@ -164,64 +147,99 @@ export const VitalsPage = GObject.registerClass({
         box.add_child(track);
         const value = label('', 'notchfolk-vitals-storage-value');
         box.add_child(value);
-        parent.add_child(box);
         return {value, fill, track, box};
     }
 
-    /** One bar per core, made again only when the machine's core count changes. */
-    _syncCores(cores) {
-        const signature = cores.length.toString();
-        if (signature !== this._coreSignature) {
-            this._coreSignature = signature;
-            this._coresBox.destroy_all_children();
-            this._cores = cores.map(() => {
-                const fill = new St.Widget({style_class: 'notchfolk-vitals-core-fill'});
-                const track = new St.Widget({style_class: 'notchfolk-vitals-core-track'});
-                track.add_child(fill);
-                this._coresBox.add_child(track);
-                return {fill, track};
-            });
+    /** The sparkline: the history as a smooth curve with a warm gradient area under it,
+     * drawn with the weather's own curve technique - cubic interpolation, area fill. */
+    _paintSpark(area) {
+        const cr = area.get_context();
+        const [width, height] = area.get_surface_size();
+        if (width <= 0 || height <= 0 || this._history.length < 2) {
+            cr.$dispose();
+            return;
         }
-        cores.forEach((usage, index) => {
-            const core = this._cores[index];
-            if (!core)
-                return;
-            const percent = Math.max(0, Math.min(100, Math.round(usage)));
-            core.fill.height = Math.max(1, Math.round(percent / 100 * 14));
-            core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
-            core.track.tooltip_text = `Core ${index}: ${percent}%`;
-        });
+        const points = this._history.slice(-SPARK_POINTS);
+        const x = i => width * i / (points.length - 1);
+        const top = px(3);
+        const bottom = height - px(2);
+        const y = value => bottom - (bottom - top) * (value / 100);
+
+        cr.setLineCap(Cairo.LineCap.ROUND);
+        cr.setLineJoin(Cairo.LineJoin.ROUND);
+
+        // The smooth curve through the history, as the weather's own.
+        const drawCurve = () => {
+            cr.moveTo(x(0), y(points[0]));
+            for (let i = 0; i < points.length - 1; i++) {
+                const previous = points[Math.max(0, i - 1)];
+                const current = points[i];
+                const next = points[i + 1];
+                const following = points[Math.min(points.length - 1, i + 2)];
+                const controlY1 = y(current + (next - previous) / 6);
+                const controlY2 = y(next - (following - current) / 6);
+                const third = (x(i + 1) - x(i)) / 3;
+                cr.curveTo(x(i) + third, controlY1, x(i + 1) - third, controlY2,
+                    x(i + 1), y(next));
+            }
+        };
+
+        // The area under the curve: the island's own warm gold, fading to nothing.
+        const areaGradient = new Cairo.LinearGradient(0, top, 0, bottom);
+        areaGradient.addColorStopRGBA(1, 1, 0.81, 0.36, 0.18);
+        areaGradient.addColorStopRGBA(0, 1, 0.81, 0.36, 0);
+        drawCurve();
+        cr.lineTo(x(points.length - 1), bottom);
+        cr.lineTo(x(0), bottom);
+        cr.closePath();
+        cr.setSource(areaGradient);
+        cr.fill();
+
+        // The line itself: the warm gradient, left to right.
+        const lineGradient = new Cairo.LinearGradient(0, 0, width, 0);
+        lineGradient.addColorStopRGBA(0, 1, 0.81, 0.36, 0.4);
+        lineGradient.addColorStopRGBA(1, 1, 0.62, 0.04, 0.95);
+        cr.setSource(lineGradient);
+        cr.setLineWidth(px(2));
+        drawCurve();
+        cr.stroke();
+
+        // The dot at the curve's end: where the machine is now.
+        cr.setSourceRGBA(1, 0.81, 0.36, 1);
+        cr.arc(x(points.length - 1), y(points[points.length - 1]), px(2.5), 0, 2 * Math.PI);
+        cr.fill();
+        cr.$dispose();
     }
 
     _refresh() {
         const vitals = this.daemon.state?.vitals;
         if (!vitals)
             return;
-        this._vitals = vitals;
 
-        this._cpuRing.progress = vitals.cpu_percent / 100;
-        this._cpuPercent.text = `${Math.round(vitals.cpu_percent)}%`;
+        this._cpuValue.text = `${Math.round(vitals.cpu_percent)}%`;
 
         const celsius = vitals.temperature_c;
         const unit = this._unit === 'F' ? 'F' : 'C';
         const shown = unit === 'F' ? celsius * 9 / 5 + 32 : celsius;
-        this._tempLabel.text = celsius > 0 ? `${Math.round(shown)}°` : '—';
-        this._tempLabel.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
-        this._tempNote.text = tempBand(celsius);
-        this._tempNote.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
+        this._tempValue.text = celsius > 0 ? `${Math.round(shown)}\u00b0` : '\u2014';
+        this._tempValue.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
+        this._tempBand.text = tempBand(celsius);
+        this._tempBand.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
 
-        this._syncCores(vitals.cpu_cores ?? []);
+        // The sparkline's history: the last minute of CPU activity.
+        this._history.push(vitals.cpu_percent);
+        if (this._history.length > SPARK_POINTS)
+            this._history.shift();
+        this._spark.queue_repaint();
 
         this._setRow(this._memBar, vitals.memory_used_bytes, vitals.memory_total_bytes);
-        this._setRow(this._swapBar, vitals.swap_used_bytes, vitals.swap_total_bytes);
-        this._swapBar.box.visible = vitals.swap_total_bytes > 0;
         this._setRow(this._diskBar, vitals.disk_used_bytes, vitals.disk_total_bytes);
 
-        this._netDown.text = `↓ ${rate(vitals.network_down_bytes_per_s)}`;
-        this._netUp.text = `↑ ${rate(vitals.network_up_bytes_per_s)}`;
+        this._netDown.text = `\u2193 ${rate(vitals.network_down_bytes_per_s)}`;
+        this._netUp.text = `\u2191 ${rate(vitals.network_up_bytes_per_s)}`;
 
         const battery = this.daemon.state?.system?.battery;
-        this._battery.text = battery ? `${battery.percent}%${battery.charging ? ' ⚡' : ''}` : '';
+        this._battery.text = battery ? `${battery.percent}%${battery.charging ? ' \u26a1' : ''}` : '';
         this._battery.visible = Boolean(battery);
     }
 
@@ -229,7 +247,7 @@ export const VitalsPage = GObject.registerClass({
      * filling up says so - amber past three quarters, red past nine tenths. */
     _setRow(row, used, total) {
         const percent = share(used, total);
-        row.value.text = total > 0 ? `${percent}%  ·  ${size(used)} / ${size(total)}` : '—';
+        row.value.text = total > 0 ? `${percent}%  \u00b7  ${size(used)} / ${size(total)}` : '\u2014';
         row.fill.width = Math.round(percent);
         row.fill.style = percent >= 90 ? 'background-color: #ff6961;'
             : percent >= 75 ? 'background-color: #ffb748;' : null;
