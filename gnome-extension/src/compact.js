@@ -149,7 +149,8 @@ export const CompactView = GObject.registerClass({
         this._karaokeText = label('', 'notchfolk-compact-karaoke');
         this._karaokeText.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this._karaokeButton = new St.Button({style_class: 'notchfolk-compact-karaoke-button', child: this._karaokeText,
-            can_focus: true, visible: false, accessible_name: 'The line being sung', y_align: Clutter.ActorAlign.CENTER});
+            can_focus: true, visible: false, accessible_name: 'The line being sung',
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton = new St.Button({style_class: 'notchfolk-compact-assistant-button', child: this._assistant,
             can_focus: true, track_hover: true, accessible_name: 'AI assistant', y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton.connect('clicked', () => {
