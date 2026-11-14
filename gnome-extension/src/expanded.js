@@ -43,6 +43,7 @@ const TABS = {
     water: {icon: 'notchfolk-water-tab', label: 'Water'},
     prayer: {icon: 'notchfolk-prayer', label: 'Prayer'},
     weather: {icon: 'notchfolk-weather', label: 'Weather'},
+    vitals: {icon: 'notchfolk-gauge', label: 'Vitals'},
     apps: {icon: 'notchfolk-apps', label: 'Apps'},
     usage: {icon: 'notchfolk-gauge', label: 'Usage'},
     phone: {icon: 'notchfolk-devices', label: 'Phone'},

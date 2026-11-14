@@ -143,7 +143,7 @@ export const CompactView = GObject.registerClass({
         // The karaoke line: the sung line in the assistant's centre while it plays, and the
         // assistant's own click - nothing the mode shows costs the assistant its home.
         this._karaokeText = label('', 'notchfolk-compact-karaoke');
-        this._karaokeText.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._karaokeText.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
         this._karaokeButton = new St.Button({style_class: 'notchfolk-compact-karaoke-button', child: this._karaokeText,
             can_focus: true, visible: false, accessible_name: 'The line being sung', y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton = new St.Button({style_class: 'notchfolk-compact-assistant-button', child: this._assistant,
@@ -255,27 +255,41 @@ export const CompactView = GObject.registerClass({
         const leftWidth = leftItems.reduce((total, item) => total + item.get_preferred_width(-1)[1], 0) +
             gap * Math.max(0, leftItems.length - 1);
         // The bars sit in the right corner, the cover's opposite, past the privacy dots.
-        const rightItems = [this._restDate, this._rightStatuses, this._privacyDots, this._musicStatus]
-            .filter(item => item.visible);
+        const rightItems = [this._restDate, this._rightStatuses, this._privacyDots, this._vitalLabel,
+            this._musicStatus].filter(item => item.visible);
         const rightWidth = rightItems.reduce((total, item) => total + item.get_preferred_width(-1)[1], 0) +
             gap * Math.max(0, rightItems.length - 1);
-        // The sides take their natural width. Their imbalance keeps the assistant in the notch's
-        // middle; split evenly between the two end pads, it also leaves both ends of the notch as
-        // full as each other instead of one dead wing — the pads weigh the same on both sides of
-        // the assistant, so it stays centred whatever is on.
+        // The karaoke line takes exactly the width of the line being sung: the island narrows and
+        // widens with each line, so the wave stays at the notch's right edge and the line shows
+        // whole. The button is measured, not its label: its own padding is part of the row's slot.
+        // Only a line wider than the screen has room for is cut; the cover and the wave keep their corners.
+        const sides = leftWidth + rightWidth + 4 * px(12) + Math.abs(leftWidth - rightWidth);
+        const room = this._screenWidth ? this._screenWidth - sides - 2 * px(24) : Infinity;
+        // An instrumental gap (an empty line) holds the last line's width: the notch and the wave
+        // stay put instead of collapsing to the floor and springing back on the next line.
+        const lineWidth = this._karaokeButton.get_preferred_width(-1)[1];
+        if (this._karaokeActive && lineWidth > px(60))
+            this._karaokeHeld = lineWidth;
+        const centre = this._karaokeActive
+            ? Math.min(Math.max(this._karaokeHeld ?? lineWidth, px(60)), Math.max(px(60), room))
+            : px(size.center);
+        // The sides take their natural width. Their imbalance keeps the assistant (or the karaoke
+        // line) in the notch's middle; split evenly between the two end pads, it also leaves both
+        // ends of the notch as full as each other instead of one dead wing — the pads weigh the
+        // same on both sides, so whatever is in the centre stays centred.
         const imbalance = Math.abs(leftWidth - rightWidth);
         this._rowPad.width = Math.ceil(imbalance / 2);
         this._rowEndPad.width = imbalance - this._rowPad.width;
         // No row padding anymore: the cover and the bars sit at the notch's ends, and only the pads
         // that balance the sides sit between them and the edge. The row's four gaps: pad, side,
-        // assistant, side, pad.
-        // The karaoke holds one width for the whole song: the longest line's, capped at
-        // 500px - the island does not shrink and grow per line (the art would drift off the
-        // left edge, the wave off the right, on every short line).
-        const centre = this._karaokeActive
-            ? Math.min(Math.max(this._karaokeWidest, px(200)), px(500)) : px(size.center);
+        // centre, side, pad.
         return Math.ceil(4 * px(12) + leftWidth + rightWidth +
             this._rowPad.width + this._rowEndPad.width + centre);
+    }
+
+    /** The display's width in stage pixels: the most a karaoke line may take. */
+    set screenWidth(width) {
+        this._screenWidth = width;
     }
 
     /**
@@ -603,18 +617,21 @@ export const CompactView = GObject.registerClass({
         // in their corners. Anything else leaves the closed island as it is.
         const lyrics = this._daemon.state.lyrics;
         this._karaokeLines = lyrics?.status === 'synced' ? [...lyrics.lines ?? []] : [];
-        // The karaoke's held width: the longest line of this song, measured once.
-        this._karaokeWidest = Math.max(...this._karaokeLines.map(line => {
-            this._karaokeText.text = line.text;
-            return this._karaokeText.get_preferred_width(-1)[1];
-        }), 0);
-        this._karaokeText.text = '';
+        // A new song measures its own lines: the held width starts empty.
+        if (this._karaokeLines !== this._karaokeMeasuredFor) {
+            this._karaokeMeasuredFor = this._karaokeLines;
+            this._karaokeHeld = 0;
+            this._karaokeShown = undefined;
+        }
         this._karaokeActive = !this._isServiceDown && playing && this._karaokeLines.length > 0
             && this._settings.get_boolean('compact-karaoke');
         this._karaokeButton.visible = this._karaokeActive;
         this._assistantButton.visible = !this._karaokeActive;
         this._clockBox.visible = !this._karaokeActive && !this._isServiceDown;
         this._restDate.visible = !this._isServiceDown && !this._karaokeActive;
+        // The line is on screen before the width is measured: a blank centre would measure its floor.
+        if (this._karaokeActive && !this._karaokeText.text)
+            this._karaokeText.text = this._karaokeLines[0]?.text ?? '';
         this._tickKaraoke();
         // The dots' own update() decides their visibility from what is on; the switch
         // decides by handing it an empty set when off.
@@ -749,15 +766,25 @@ export const CompactView = GObject.registerClass({
         const text = index >= 0 ? this._karaokeLines[index].text
             : this._karaokeLines[0]?.text ?? '';
         const dimmed = index < 0;
-        if (text !== this._karaokeText.text || dimmed !== this._karaokeDimmed) {
+        // Compared against the line last shown, not the label: an empty line leaves the label as it
+        // was, and comparing to it would re-fade and re-measure every tick through the gap.
+        if (text !== this._karaokeShown || dimmed !== this._karaokeDimmed) {
+            this._karaokeShown = text;
             this._karaokeDimmed = dimmed;
             this._karaokeText.remove_all_transitions();
-            this._karaokeText.ease({opacity: 0, duration: 180, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    this._karaokeText.text = text;
-                    this._karaokeText.ease({opacity: dimmed ? 100 : 255, duration: 180,
-                        mode: Clutter.AnimationMode.EASE_IN_QUAD});
-                }});
+            // The text lands now, the fade is only its opacity: the island is as wide as the line
+            // it is about to show, so the wave never waits a fade at the end of an empty centre.
+            // An empty line keeps what was on: the island holds its width through the gap.
+            if (text)
+                this._karaokeText.text = text;
+            this._karaokeText.opacity = 0;
+            // The line not yet sung is muted by its own colour, not by a faint white.
+            this._karaokeText.style_class = dimmed ? 'notchfolk-compact-karaoke notchfolk-compact-karaoke-coming'
+                : 'notchfolk-compact-karaoke';
+            this._karaokeText.ease({opacity: 255, duration: 180,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD});
+            if (this.mapped)
+                this._queueWidthChanged();
         }
         this._cancelKaraokeTick();
         this._karaokeTick = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {

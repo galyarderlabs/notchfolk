@@ -7,6 +7,7 @@
 // temperature at the top (the two that matter at a glance), the memory and disk bars,
 // the network's rates, the battery from the state it already publishes.
 
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -43,10 +44,16 @@ function size(bytes) {
 
 export const VitalsPage = GObject.registerClass({
 }, class VitalsPage extends Page.Page {
-    _init(daemon, settings, size) {
-        super._init({name: 'vitals', icon: 'notchfolk-vitals-symbolic', label: 'Vitals',
-            daemon, settings, size});
+    _init(daemon, {height}) {
+        super._init(daemon, {
+            style_class: 'notchfolk-page notchfolk-vitals',
+            layout_manager: new Clutter.BinLayout(),
+            height,
+        });
+        this.name = 'vitals';
         this._vitals = null;
+        this._box = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        this.add_child(this._box);
 
         // Top: the CPU ring (the aggregate, the % in the centre) and the temperature.
         const top = new St.BoxLayout({style_class: 'notchfolk-vitals-top'});
@@ -75,10 +82,7 @@ export const VitalsPage = GObject.registerClass({
 
         // The daemon's proxy: the vitals arrive as a parsed property in the state,
         // and the page re-reads it every time the daemon publishes a new sample.
-        this._vitalsChanged = daemon.connect('changed', (_daemon, key) => {
-            if (key === 'vitals')
-                this._refresh();
-        });
+        this.watch(['vitals'], () => this._refresh());
         this._refresh();
     }
 
@@ -99,7 +103,7 @@ export const VitalsPage = GObject.registerClass({
     }
 
     _refresh() {
-        const vitals = this._daemon.state?.vitals;
+        const vitals = this.daemon.state?.vitals;
         if (!vitals)
             return;
         this._vitals = vitals;
@@ -125,7 +129,7 @@ export const VitalsPage = GObject.registerClass({
         this._netUp.text = `↑ ${rate(vitals.network_up_bytes_per_s)}`;
 
         // The battery, from the state it already publishes.
-        const battery = this._daemon.state?.system?.battery;
+        const battery = this.daemon.state?.system?.battery;
         this._battery.text = battery ? `${battery.percent}% ${battery.charging ? '⚡' : ''}` : '';
         this._battery.visible = Boolean(battery);
     }

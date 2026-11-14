@@ -183,9 +183,12 @@
   border-radius: 999px; }
 
 /* The karaoke line: the sung line in the assistant's centre while it plays, at the
-   compact's own text size, capped so a long line never grows the island past its measure. */
+   compact's own text size, whole - the island widens to it, up to the room the screen has. */
 .notchfolk-compact-karaoke { font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
-  max-width: 500px; color: rgba(255, 255, 255, 0.9); }
+  color: rgba(255, 255, 255, 0.9); }
+/* The line before it is sung (the intro): muted, so the notch says what is coming without
+   competing with the line that is actually on. */
+.notchfolk-compact-karaoke-coming { color: rgba(255, 255, 255, 0.45); }
 .notchfolk-compact-karaoke-button { border-radius: 8px; padding: 2px 6px; }
 .notchfolk-compact-karaoke-button:hover, .notchfolk-compact-karaoke-button:focus {
   background-color: rgba(255, 255, 255, 0.08); }

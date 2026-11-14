@@ -351,6 +351,7 @@ export class Controller {
         this._island.monitor = this._monitor;
         this._topBar.clockShown = !this._onBar;
         this._compact.inBar = inBar;
+        this._compact.screenWidth = this._monitor?.width ?? 0;
 
         const size = {
             width: this._compact.preferredWidth,
@@ -502,7 +503,7 @@ export class Controller {
             () => page('./pages/apps.js', 'AppsPage', [this._daemon, this._appUsage, size]),
             () => page('./pages/gsconnect.js', 'PhonePage', [this._daemon, () => this._botLook.palette.glow, size]),
             () => page('./pages/devices.js', 'DevicesPage', [this._daemon, size]),
-            () => page('./pages/vitals.js', 'VitalsPage', [this._daemon, this._settings, size]),
+            () => page('./pages/vitals.js', 'VitalsPage', [this._daemon, size]),
         ];
     }
 
@@ -1611,6 +1612,7 @@ export class Controller {
         const top = onBar ? this._topBar.height : 0;
         const inBar = onBar && this._settings.get_boolean('island-in-top-bar');
         compact.inBar = this._compactInBar(onBar);
+        compact.screenWidth = this._monitor?.width ?? 0;
         const gap = this._pillGapOn(onBar);
         if (gap !== null) {
             // A pill: centred in the bar, or PILL_HEIGHT tall off it; round all over (the island caps the radius).

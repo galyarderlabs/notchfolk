@@ -764,9 +764,14 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             // Only what the plan allows; until notchfolkd has asked, just the AI's own default.
             const def = entry?.default_name ? `Default (${entry.default_name})` : `${current.name}’s default`;
             const fromCatalog = [['', def], ...(entry?.models ?? []).map(({id, name}) => [id, name])];
-            modelChoices = entry ? fromCatalog : current.models?.() ?? fromCatalog;
-            if (!modelChoices.length)
-                modelChoices = fromCatalog;
+            modelChoices = fromCatalog;
+            // A provider that lists its models over D-Bus answers later; the row fills in then.
+            if (!entry && current.models) {
+                current.models().then(list => {
+                    if (list.length && settings.get_string('voice-provider') === wanted)
+                        syncModel();
+                });
+            }
             // A pick the plan no longer allows stays (it comes back once allowed), marked as not used now.
             if (!modelChoices.some(([id]) => id === value)) {
                 const known = entry?.models?.length > 0;
@@ -1758,13 +1763,14 @@ const PAGES = [
     ['calories', 'Calories', 'accessories-calculator-symbolic', 'Your food log and daily calorie goal'],
     ['water', 'Water', 'weather-showers-symbolic', 'Your water log and daily hydration goal'],
     ['prayer', 'Prayer', 'preferences-system-time-symbolic', 'Prayer times for your selected city'],
+    ['vitals', 'Vitals', 'utilities-system-monitor-symbolic', 'CPU, memory, temperature, network and disk, sampled by the daemon'],
 ];
 
 /** The pages a shortcut of their own may open from anywhere, as the controller's SHORTCUT_PAGES, with their names. */
 const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, iconName]),
     ['phone', 'Phone', 'phone-symbolic'], ['apps', 'Apps', 'view-app-grid-symbolic'],
     ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic'],
-    ['weather', 'Weather', 'weather-clear-symbolic']];
+    ['weather', 'Weather', 'weather-clear-symbolic'], ['vitals', 'Vitals', 'power-profile-balanced-symbolic']];
 
 /** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
 function shortcutsGroup(settings) {
@@ -2188,17 +2194,22 @@ const AI_PROVIDERS = [
 
 /** Model ids from API-backed providers. OMP uses its configured default or an optional manual model id. */
 function apiModels(provider) {
-    try {
-        const proxy = Gio.DBusProxy.new_for_bus_sync(Gio.BusType.SESSION, Gio.DBusProxyFlags.NONE,
-            null, DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, null);
-        const result = proxy.call_sync('ListModels', new GLib.Variant('(s)', [provider]),
-            Gio.DBusCallFlags.NONE, 8000, null);
-        const [models] = result.deep_unpack();
-        return JSON.parse(models).map(id => [id, id]);
-    } catch (e) {
-        console.warn(`Notchfolk: could not list ${provider} models: ${e.message}`);
-        return [];
-    }
+    // Asynchronous: a synchronous call here blocks the settings process for as long as the
+    // provider takes to answer (8 s and more against a router), and the shell's own D-Bus
+    // service waits behind it. The row fills in when the answer comes.
+    return new Promise(resolve => {
+        Gio.DBus.session.call(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, 'ListModels',
+            new GLib.Variant('(s)', [provider]), new GLib.VariantType('(s)'), Gio.DBusCallFlags.NONE, 30000, null,
+            (bus, result) => {
+                try {
+                    const [models] = bus.call_finish(result).deep_unpack();
+                    resolve(JSON.parse(models).map(id => [id, id]));
+                } catch (e) {
+                    console.warn(`Notchfolk: could not list ${provider} models: ${e.message}`);
+                    resolve([]);
+                }
+            });
+    });
 }
 
 /** notchfolkd's `Models`: per AI `{plan, default, default_name, models: [{id, name}]}`, followed while Settings is open. */
