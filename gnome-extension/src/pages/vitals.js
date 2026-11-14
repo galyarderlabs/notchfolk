@@ -207,10 +207,13 @@ export const VitalsPage = GObject.registerClass({
         this._battery.visible = Boolean(battery);
     }
 
-    /** One storage row: its share, the bytes, and the fill's width. */
+    /** One storage row: its share, the bytes, and the fill's width. A bar that is
+     * filling up says so - amber past three quarters, red past nine tenths. */
     _setRow(row, used, total) {
         const percent = share(used, total);
         row.value.text = total > 0 ? `${percent}%  ·  ${size(used)} / ${size(total)}` : '—';
         row.fill.width = Math.round(percent);
+        row.fill.style = percent >= 90 ? 'background-color: #ff6961;'
+            : percent >= 75 ? 'background-color: #ffb748;' : null;
     }
 });
