@@ -12,7 +12,6 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
-import * as Format from '../format.js';
 import {icon, label} from '../widgets.js';
 import {Page} from './page.js';
 
@@ -377,11 +376,11 @@ export const VitalsPage = GObject.registerClass({
         this._battery.text = battery ? `\u26a1 ${battery.percent}%${battery.charging ? ' charging' : ''}` : '';
         this._battery.visible = Boolean(battery);
 
-        // The machine's own story.
-        const up = vitals.uptime_seconds ?? 0;
-        const upDays = Math.floor(up / 86400);
-        const upHours = Math.floor((up % 86400) / 3600);
-        const upMins = Math.floor((up % 3600) / 60);
+        // The machine's own story. `up` is the network's rate above: the uptime gets its own name.
+        const uptime = vitals.uptime_seconds ?? 0;
+        const upDays = Math.floor(uptime / 86400);
+        const upHours = Math.floor((uptime % 86400) / 3600);
+        const upMins = Math.floor((uptime % 3600) / 60);
         this._uptime.text = `Up ${upDays > 0 ? `${upDays}d ` : ''}${upHours}h ${upMins}m`;
         this._allFreq.text = vitals.cpu_frequency_mhz > 0 ? `${(vitals.cpu_frequency_mhz / 1000).toFixed(1)}` : '—';
         this._cpuFreqLabel.text = vitals.cpu_frequency_mhz > 0 ? `${(vitals.cpu_frequency_mhz / 1000).toFixed(2)} GHz` : '';
