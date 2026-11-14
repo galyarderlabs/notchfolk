@@ -80,6 +80,8 @@ export const VitalsPage = GObject.registerClass({
             height,
         });
         this.name = 'vitals';
+        // A little taller than the base: the footer was cut off at the base height.
+        this.pageHeight = height + 40;
         this._settings = settings;
         this._cpuHistory = [];
         this._cores = [];
