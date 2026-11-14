@@ -37,6 +37,8 @@ const POINTER_POLL_MS = 33;
 const COMPACT_STATUSES = ['timer', 'calls', 'notifications', 'phone', 'router', 'privacy'];
 /** The music bars' opacity while the song is paused. */
 const PAUSED_OPACITY = 110;
+/** How often the karaoke looks again while no next line is timed (a pause, or a song's end). */
+const KARAOKE_IDLE_MS = 1000;
 /** How often the focus ring is redrawn; it moves too slowly to need more. */
 const RING_REFRESH_S = 5;
 /** The focus timer's colour: white while focusing, green on a break. */
@@ -786,8 +788,14 @@ export const CompactView = GObject.registerClass({
             if (this.mapped)
                 this._queueWidthChanged();
         }
+        // The next line's own moment, not a poll every half second: a poll that lands on the wrong
+        // side of a line's start shows the previous line again for a moment, which reads as a blink.
+        // The song's position is extrapolated from its sample, so the wait is exact.
         this._cancelKaraokeTick();
-        this._karaokeTick = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
+        const wait = Playback.msUntilLine(this._daemon.state.nowPlaying, this._karaokeLines, index);
+        // The sample is a moment old: the line may already have started since it was taken.
+        const delay = wait === null ? KARAOKE_IDLE_MS : Math.max(0, Math.round(wait) + 30);
+        this._karaokeTick = GLib.timeout_add(GLib.PRIORITY_DEFAULT, delay, () => {
             this._karaokeTick = 0;
             this._tickKaraoke();
             return GLib.SOURCE_REMOVE;
