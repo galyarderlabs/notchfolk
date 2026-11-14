@@ -2172,6 +2172,7 @@
 }
 
 .notchfolk-vitals-moving { spacing: 14px; }
+.notchfolk-vitals-net-down { color: rgba(255, 255, 255, 0.85) !important; }
 .notchfolk-vitals-net, .notchfolk-vitals-battery {
   font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.7);
   font-feature-settings: "tnum";

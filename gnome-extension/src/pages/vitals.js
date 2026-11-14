@@ -118,7 +118,7 @@ export const VitalsPage = GObject.registerClass({
         column.add_child(new St.Widget({style_class: 'notchfolk-vitals-hairline'}));
         const moving = new St.BoxLayout({style_class: 'notchfolk-vitals-moving', x_expand: true});
         moving.add_child(label('Network', 'notchfolk-vitals-row-name'));
-        this._netDown = label('', 'notchfolk-vitals-net');
+        this._netDown = label('', 'notchfolk-vitals-net notchfolk-vitals-net-down');
         this._netUp = label('', 'notchfolk-vitals-net');
         moving.add_child(this._netDown);
         moving.add_child(this._netUp);
@@ -207,10 +207,13 @@ export const VitalsPage = GObject.registerClass({
         this._battery.visible = Boolean(battery);
     }
 
-    /** One storage row: its share, the bytes, and the fill's width. */
+    /** One storage row: its share, the bytes, and the fill's width. A bar that is
+     * filling up says so - amber past three quarters, red past nine tenths. */
     _setRow(row, used, total) {
         const percent = share(used, total);
         row.value.text = total > 0 ? `${percent}%  ·  ${size(used)} / ${size(total)}` : '—';
         row.fill.width = Math.round(percent);
+        row.fill.style = percent >= 90 ? 'background-color: #ff6961;'
+            : percent >= 75 ? 'background-color: #ffb748;' : null;
     }
 });
