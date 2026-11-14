@@ -157,6 +157,14 @@ export const VitalsPage = GObject.registerClass({
         this.watch(['vitals', 'system'], () => this._refresh());
         this._refresh();
     }
+    /** The page grows a little above the base (the footer was cut off at it);
+     * only the base heights (150, 210) trigger the growth, so it never loops. */
+    onPageHeight(height) {
+        if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
+            return;
+        this.pageHeight = height + 40;
+    }
+
     _storageRow(name, parent) {
         const box = new St.BoxLayout({style_class: 'notchfolk-vitals-storage', x_expand: true});
         box.add_child(label(name, 'notchfolk-vitals-storage-name'));
