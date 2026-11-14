@@ -2180,15 +2180,15 @@
 }
 
 /* The data: the storage that fills slowly, the network and the battery. */
-.notchfolk-vitals-data { spacing: 8px; }
-.notchfolk-vitals-storage { spacing: 2px; }
+.notchfolk-vitals-data { spacing: 7px; }
+.notchfolk-vitals-storage { spacing: 8px; }
 .notchfolk-vitals-storage-name {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  width: 52px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
   text-transform: uppercase; color: rgba(255, 255, 255, 0.42);
 }
 .notchfolk-vitals-storage-value {
-  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
-  font-feature-settings: "tnum";
+  width: 130px; font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
+  font-feature-settings: "tnum"; text-align: right;
 }
 .notchfolk-vitals-bar-track { height: 5px; border-radius: 2.5px; background-color: rgba(255, 255, 255, 0.08); }
 .notchfolk-vitals-bar-fill {

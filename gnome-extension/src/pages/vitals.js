@@ -154,9 +154,9 @@ export const VitalsPage = GObject.registerClass({
         this._refresh();
     }
 
-    /** One storage row: the name above, the bar and the value under it. */
+    /** One storage row: the name left, the bar across, the value right - one line. */
     _storageRow(name, parent) {
-        const box = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-storage'});
+        const box = new St.BoxLayout({style_class: 'notchfolk-vitals-storage', x_expand: true});
         box.add_child(label(name, 'notchfolk-vitals-storage-name'));
         const fill = new St.Widget({style_class: 'notchfolk-vitals-bar-fill'});
         const track = new St.Widget({style_class: 'notchfolk-vitals-bar-track', x_expand: true});
