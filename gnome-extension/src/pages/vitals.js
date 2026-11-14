@@ -2,10 +2,10 @@
 // Copyright (C) 2026 Galyarder Labs
 
 // The Vitals page: the machine's own pulse, in the island. The daemon samples the vitals
-// every 2 s (CPU, memory, swap, temperature, network, disk - the plan: docs/vitals-spec.md)
-// and publishes them as the weather is; the page shows them: the CPU ring and the
-// temperature at the top (the two that matter at a glance), the memory and disk bars,
-// the network's rates, the battery from the state it already publishes.
+// every 2 s (CPU, memory, swap, temperature, network, disk - docs/vitals-spec.md) and
+// publishes them as the weather is. The page shows them the way the island's other pages
+// do: the two that matter at a glance in a hero on the left, the rest as rows on the right,
+// and the CPU's own cores as a bar each, so a single busy core is visible.
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -33,7 +33,7 @@ function rate(bytesPerSecond) {
     return `${(bytesPerSecond / 1024 / 1024).toFixed(1)} MB/s`;
 }
 
-/** A size in bytes, as a human's own words (GB, TB). */
+/** A size in bytes, as a human's own words (MB, GB, TB). */
 function size(bytes) {
     if (bytes < 1024 ** 3)
         return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
@@ -42,51 +42,75 @@ function size(bytes) {
     return `${(bytes / 1024 ** 4).toFixed(1)} TB`;
 }
 
+/** A share of a whole, as a whole percent (0 when the whole is nothing). */
+function share(used, total) {
+    return total > 0 ? Math.round(used / total * 100) : 0;
+}
+
 export const VitalsPage = GObject.registerClass({
 }, class VitalsPage extends Page.Page {
-    _init(daemon, {height}) {
+    _init(daemon, settings, {height}) {
         super._init(daemon, {
             style_class: 'notchfolk-page notchfolk-vitals',
             layout_manager: new Clutter.BinLayout(),
             height,
         });
         this.name = 'vitals';
+        this._settings = settings;
         this._vitals = null;
-        this._box = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-        this.add_child(this._box);
+        this._cores = [];
+        this._coreSignature = '';
 
-        // Top: the CPU ring (the aggregate, the % in the centre) and the temperature.
-        const top = new St.BoxLayout({style_class: 'notchfolk-vitals-top'});
-        this._cpuRing = new Ring({size: 64, lineWidth: 5});
-        this._cpuPercent = label('', 'notchfolk-vitals-cpu-percent');
+        const row = new St.BoxLayout({style_class: 'notchfolk-vitals-layout', x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER});
+        this.add_child(row);
+
+        // Left: the CPU ring, its percentage, and the temperature under it.
+        const left = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-left',
+            y_align: Clutter.ActorAlign.CENTER});
+        this._cpuRing = new Ring({size: 78, lineWidth: 6});
+        this._cpuPercent = label('—', 'notchfolk-vitals-cpu-percent');
         this._cpuRing.add_child(this._cpuPercent);
-        top.add_child(this._cpuRing);
-        this._tempLabel = label('', 'notchfolk-vitals-temp');
-        top.add_child(this._tempLabel);
-        this._box.add_child(top);
+        left.add_child(this._cpuRing);
+        left.add_child(label('CPU', 'notchfolk-vitals-caption'));
+        this._tempLabel = label('—', 'notchfolk-vitals-temp');
+        left.add_child(this._tempLabel);
+        row.add_child(left);
+        row.add_child(new St.Widget({style_class: 'notchfolk-vitals-divider'}));
 
-        // Middle: the memory bar (with swap under it when there is one), the disk bar.
+        // Right: the cores, then memory, swap, disk, the network and the battery.
+        const right = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-vitals-right', x_expand: true});
+        row.add_child(right);
+
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
+        right.add_child(this._coresBox);
+
         this._memBar = this._bar('Memory');
         this._swapBar = this._bar('Swap');
         this._diskBar = this._bar('Disk');
+        for (const bar of [this._memBar, this._swapBar, this._diskBar])
+            right.add_child(bar.box);
 
-        // Bottom: the network's rates, the battery (from the state it already publishes).
-        const bottom = new St.BoxLayout({style_class: 'notchfolk-vitals-bottom'});
+        const bottom = new St.BoxLayout({style_class: 'notchfolk-vitals-bottom', x_expand: true});
         this._netDown = label('', 'notchfolk-vitals-net');
         this._netUp = label('', 'notchfolk-vitals-net');
+        this._battery = label('', 'notchfolk-vitals-battery');
         bottom.add_child(this._netDown);
         bottom.add_child(this._netUp);
-        this._battery = label('', 'notchfolk-vitals-battery');
         bottom.add_child(this._battery);
-        this._box.add_child(bottom);
+        right.add_child(bottom);
 
-        // The daemon's proxy: the vitals arrive as a parsed property in the state,
-        // and the page re-reads it every time the daemon publishes a new sample.
-        this.watch(['vitals'], () => this._refresh());
+        this._unit = settings.get_string('vitals-temperature-unit');
+        this._unitChanged = settings.connect('changed::vitals-temperature-unit', () => {
+            this._unit = settings.get_string('vitals-temperature-unit');
+            this._refresh();
+        });
+        this.connect('destroy', () => settings.disconnect(this._unitChanged));
+        this.watch(['vitals', 'system'], () => this._refresh());
         this._refresh();
     }
 
-    /** A labelled bar: the label left, the value right, the bar under. */
+    /** A labelled bar: the name and value on one line, the bar under. */
     _bar(name) {
         const box = new St.BoxLayout({style_class: 'notchfolk-vitals-bar-box', ...VERTICAL});
         const header = new St.BoxLayout({style_class: 'notchfolk-vitals-bar-header'});
@@ -98,8 +122,33 @@ export const VitalsPage = GObject.registerClass({
         const track = new St.Widget({style_class: 'notchfolk-vitals-bar-track'});
         track.add_child(fill);
         box.add_child(track);
-        this._box.add_child(box);
         return {value, fill, track, box};
+    }
+
+    /** One bar per core, made again only when the machine's core count changes. */
+    _syncCores(cores) {
+        const signature = cores.length.toString();
+        if (signature !== this._coreSignature) {
+            this._coreSignature = signature;
+            this._coresBox.destroy_all_children();
+            this._cores = cores.map(() => {
+                const fill = new St.Widget({style_class: 'notchfolk-vitals-core-fill'});
+                const track = new St.Widget({style_class: 'notchfolk-vitals-core-track'});
+                track.add_child(fill);
+                this._coresBox.add_child(track);
+                return {fill, track};
+            });
+        }
+        cores.forEach((usage, index) => {
+            const core = this._cores[index];
+            if (!core)
+                return;
+            const percent = Math.max(0, Math.min(100, Math.round(usage)));
+            core.fill.height = Math.max(1, Math.round(percent / 100 * 22));
+            // A core near its ceiling is the one to look at.
+            core.fill.style = percent >= 85 ? 'background-color: #ff6961;' : null;
+            core.track.tooltip_text = `Core ${index}: ${percent}%`;
+        });
     }
 
     _refresh() {
@@ -108,40 +157,35 @@ export const VitalsPage = GObject.registerClass({
             return;
         this._vitals = vitals;
 
-        // The CPU ring and its %.
+        const cpu = Math.round(vitals.cpu_percent);
         this._cpuRing.progress = vitals.cpu_percent / 100;
-        this._cpuPercent.text = `${Math.round(vitals.cpu_percent)}%`;
+        this._cpuPercent.text = `${cpu}%`;
 
-        // The temperature, colour-coded.
-        this._tempLabel.text = `${Math.round(vitals.temperature_c)}°C`;
-        this._tempLabel.style = `color: ${tempColor(vitals.temperature_c)};`;
+        const celsius = vitals.temperature_c;
+        const unit = this._unit === 'F' ? 'F' : 'C';
+        const shown = unit === 'F' ? celsius * 9 / 5 + 32 : celsius;
+        this._tempLabel.text = celsius > 0 ? `${Math.round(shown)}°${unit}` : '—';
+        this._tempLabel.style = celsius > 0 ? `color: ${tempColor(celsius)};` : null;
 
-        // The memory bar (and swap under it when there is one).
+        this._syncCores(vitals.cpu_cores ?? []);
+
         this._setBar(this._memBar, vitals.memory_used_bytes, vitals.memory_total_bytes);
         this._setBar(this._swapBar, vitals.swap_used_bytes, vitals.swap_total_bytes);
         this._swapBar.box.visible = vitals.swap_total_bytes > 0;
-
-        // The disk bar.
         this._setBar(this._diskBar, vitals.disk_used_bytes, vitals.disk_total_bytes);
 
-        // The network's rates.
         this._netDown.text = `↓ ${rate(vitals.network_down_bytes_per_s)}`;
         this._netUp.text = `↑ ${rate(vitals.network_up_bytes_per_s)}`;
 
-        // The battery, from the state it already publishes.
         const battery = this.daemon.state?.system?.battery;
-        this._battery.text = battery ? `${battery.percent}% ${battery.charging ? '⚡' : ''}` : '';
+        this._battery.text = battery ? `${battery.percent}%${battery.charging ? ' ⚡' : ''}` : '';
         this._battery.visible = Boolean(battery);
     }
 
-    /** One bar: the value (used / total), the fill's width. */
+    /** One bar: the value (used / total) and its share, the fill's width. */
     _setBar(bar, used, total) {
-        if (total === 0) {
-            bar.value.text = '—';
-            bar.fill.width = 0;
-            return;
-        }
-        bar.value.text = `${size(used)} / ${size(total)}`;
-        bar.fill.width = Math.round(used / total * 100);
+        const percent = share(used, total);
+        bar.value.text = total > 0 ? `${percent}% · ${size(used)} / ${size(total)}` : '—';
+        bar.fill.width = Math.round(percent);
     }
 });

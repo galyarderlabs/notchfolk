@@ -1800,7 +1800,7 @@ const PAGES = [
 const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, iconName]),
     ['phone', 'Phone', 'phone-symbolic'], ['apps', 'Apps', 'view-app-grid-symbolic'],
     ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic'],
-    ['weather', 'Weather', 'weather-clear-symbolic'], ['vitals', 'Vitals', 'power-profile-balanced-symbolic']];
+    ['weather', 'Weather', 'weather-clear-symbolic'], ['vitals', 'Vitals', 'utilities-system-monitor-symbolic']];
 
 /** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
 function shortcutsGroup(settings) {

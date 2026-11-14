@@ -503,7 +503,7 @@ export class Controller {
             () => page('./pages/apps.js', 'AppsPage', [this._daemon, this._appUsage, size]),
             () => page('./pages/gsconnect.js', 'PhonePage', [this._daemon, () => this._botLook.palette.glow, size]),
             () => page('./pages/devices.js', 'DevicesPage', [this._daemon, size]),
-            () => page('./pages/vitals.js', 'VitalsPage', [this._daemon, size]),
+            () => page('./pages/vitals.js', 'VitalsPage', [this._daemon, this._settings, size]),
         ];
     }
 
