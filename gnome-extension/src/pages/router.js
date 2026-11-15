@@ -65,6 +65,9 @@ class RouterPage extends Page {
             reactive: true,
         });
         this.name = 'router';
+        // The growth fires at build time too, not only when Large toggles (the
+        // expanded view only sets pageHeight on the Large toggle).
+        this.onPageHeight(height);
         this._settings = settings;
         this._activityPhase = 0;
         this._activitySamples = [];
