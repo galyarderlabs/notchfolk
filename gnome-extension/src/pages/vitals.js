@@ -276,7 +276,8 @@ export const VitalsPage = GObject.registerClass({
         this._netDown.text = `\u2193 ${rate(vitals.network_down_bytes_per_s)}`;
         this._netUp.text = `\u2191 ${rate(vitals.network_up_bytes_per_s)}`;
         const battery = this.daemon.state?.system?.battery;
-        this._battery.text = battery ? `\u26a1 ${battery.percent}%` : '';
+        this._battery.text = battery
+            ? `${battery.charging ? '\u26a1 ' : ''}${battery.percent}%` : '';
         this._battery.visible = Boolean(battery);
         this._uptime.text = `Up ${uptimeText(vitals.uptime_seconds ?? 0)}`;
     }
