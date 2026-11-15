@@ -14,6 +14,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
+import {LARGE_PAGE_HEIGHT, PAGE_HEIGHT} from '../expanded.js';
 import {Page} from './page.js';
 import {label} from '../widgets.js';
 
