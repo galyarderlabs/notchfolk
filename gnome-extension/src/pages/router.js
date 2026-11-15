@@ -149,7 +149,8 @@ class RouterPage extends Page {
             style_class: 'notchfolk-router-recent-scroll',
             accessible_name: 'Recent Router requests',
             hscrollbar_policy: St.PolicyType.NEVER,
-            vscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.EXTERNAL,
+            overlay_scrollbars: true,
             x_expand: true,
             y_expand: true,
         });
@@ -271,7 +272,7 @@ class RouterPage extends Page {
     onPageHeight(height) {
         if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
             return;
-        this.pageHeight = height + 100;
+        this.pageHeight = height + 60;
     }
 
     _setPeriod(period) {
