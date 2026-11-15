@@ -268,7 +268,7 @@ class RouterPage extends Page {
     onPageHeight(height) {
         if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
             return;
-        this.pageHeight = height + 50;
+        this.pageHeight = height + 100;
     }
 
     _setPeriod(period) {
