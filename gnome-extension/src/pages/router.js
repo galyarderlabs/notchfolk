@@ -12,6 +12,7 @@ import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
 import {icon, label} from '../widgets.js';
+import {LARGE_PAGE_HEIGHT, PAGE_HEIGHT} from '../expanded.js';
 import {Page} from './page.js';
 
 /** The periods the header offers, in order; Settings' own words. */
@@ -263,6 +264,13 @@ class RouterPage extends Page {
     }
 
     /** The header's period toggle changes both the page and the notch chip. */
+    /** The page grows a little above the base: the recent list was cut off at it. */
+    onPageHeight(height) {
+        if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
+            return;
+        this.pageHeight = height + 50;
+    }
+
     _setPeriod(period) {
         this._settings.set_string('router-period', period);
         this._syncPeriodButtons();
