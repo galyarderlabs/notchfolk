@@ -209,25 +209,6 @@ and [CHANGELOG.md](CHANGELOG.md) for what changed. Everyone taking part
 follows the [Code of Conduct](CODE_OF_CONDUCT.md); please report security
 problems privately as described in [SECURITY.md](SECURITY.md).
 
-### Author
-
-- [@muhamadgalihsaputra](https://github.com/muhamadgalihsaputra) — Galih:
-  Notchfolk itself. Every change since the fork of Isle — the quiet island,
-  the Weather page, the world MCP — and the direction behind them.
-
-### Contributors
-
-Thanks to everyone who has made Notchfolk better:
-
-- [@caffeinepx](https://github.com/caffeinepx): Grok in the voice assistant
-  and on the AI usage page; music from Zen and Firefox that keeps its place;
-  a sun or a moon by each World Clock.
-- [@Ashishranjan980](https://github.com/Ashishranjan980): the Apps page, where
-  your time in each app goes.
-- [@daotheone](https://github.com/daotheone): the DeepSeek request that became
-  the assistant's shared endpoint rows — one Base URL and one API key, in
-  Settings instead of a file.
-
 ## Support
 
 Notchfolk is free and always will be. If it makes your desktop nicer, you can
