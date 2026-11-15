@@ -51,6 +51,11 @@ export const WeatherWatcher = GObject.registerClass({
         this._settingsIds = [
             settings.connect('changed::weather-enabled', () => this._configure()),
             settings.connect('changed::weather-location', () => this._configure()),
+            // A unit change needs no new fetch: the last reading is re-read in the new unit.
+            settings.connect('changed::weather-temperature-unit', () => {
+                if (this._info?.is_valid())
+                    this._refreshState(this._info);
+            }),
         ];
         this._clocksId = this._clocks?.connect('changed::locations', () => {
             if (!WorldClocks.hasWeatherLocation(settings))
@@ -76,12 +81,49 @@ export const WeatherWatcher = GObject.registerClass({
         }
     }
 
+    /** The GWeather unit for the chosen setting; DEFAULT follows the locale, as today. An
+     * unknown stored value falls back to it too, so the page never shows a wrong unit. */
+    _tempUnit() {
+        switch (this._settings.get_string('weather-temperature-unit')) {
+            case 'celsius':
+                return GWeather.TemperatureUnit.CENTIGRADE;
+            case 'fahrenheit':
+                return GWeather.TemperatureUnit.FAHRENHEIT;
+            default:
+                return GWeather.TemperatureUnit.DEFAULT;
+        }
+    }
+
+    /** A temperature as the page shows it: GWeather's own string while Automatic, else the
+     * value GWeather answers in the chosen unit, written as GWeather writes it - one decimal,
+     * a non-break space, the degree sign and the letter. */
+    _tempString(info, stringGetter, valueGetter) {
+        const unit = this._tempUnit();
+        if (unit === GWeather.TemperatureUnit.DEFAULT)
+            return info[stringGetter]?.() ?? '';
+        const [valid, value] = info[valueGetter]?.(unit) ?? [false, 0];
+        if (!valid)
+            return '';
+        const letter = unit === GWeather.TemperatureUnit.FAHRENHEIT ? 'F' : 'C';
+        return `${value.toFixed(1)}\u00a0\u00b0${letter}`;
+    }
+
+    /** A temperature as a number, for the curve and the days' minima and maxima: GWeather's
+     * own string parsed while Automatic, else the value GWeather answers in the chosen unit. */
+    _tempValue(info) {
+        const unit = this._tempUnit();
+        if (unit === GWeather.TemperatureUnit.DEFAULT)
+            return Number.parseFloat(info.get_temp?.() ?? '');
+        const [valid, value] = info.get_value_temp?.(unit) ?? [false, 0];
+        return valid ? value : Number.NaN;
+    }
+
     /** The next hours as the page shows them, from GWeather's own forecast list; a GWeather
      * without one answers an empty list, and the page shows only the current conditions. */
     _forecast(info) {
         try {
             return (info.get_forecast_list() ?? []).slice(1, 8).map(slice => {
-                const temperature = slice.get_temp?.() ?? '';
+                const temperature = this._tempString(slice, 'get_temp', 'get_value_temp');
                 const iconName = slice.get_icon_name?.() ?? '';
                 // The slice's own 'update' time is the time it is for (the reference's
                 // words); get_value_update answers [valid, unix seconds]. GWeather
@@ -98,16 +140,15 @@ export const WeatherWatcher = GObject.registerClass({
     }
 
     /** The forecast's days: each date's coldest and warmest slice, with the warmest hour's
-     * icon - five of them, today first. The temperatures GWeather answers are strings
-     * ("24\u00b0"); the numbers are read for the minima and maxima. A GWeather whose forecast
-     * carries no timestamps answers an empty list, and the page shows only the hours. */
+     * icon - five of them, today first. A GWeather whose forecast carries no timestamps
+     * answers an empty list, and the page shows only the hours. */
     _daily(info) {
         try {
             const byDate = new Map();
             for (const slice of (info.get_forecast_list() ?? [])) {
                 const [valid, stamp] = slice.get_value_update?.() ?? [false, 0];
                 const timestamp = valid ? Number(stamp) : 0;
-                const temperature = Number.parseFloat(slice.get_temp?.() ?? '');
+                const temperature = this._tempValue(slice);
                 if (!timestamp || Number.isNaN(temperature))
                     continue;
                 const when = GLib.DateTime.new_from_unix_local(timestamp);
@@ -192,13 +233,19 @@ export const WeatherWatcher = GObject.registerClass({
     _onUpdated(info) {
         if (info !== this._info || !info.is_valid())
             return;
-        const temperature = info.get_temp();
+        this._refreshState(info);
+    }
+
+    /** The whole reading from one GWeather answer, in the chosen unit: the watcher re-reads
+     * the same answer when the unit changes, so no fetch waits on the choice. */
+    _refreshState(info) {
+        const temperature = this._tempString(info, 'get_temp', 'get_value_temp');
         if (!temperature)
             return;
         this.state = {
             forecast: this._forecast(info),
             daily: this._daily(info),
-            feelsLike: info.get_apparent?.() ?? '',
+            feelsLike: this._tempString(info, 'get_apparent', 'get_value_apparent'),
             humidity: info.get_humidity?.() ?? '',
             wind: info.get_wind?.() ?? '',
             daylight: daylightRange(info),
