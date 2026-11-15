@@ -39,6 +39,7 @@ All sizes are logical pixels.
 | Compact, hanging | as wide as it shows, at least 164 × (P + 30; Settings 24–40) | 16 | 10 | As above |
 | Peek (alert) | fits its content, up to 380 wide × (P + 56); 56 high off a black bar; 12 px round the badge on every side, and the value or button as far from the right edge | 28 | 13 | Badge · title/subtitle (a notification's words on up to two lines) · value, level bar or button, centred |
 | Peek with buttons | fits its words up to 440, its buttons whole up to 560; buttons that don't fit go on to a line below; 16 px round one lit along its edges | 28 | 13 | Badge · title/subtitle · code · small buttons under the words, from the left |
+| Hello (greeting) | 360 wide × (P + 192); the wordmark 320 wide, 20 px round it on every side | 28 | 13 | "hello" in a flowing script, white, centred; fades and grows in as it shows; once per load, 2.5 s, or until the island opens or an alert comes; off with Settings → Hello greeting |
 | Expanded | at least 600 × (P + 170) on every page; wider when its tabs and status need room (about 650 with the usual tabs); 720 for lyrics | 32 | 22 | Header row (tabs) · page, 20 px in from the sides and the bottom |
 
 Every width is even, so the island sits centred on its display to the pixel.

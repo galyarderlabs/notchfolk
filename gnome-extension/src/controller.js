@@ -25,6 +25,7 @@ import {HAS_ACCENT, grabsKeyboard, inhibitScanout, isWayland, onUiScale, px, uiS
 import {Daemon} from './daemon.js';
 import {ShellProxy} from './shellProxy.js';
 import {BOTTOM_PADDING, ExpandedView, PAGE_HEIGHT} from './expanded.js';
+import {HelloView} from './hello.js';
 import {Island} from './island.js';
 import {MirrorIsland} from './mirror.js';
 import {AudioOutputs} from './audio.js';
@@ -116,6 +117,10 @@ const PEEK_RADIUS = 28;
 // the screen's top instead of below the bar.
 const PEEK_TOP_GLASS = 6;
 const PEEK_SHOULDER = 13;
+/** The greeting waits this long after the island is built before it says hello (ms). */
+const HELLO_WAIT_MS = 500;
+/** The greeting stays up this long, or until it is opened, clicked away or an alert comes (ms). */
+const HELLO_MS = 2500;
 const EXPANDED_RADIUS = 32;
 const EXPANDED_SHOULDER = 22;
 const VOICE_RADIUS = 26;
@@ -197,6 +202,10 @@ export class Controller {
         /** A warm-up the island opened in the middle of, and whether it was of all (see `_warmUp`); else null. */
         this._warmHeld = null;
         this._expandWanted = false;
+        /** The greeting still to say, once, this load (see `_showHello`); spent the moment it is tried. */
+        this._helloPending = true;
+        /** The greeting on screen now. */
+        this._helloWanted = false;
         /** The island is pinned open: the pointer leaving does not close it (one opening). */
         this._pinned = false;
         this._alert = null;
@@ -345,6 +354,7 @@ export class Controller {
         this._botLook = this._readBotLook();
         this._voice = new VoiceView(this._botLook);
         this._voice.chatLook = this._botLook;
+        this._hello = new HelloView(this._extension.dir.get_child('icons/notchfolk-hello.svg').get_uri());
     }
 
     // Put the light, resting view on screen before constructing the pages behind it.
@@ -391,7 +401,7 @@ export class Controller {
         });
         this._terminal.connect('held-changed', () => this._syncTerminalHover());
         this._terminalPage.connect('active-changed', () => this._syncTerminalHover());
-        for (const view of [...this._peeks, this._expanded, this._voice])
+        for (const view of [...this._peeks, this._expanded, this._voice, this._hello])
             this._island.addView(view);
         // GNOME Shell shutting down takes the island with the stage, Notchfolk still on, and GNOME 51 runs on a
         // moment after: nothing of Notchfolk's may run on it then.
@@ -500,6 +510,8 @@ export class Controller {
             this._onHoverChanged();
         this._render();
         this._daemon.release();
+        // Once per load, the island says hello, like unboxing an iPhone or a Mac.
+        this._later('hello-show', HELLO_WAIT_MS, () => this._showHello());
     }
 
     /** Makes each page, in tab order. */
@@ -744,6 +756,7 @@ export class Controller {
                 return Clutter.EVENT_STOP;
             }
             if (event.get_key_symbol() === Clutter.KEY_Escape) {
+                this._dismissHello();
                 this.collapse();
                 return Clutter.EVENT_STOP;
             }
@@ -1577,7 +1590,7 @@ export class Controller {
         if (this._destroying)
             return;
         const presentation = this._voiceOpen ? 'voice'
-            : this._expandWanted ? 'expanded' : this._alert ? 'peek' : 'compact';
+            : this._expandWanted ? 'expanded' : this._helloWanted ? 'hello' : this._alert ? 'peek' : 'compact';
         this._presentation = presentation;
         // Alerts, the open island and the assistant are never auto-hidden; the resting island waits again.
         this._syncAutoHide();
@@ -1636,6 +1649,10 @@ export class Controller {
         case 'peek':
             size = this._peekShape(this._peek, this._onBar);
             view = this._peek;
+            break;
+        case 'hello':
+            size = this._helloShape(this._hello, this._onBar);
+            view = this._hello;
             break;
         default:
             size = this._compactShape(this._compact, this._onBar);
@@ -1711,6 +1728,18 @@ export class Controller {
         const size = {width: peek.preferredWidth, height: inset + peek.preferredHeight, radius: PEEK_RADIUS * scale,
             shoulder: gap === null ? PEEK_SHOULDER * scale : 0};
         peek.style = `padding-top: ${inset / scale}px;`;
+        return size;
+    }
+
+    /** The greeting's size on a display with the top bar (`onBar`) or without, `hello` (showing it) styled for it. */
+    _helloShape(hello, onBar) {
+        const scale = uiScale();
+        // Like an alert, it hangs below the top bar; a pill's from where it floats.
+        const gap = this._pillGapOn(onBar);
+        const inset = gap ?? (this._blendsInOn(onBar) ? this._topBar.height : 0);
+        const size = {width: hello.preferredWidth, height: inset + hello.preferredHeight, radius: PEEK_RADIUS * scale,
+            shoulder: gap === null ? PEEK_SHOULDER * scale : 0};
+        hello.style = `padding-top: ${inset / scale}px;`;
         return size;
     }
 
@@ -2253,11 +2282,37 @@ export class Controller {
         }
     }
 
+    /** Once per load, the island says hello, like unboxing an iPhone or a Mac: the resting island opens on the
+     * word, then goes back to resting after a moment. One shot per load: the flag is spent the moment it is
+     * tried, so a later opening in this session never greets again. */
+    _showHello() {
+        if (!this._helloPending)
+            return;
+        // Spent at once, whatever follows: it never comes back this session.
+        this._helloPending = false;
+        if (this._destroying || !this._settings.get_boolean('hello-greeting') ||
+            this._presentation !== 'compact' || !this._island.visible)
+            return;
+        this._helloWanted = true;
+        this._render();
+        this._later('hello', HELLO_MS, () => this._dismissHello());
+    }
+
+    /** Puts the greeting away, back to the resting island. */
+    _dismissHello() {
+        if (!this._helloWanted)
+            return;
+        this._helloWanted = false;
+        this._cancel('hello');
+        this._render();
+    }
+
     /** Opens the island, on `pageName` or the most useful page. */
     expand(pageName = null) {
         // An action finishing after Notchfolk was turned off.
         if (this._destroying)
             return;
+        this._dismissHello();
         islandSound('open');
         this._hasOpened = true;
         // A close still pending (the pointer just left) would shut it again.
@@ -2508,6 +2563,8 @@ export class Controller {
 
     /** `inPlace` for a newer version of the alert on screen (the volume moving): it doesn't animate in again. */
     _showAlert(alert, {inPlace = false} = {}) {
+        // An alert takes over from the greeting.
+        this._dismissHello();
         // Another alert on screen takes the other view; the same one (the volume moving) updates in place.
         const turn = this._presentation === 'peek' && this._shownAlertKey !== alert.key;
         if (turn)
@@ -2868,6 +2925,7 @@ export class Controller {
     _openVoice({typing = false, byHover = false} = {}) {
         if (!this._voiceBound)
             return;
+        this._dismissHello();
         // Opened again before the last answer's actions ran: they belonged to that one.
         this._cancel('voice-after');
         this._voiceAfter = [];
