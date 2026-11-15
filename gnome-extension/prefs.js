@@ -2142,6 +2142,14 @@ function weatherGroup(settings, window) {
     });
     refresh();
     group.add(city);
+    const tempUnit = new Adw.ComboRow({title: 'Temperature unit',
+        subtitle: 'Automatic follows your system locale',
+        model: Gtk.StringList.new(['Automatic', 'Celsius (\u00b0C)', 'Fahrenheit (\u00b0F)']),
+        selected: Math.max(0, ['auto', 'celsius', 'fahrenheit'].indexOf(settings.get_string('weather-temperature-unit')))});
+    tempUnit.connect('notify::selected', () =>
+        settings.set_string('weather-temperature-unit', ['auto', 'celsius', 'fahrenheit'][tempUnit.selected]));
+    settings.bind('weather-enabled', tempUnit, 'sensitive', Gio.SettingsBindFlags.GET);
+    group.add(tempUnit);
     return group;
 }
 
