@@ -299,13 +299,13 @@ fn cpu_frequency() -> f64 {
     let mut total = 0.0;
     let mut count = 0;
     for line in text.lines() {
-        if let Some(value) = line.strip_prefix("cpu MHz") {
-            if let Some((_, number)) = value.split_once(':') {
-                if let Ok(mhz) = number.trim().parse::<f64>() {
-                    total += mhz;
-                    count += 1;
-                }
-            }
+        let mhz = line
+            .strip_prefix("cpu MHz")
+            .and_then(|value| value.split_once(':'))
+            .and_then(|(_, number)| number.trim().parse::<f64>().ok());
+        if let Some(mhz) = mhz {
+            total += mhz;
+            count += 1;
         }
     }
     if count > 0 { total / count as f64 } else { 0.0 }
