@@ -118,15 +118,20 @@ export const VitalsPage = GObject.registerClass({
         // ── The cores and the machine's own numbers, one row each ──
         const coresRow = new St.BoxLayout({style_class: 'notchfolk-vitals-info-row', x_expand: true});
         coresRow.add_child(label('Cores', 'notchfolk-vitals-info-name'));
-        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores'});
+        this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores',
+            x_expand: true, x_align: Clutter.ActorAlign.CENTER});
         coresRow.add_child(this._coresBox);
-        this._freqNote = label('', 'notchfolk-vitals-info-value');
+        this._freqNote = label('', 'notchfolk-vitals-info-value', {
+            x_expand: true, x_align: Clutter.ActorAlign.END,
+        });
         coresRow.add_child(this._freqNote);
         column.add_child(coresRow);
 
         const loadRow = new St.BoxLayout({style_class: 'notchfolk-vitals-info-row', x_expand: true});
         loadRow.add_child(label('Load', 'notchfolk-vitals-info-name'));
-        this._loadNote = label('', 'notchfolk-vitals-info-value');
+        this._loadNote = label('', 'notchfolk-vitals-info-value', {
+            x_expand: true, x_align: Clutter.ActorAlign.END,
+        });
         loadRow.add_child(this._loadNote);
         this._procNote = label('', 'notchfolk-vitals-info-proc');
         loadRow.add_child(this._procNote);

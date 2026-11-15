@@ -2155,13 +2155,13 @@
 }
 .notchfolk-vitals-info-value {
   font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
-  font-feature-settings: "tnum"; x_expand: true; text-align: right;
+  font-feature-settings: "tnum"; text-align: right;
 }
 .notchfolk-vitals-info-proc {
   font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.5);
   font-feature-settings: "tnum";
 }
-.notchfolk-vitals-cores { spacing: 2px; height: 18px; x_align: center; }
+.notchfolk-vitals-cores { spacing: 2px; height: 18px; }
 .notchfolk-vitals-core-track {
   width: 3px; height: 18px; border-radius: 1.5px;
   background-color: rgba(255, 255, 255, 0.10);
