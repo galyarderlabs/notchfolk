@@ -12,6 +12,7 @@ import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
 import {icon, label} from '../widgets.js';
+import {LARGE_PAGE_HEIGHT, PAGE_HEIGHT} from '../expanded.js';
 import {Page} from './page.js';
 
 /** The periods the header offers, in order; Settings' own words. */
@@ -64,6 +65,9 @@ class RouterPage extends Page {
             reactive: true,
         });
         this.name = 'router';
+        // The growth fires at build time too, not only when Large toggles (the
+        // expanded view only sets pageHeight on the Large toggle).
+        this.onPageHeight(height);
         this._settings = settings;
         this._activityPhase = 0;
         this._activitySamples = [];
@@ -81,12 +85,12 @@ class RouterPage extends Page {
         status.add_child(this._statusLine);
         heading.add_child(status);
         // The period toggle in the header, kept in step with Settings.
-        this._periodToggle = new St.BoxLayout({style_class: 'notchfolk-router-periods'});
+        this._periodToggle = new St.BoxLayout({style_class: 'notchfolk-segmented'});
         this._periodToggle.x_expand = true;
         this._periodToggle.x_align = Clutter.ActorAlign.END;
         this._periodButtons = {};
         for (const period of PERIODS) {
-            const button = new St.Button({style_class: 'notchfolk-router-period', can_focus: true,
+            const button = new St.Button({style_class: 'notchfolk-segment', can_focus: true,
                 label: PERIOD_LABELS[period], accessible_name: `Router period ${PERIOD_LABELS[period]}`});
             button.connect('clicked', () => this._setPeriod(period));
             this._periodToggle.add_child(button);
@@ -145,7 +149,8 @@ class RouterPage extends Page {
             style_class: 'notchfolk-router-recent-scroll',
             accessible_name: 'Recent Router requests',
             hscrollbar_policy: St.PolicyType.NEVER,
-            vscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.EXTERNAL,
+            overlay_scrollbars: true,
             x_expand: true,
             y_expand: true,
         });
@@ -258,15 +263,18 @@ class RouterPage extends Page {
     /** The period Settings picked, on the header's toggle. */
     _syncPeriodButtons() {
         const picked = this._settings.get_string('router-period');
-        for (const period of PERIODS) {
-            if (period === picked)
-                this._periodButtons[period].add_style_class_name('picked');
-            else
-                this._periodButtons[period].remove_style_class_name('picked');
-        }
+        for (const period of PERIODS)
+            this._periodButtons[period].set_checked(period === picked);
     }
 
     /** The header's period toggle changes both the page and the notch chip. */
+    /** The page grows a little above the base: the recent list was cut off at it. */
+    onPageHeight(height) {
+        if (height !== PAGE_HEIGHT && height !== LARGE_PAGE_HEIGHT)
+            return;
+        this.pageHeight = height + 60;
+    }
+
     _setPeriod(period) {
         this._settings.set_string('router-period', period);
         this._syncPeriodButtons();

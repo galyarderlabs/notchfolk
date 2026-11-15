@@ -3111,6 +3111,10 @@ export class Controller {
         this._openWhenBack = false;
         this._daemon.call('assistant', 'NewChat');
         this._voice.showUndo(true);
+        // The new chat opens in the chat's own layout: the header, the empty list,
+        // the entry field as the input - the same face the chat always has.
+        this._voice.openChatForNew();
+        this._startTyping('');
         this._later('chat-undo', UNDO_MS, () => this._voice.showUndo(false));
     }
 
