@@ -78,6 +78,10 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Fixed
 
+- **Settings opens without waiting.** The model lists load asynchronously - the
+  window never hangs while a provider thinks - one fetch per provider per window
+  (not one per row), a late list lands on the row safely, and the row says it is
+  fetching while the answer is on its way.
 - The karaoke line centres in the width its last long line held: a short line after a long
   one no longer leaves a dead wing between the word and the wave.
 - The vitals and the router pages grow at build time, not only when Large toggles - their
