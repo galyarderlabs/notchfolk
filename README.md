@@ -81,6 +81,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/conversation.png" alt="Chatting with the AI: asking where Notchfolk runs" width="100%"><br>
+<img src="docs/images/chat-history.png" alt="Chat history: past conversations with their message counts, New chat and Conversation" width="100%"><br>
 <b>Speak or type, and talk it through.</b> It listens as soon as it opens; start typing to type instead. Scroll up for the conversation so far; select text to copy it, + for a new one. The bot turns to the pointer, blinks, and bounces as you speak; close the island and it carries on in the background.
 </td>
 </tr>
