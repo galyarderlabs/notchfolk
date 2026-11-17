@@ -2,7 +2,7 @@
 
 ![Notchfolk — a little world in your notch](docs/images/banner.png)
 
-Your desktop notch, alive — GNOME today, Windows and macOS next. Music with synced lyrics, calls, a focus timer, calendar, food and water tracking, prayer times, weather, a file shelf, app usage, phone integration, and AI agents (Hermes, Claude Code, Grok, Codex, OMP) through a built-in MCP server — with AI router analytics and subscription usage quota tracking.
+Your desktop notch, alive — GNOME today, Windows and macOS next. Music with synced lyrics and karaoke, calls, a focus timer, calendar, food and water tracking, prayer times, weather, system vitals, a file shelf, app usage, phone integration, and AI agents (Hermes, Claude Code, Grok, Codex, OMP) through a built-in MCP server — with AI router analytics and subscription usage quota tracking.
 
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 ![GNOME Shell 46–51](https://img.shields.io/badge/GNOME%20Shell-46%E2%80%9351-4a86cf.svg)
@@ -14,7 +14,7 @@ Your desktop notch, alive — GNOME today, Windows and macOS next. Music with sy
 Notchfolk turns the centre of the top bar into a black notch. At rest, the
 clock sits in the middle with what's running beside it — a song, a call, a
 timer. Rest the pointer on it and it springs open into a small panel with
-tabs for each page.
+tabs for each page; pin it open to keep it there while you work elsewhere.
 
 </div>
 
@@ -51,13 +51,13 @@ tabs for each page.
 <img src="docs/images/files.png" alt="The files tray with six files, full" width="100%"><br>
 <img src="docs/images/phone.png" alt="Shelf on your phone: scan the QR code to access the shelf files" width="100%"><br>
 <img src="docs/images/devices.png" alt="Devices: galyarder connected via GSConnect, battery 50%, not charging, with Ring phone and Send clipboard" width="100%"><br>
-<b>Shelf.</b> Clipboard history of text, links, images and files — search, filter, pin; Super+V to paste. Files tray: drop up to 6 files on the island, drag them into any app or click to copy. Phone: scan the QR to save shelf files on your phone or send files back, in the browser, same Wi-Fi, nothing through the internet.
+<b>Shelf.</b> Clipboard history of text, links, images and files — search, filter, pin; Super+V to paste. Files tray: drop files on the island — as many as you set in Settings — drag them into any app or click to copy; a long row scrolls. Phone: scan the QR to save shelf files on your phone or send files back, in the browser, same Wi-Fi, nothing through the internet.
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/weather.png" alt="Weather page: Bogor conditions, hourly temperature chart, five-day forecast and a recent earthquake" width="100%"><br>
-<b>Weather.</b> Choose a city in Settings, or follow the GNOME World Clock nearest your time zone. See current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by each forecast condition, and the five-day forecast. Nearby earthquakes use BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event. The closed island stays quiet.
+<b>Weather.</b> Choose a city in Settings, or follow the GNOME World Clock nearest your time zone; the temperature reads in your own unit — auto, Celsius or Fahrenheit. See current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by each forecast condition, and the five-day forecast. Nearby earthquakes use BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event. The closed island stays quiet.
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="100%"><br>
@@ -112,6 +112,16 @@ tabs for each page.
 <td width="50%" valign="top">
 <img src="docs/images/glass.png" alt="The conversation in the glass island, the desktop behind it showing through, blurred" width="100%"><br>
 <b>Glass.</b> The island in clear dark glass instead of black, if you prefer: what is behind it shows through, blurred, as you work. Choose it in Settings → Appearance → Island.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/images/vitals.png" alt="Vitals page: CPU load with its sparkline, temperature, cores, memory and disk bars, network and uptime" width="100%"><br>
+<b>Vitals.</b> The machine's own pulse in the island: the CPU load and the temperature big with the last minute drawn as a sparkline between them, each core a bar, the load averages and the process count, memory / swap / disk bars with their bytes, the network's rates, the battery and the uptime — sampled every 2 s from /proc, no extension needed. Optionally, one vital rides the closed island beside the wave.
+</td>
+<td width="50%" valign="top">
+<img src="docs/images/karaoke.png" alt="Karaoke in the closed island: the line being sung centred between the cover and the wave" width="100%"><br>
+<b>Karaoke.</b> While a song plays with synced lyrics, the closed island's centre becomes the line being sung — the cover left, the wave right, the clock waiting. The line holds one width for the whole song, so the island never pumps; a short line centres in the room its last long line held.
 </td>
 </tr>
 <tr>
