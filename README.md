@@ -150,7 +150,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/more-ais.png" alt="The AI picker: OpenAI-compatible API selected, with the model list showing claude-mythos-5" width="100%"><br>
-<img src="docs/images/more-ais-omp.png" alt="Automatic (Claude Code) selected, with model Opus" width="100%"><br>
+<img src="docs/images/more-ais-compatible.png" alt="OpenAI-compatible API selected, with model claude-mythos-5" width="100%"><br>
 <img src="docs/images/more-ais-hermes.png" alt="Hermes Agent selected, with its endpoint at 100.85.83.76:8642/v1" width="100%"><br>
 <b>More AIs.</b> The assistant also runs Hermes and Oh My Pi with the providers they are configured for, plus any OpenAI-compatible API.
 </td>
