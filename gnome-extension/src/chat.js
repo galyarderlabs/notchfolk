@@ -577,20 +577,24 @@ export const ChatView = GObject.registerClass({
         this.setItems(this._items);
     }
 
-    /** The archived conversations: [{timestamp, last, items}], newest first (notchfolkd's
-     *  ArchivedChats). Shown by the header's history button; a click resumes one. */
+    /** The conversations History offers: [{timestamp, last, items, now?}], the one going on first
+     *  (notchfolkd's ArchivedChats). Shown by the header's history button; a click resumes one. */
     setArchive(chats) {
         this._archiveCount = chats.length;
         this._archiveList.destroy_all_children();
         for (const chat of chats) {
             const when = new Date(chat.last).toLocaleString(undefined, {weekday: 'short', hour: '2-digit', minute: '2-digit'});
+            // The conversation going on is not archived, so it is not resumed: picking it just goes back to it.
+            const now = Boolean(chat.now);
             const row = new St.Button({style_class: 'notchfolk-chat-archive-row', can_focus: true, x_expand: true,
-                accessible_name: `Resume the conversation from ${when}`});
+                accessible_name: now ? 'Back to the conversation going on' : `Resume the conversation from ${when}`});
+            if (now)
+                row.add_style_class_name('notchfolk-chat-archive-now');
             const column = new St.BoxLayout({...VERTICAL, x_expand: true});
-            column.add_child(label(when, 'notchfolk-chat-archive-when'));
+            column.add_child(label(now ? 'Now' : when, 'notchfolk-chat-archive-when'));
             column.add_child(label(`${chat.items} messages`, 'notchfolk-chat-archive-count'));
             row.set_child(column);
-            row.connect('clicked', () => this.emit('resume', chat.timestamp));
+            row.connect('clicked', () => (now ? this.showArchive(false) : this.emit('resume', chat.timestamp)));
             this._archiveList.add_child(row);
         }
         this._syncHistoryButton();

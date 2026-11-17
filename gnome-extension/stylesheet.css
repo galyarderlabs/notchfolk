@@ -1987,6 +1987,9 @@
 .notchfolk-chat-archive-row:active { background-color: rgba(255, 255, 255, 0.16); }
 .notchfolk-chat-archive-when { font-size: 13px; font-weight: 600; }
 .notchfolk-chat-archive-count { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+/* The conversation going on: not archived, so it reads as the live one rather than another saved chat. */
+.notchfolk-chat-archive-now { background-color: rgba(255, 255, 255, 0.09); }
+.notchfolk-chat-archive-now .notchfolk-chat-archive-when { color: #7dd87d; }
 
 /* Router: a small live analytics surface sized for the island, not a page-sized dashboard. */
 .notchfolk-router-layout { spacing: 6px; }

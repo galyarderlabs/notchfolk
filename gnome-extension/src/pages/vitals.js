@@ -118,8 +118,10 @@ export const VitalsPage = GObject.registerClass({
         // ── The cores and the machine's own numbers, one row each ──
         const coresRow = new St.BoxLayout({style_class: 'notchfolk-vitals-info-row', x_expand: true});
         coresRow.add_child(label('Cores', 'notchfolk-vitals-info-name'));
+        // The bars sit right beside "Cores", not centred in the room left over: with `x_expand` they took all
+        // of it and floated to the middle of the row, away from the word they belong to.
         this._coresBox = new St.BoxLayout({style_class: 'notchfolk-vitals-cores',
-            x_expand: true, x_align: Clutter.ActorAlign.CENTER});
+            x_align: Clutter.ActorAlign.START});
         coresRow.add_child(this._coresBox);
         this._freqNote = label('', 'notchfolk-vitals-info-value', {
             x_expand: true, x_align: Clutter.ActorAlign.END,
