@@ -54,6 +54,10 @@ const WARM_ALERT = {key: 'warm', title: '\u2007'.repeat(8), subtitle: '\u2007'.r
     value: '\u2007'.repeat(3), tone: 'neutral'};
 /** And again this long after the island closes, or a page changes out of sight, while it stays closed... */
 const WARM_AFTER_CLOSE_MS = 1500;
+/** After an unlock, the warm-up waits this long instead: the Shell is still settling
+ * and the user's pointer is often already at the bar; the page layouts must not
+ * compete with that first interaction (ms). */
+const WARM_AFTER_UNLOCK_MS = 4000;
 /** How long a permission notice waits for the island's own ask for it, which may come a moment later. */
 const ASK_SETTLE_MS = 1500;
 /** An ask this recent for the session covers its permission notice. */
@@ -420,6 +424,7 @@ export class Controller {
                 this._nextAlert();
         });
         this._sessionModeChanged = Main.sessionMode.connect('updated', () => this._syncSessionMode());
+        this._wasLocked = Main.sessionMode.isLocked;
         this._syncSessionMode();
         // A window that may now cover the island's display, or no longer: see `_syncScanout`. Again once its
         // animation (minimizing, say) is over, as some signals come as it starts.
@@ -1078,12 +1083,18 @@ export class Controller {
 
     /** Hides the island when the screen locks, and brings it back when unlocked. */
     _syncSessionMode() {
-        if (Main.sessionMode.isLocked) {
+        const locked = Main.sessionMode.isLocked;
+        if (locked) {
             this.collapse();
             this._island.visible = false;
         } else {
+            // The unlock: noted so the warm-up gives the Shell time to settle before
+            // it lays its pages out again (see `_scheduleWarm`).
+            if (this._wasLocked)
+                this._unlockedAt = GLib.get_monotonic_time() / 1000;
             this._syncFullscreen();
         }
+        this._wasLocked = locked;
     }
 
     // GNOME hides the island under a fullscreen window only when fullscreen changes, not when it moves
@@ -1773,8 +1784,13 @@ export class Controller {
         if (!this._hasOpened || this._presentation !== 'compact' || !this._island.mapped || this._timeouts.has('warm') ||
             !this._expanded.pages.some(page => page.cold && !page.hidden))
             return;
-        const sinceLast = GLib.get_monotonic_time() / 1000 - (this._warmedAt ?? -Infinity);
-        this._later('warm', Math.max(WARM_AFTER_CLOSE_MS, WARM_GAP_MS - sinceLast), () => this._warmUp(false));
+        const now = GLib.get_monotonic_time() / 1000;
+        const sinceLast = now - (this._warmedAt ?? -Infinity);
+        // Just unlocked: the Shell is still settling, the pointer often already at the
+        // bar - the page layouts wait for it to calm instead of competing with it.
+        const sinceUnlock = this._unlockedAt === undefined ? Infinity : now - this._unlockedAt;
+        this._later('warm', Math.max(WARM_AFTER_CLOSE_MS, WARM_GAP_MS - sinceLast,
+            WARM_AFTER_UNLOCK_MS - sinceUnlock), () => this._warmUp(false));
     }
 
     /** The assistant's shape and colours, from Settings (see bot.js). */
