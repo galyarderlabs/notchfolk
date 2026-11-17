@@ -134,7 +134,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 <td width="50%" valign="top">
 <img src="docs/images/calories.png" alt="Calories: today's intake 650 of 2,000 kcal, with a meal logged" width="100%"><br>
 <img src="docs/images/water.png" alt="Water: 0.8 of 2.0 L today, with the intake chart" width="100%"><br>
-<img src="docs/images/prayer.png" alt="Prayer: Dzuhur next at 11:36, with the day's prayer times" width="100%"><br>
+<img src="docs/images/prayer.png" alt="Prayer: Isya next at 19:04 in 42 minutes, with the day's prayer times on a sun arc" width="100%"><br>
 <b>Everyday tools.</b> Water and calories logged through the day, and prayer times for your city, all kept on this computer.
 </td>
 </tr>
