@@ -23,7 +23,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 <table>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/music.png" alt="Music page: Little Dark Age by MGMT at 2:08" width="100%"><br>
+<img src="docs/images/music.png" alt="Music page: Merry Christmas, Please Don't Call by Bleachers at 0:15, with Karaoke" width="100%"><br>
 <b>Music.</b> Spotify, YouTube in your browser, or any MPRIS player: cover, scrubber and controls, with the playing app's icon on the cover. Volume and output switching one click away.
 </td>
 <td width="50%" valign="top">
