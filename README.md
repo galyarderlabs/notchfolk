@@ -141,7 +141,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/mcp-settings.png" alt="MCP settings: access scopes, remote access with a public hostname, and the tunnel setup" width="100%"><br>
-<img src="docs/images/mcp-app.png" alt="NotchFolks in the ChatGPT Apps directory" width="100%"><br>
+<img src="docs/images/mcp-world.png" alt="The world: camofox browser backend, CDP port 9222, Hindsight endpoint, skill trees, OfficeCLI path" width="100%"><br>
 <b>MCP server.</b> An optional MCP server for agents outside Notchfolk: read tools for your data and actions, writes only what you list in <code>~/.config/notchfolk/mcp.env</code>, on loopback by default and remote access through an authenticated tunnel. Beyond the island's own data, the world domains — seven, 150 tools in all: <b>System</b> (the machine itself — stats, logs, files, processes, updates, the sharp tools behind their own scope), <b>Browser</b> (the web through a real browser: Camoufox, or your own Chromium over CDP), <b>Memory</b> (the Hindsight engine's 39 tools — what the agent learns, kept across conversations), <b>Notes</b> (your own vault of Markdown notes, and memory's fallback), <b>Skills</b> (the world knows how to do things: the skill trees on the machine), <b>Office</b> (the world makes documents) and <b>Composio</b> (the world reaches your accounts — mail and drive, read on the default key, writes behind their own scope). A domain whose backend is absent is not offered at all; a restricted tool is not even visible to a key without its scope.
 </td>
 <td width="50%" valign="top">
