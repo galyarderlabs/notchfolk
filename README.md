@@ -80,7 +80,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 <b>Installs and fixes things.</b> "Install LibreOffice", "pasang codex": it checks what your Linux has, searches the web when unsure, and shows the one command it wants to run, with what to know first. Press <b>Run</b> or <b>Deny</b>. It runs in the background while you carry on, and the assistant checks it worked before saying so.
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/conversation.png" alt="Chatting with the AI: asking where Notchfolk runs" width="100%"><br>
+<img src="docs/images/conversation.png" alt="Chatting with the AI: it remembers the unfinished filmcraft build after four hours" width="100%"><br>
 <img src="docs/images/chat-history.png" alt="Chat history: past conversations with their message counts, New chat and Conversation" width="100%"><br>
 <b>Speak or type, and talk it through.</b> It listens as soon as it opens; start typing to type instead. Scroll up for the conversation so far; select text to copy it, + for a new one. The bot turns to the pointer, blinks, and bounces as you speak; close the island and it carries on in the background.
 </td>
