@@ -405,6 +405,9 @@ export const VoiceView = GObject.registerClass({
         this._column.add_child(this._chat);
         this._column.add_child(row);
         this.add_child(this._column);
+        // The chat showing (however it opens: a new chat, a history resume) hides the
+        // voice view's own close - the chat header's close is the one there is.
+        this._chat.connect('notify::visible', () => this._refreshAction());
         this._row = row;
         this._boost = 0;
         this._workingAt = 0;
@@ -664,6 +667,25 @@ export const VoiceView = GObject.registerClass({
 
     // Open, the conversation shows above and the row below becomes the field to write in (the face still
     // listens when tapped), so nothing shows twice.
+    /** The chat layout for a fresh conversation: the header, the empty list, the
+     * entry field as the input - the same face the chat always has, so a new chat
+     * does not look like a different thing. */
+    openChatForNew() {
+        if (this.chatOpen)
+            return;
+        this._chat.showArchive(false);
+        this._chat.visible = true;
+        this._refreshAction();
+        this._syncClose();
+        this._heardButton.visible = false;
+        this._syncChatButton();
+        if (St.Settings.get().enable_animations) {
+            this._chat.opacity = 0;
+            this._chat.ease({opacity: 255, duration: 260, delay: 80, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+        }
+        this.emit('size-changed');
+    }
+
     openChat() {
         if (this.chatOpen || !this._history.length)
             return;
@@ -844,6 +866,9 @@ export const VoiceView = GObject.registerClass({
             this._entry.grab_key_focus();
         this._entry.clutter_text.set_cursor_position(-1);
         this._face.setForm('typing');
+        // The phase moved: the island's width follows it (listening is narrow,
+        // typing wide) and must be re-measured.
+        this.emit('size-changed');
     }
 
     /** Hides the field; the answer line comes back. */
@@ -931,8 +956,8 @@ export const VoiceView = GObject.registerClass({
             (this._chatSlot.visible ? CHAT_BUTTON_WIDTH + chatGap : 0);
         const width = this.preferredWidth - (TEXT_INSET - ends) * scale;
         // Measured per label: the box's own answer is the size set below.
-        const parts = [this._text, this._heardButton, this._entry, this._stepsBox, this._card,
-            this._hint, this._signIn, this._setUp];
+        const parts = [this._undo, this._text, this._heardButton, this._entry, this._stepsBox,
+            this._card, this._hint, this._signIn, this._setUp];
         // Every step counted first: those a card hid last time may fit now (see `_fitCard`).
         this._stepsBox.get_children().forEach(step => step.show());
         let natural = parts.filter(part => part.visible).reduce((sum, part) => sum + part.get_preferred_height(width)[1], 0);

@@ -721,6 +721,8 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         modelId.text = settings.get_string('voice-openai-model');
         let modelChoices = [];
         let modelKey = null;
+        /** Which fillModel call is the current one: a late answer from an older one is ignored. */
+        let fillToken = 0;
         modelId.connect('changed', () => {
             if (syncing)
                 return;
@@ -731,17 +733,17 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         });
         // Swapping the list moves the selection; that must not write a model of its own.
         let syncing = false;
-        const syncModel = () => {
+        const syncModel = async () => {
             syncing = true;
             try {
-                fillModel();
+                await fillModel();
             } finally {
                 syncing = false;
             }
         };
         // Each AI's plan and the models it allows, as notchfolkd last found them (`Assistant1.Models`).
         const catalog = new ModelCatalog(settings);
-        const fillModel = () => {
+        const fillModel = async () => {
             const wanted = settings.get_string('voice-provider');
             const current = installed.find(p => p.id === wanted) ?? automatic;
             model.visible = Boolean(current);
@@ -764,9 +766,34 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             // Only what the plan allows; until notchfolkd has asked, just the AI's own default.
             const def = entry?.default_name ? `Default (${entry.default_name})` : `${current.name}’s default`;
             const fromCatalog = [['', def], ...(entry?.models ?? []).map(({id, name}) => [id, name])];
-            modelChoices = entry ? fromCatalog : current.models?.() ?? fromCatalog;
-            if (!modelChoices.length)
-                modelChoices = fromCatalog;
+            modelChoices = fromCatalog;
+            // A provider that lists its models over D-Bus answers later: the row fills in then,
+            // with those models, not just the default. The answer is dropped if the row was rebuilt
+            // meanwhile (another AI, another model id): its list belongs to a row that is gone.
+            if (!entry && current.models) {
+                const mine = ++fillToken;
+                // Said while the router thinks: the row is the default until the list arrives.
+                if (!modelLists.has(current.id)) {
+                    model.subtitle = `Fetching the models from ${current.name}…`;
+                    // Laid out before the wait: the row says it is working while the router thinks.
+                    await new Promise(resolve => {
+                        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                            resolve();
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    });
+                }
+                const list = await current.models();
+                if (mine !== fillToken)
+                    return;
+                if (settings.get_string('voice-provider') !== wanted)
+                    return;
+                if (list.length) {
+                    modelChoices = [['', def], ...list];
+                    if (!modelChoices.some(([id]) => id === value))
+                        modelChoices.push([value, value]);
+                }
+            }
             // A pick the plan no longer allows stays (it comes back once allowed), marked as not used now.
             if (!modelChoices.some(([id]) => id === value)) {
                 const known = entry?.models?.length > 0;
@@ -783,6 +810,10 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             const checking = current.noPlan ? 'Finding your providers’ models…' : 'Checking which models your plan includes…';
             model.subtitle = current.models && !entry ? current.about
                 : entry || catalog.loaded ? about : checking;
+            // The row is rebuilt only when it is not on screen: swapping a combo's model while its
+            // popup is open leaves GTK holding a row it has already freed.
+            if (model.popup_shown)
+                return;
             model.enable_search = modelChoices.length > 12;
             model.model = Gtk.StringList.new(modelChoices.map(([, label]) => label));
             model.selected = Math.max(0, modelChoices.findIndex(([id]) => id === value));
@@ -925,6 +956,10 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         const urlChanged = settings.connect('changed::voice-router-url', () => {
             if (routerUrl.text.trim() !== settings.get_string('voice-router-url'))
                 routerUrl.text = settings.get_string('voice-router-url');
+            // Another router lists other models: the cached list is stale.
+            modelLists.delete('openai-compatible');
+            if (settings.get_string('voice-provider') === 'openai-compatible')
+                syncModel();
         });
         routerUrl.connect('destroy', () => settings.disconnect(urlChanged));
 
@@ -1141,6 +1176,13 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         });
         page.add(ignored);
         fillIgnoredApps(ignored, settings);
+
+        const shelf = new Adw.PreferencesGroup({
+            title: 'Shelf',
+            description: 'The files tray kept on the island.',
+        });
+        shelf.add(spinRow(settings, 'shelf-capacity', 'Maximum files', 'How many files the Shelf can hold at once', 6, 64, 1));
+        page.add(shelf);
         return page;
     }
 
@@ -1758,13 +1800,14 @@ const PAGES = [
     ['calories', 'Calories', 'accessories-calculator-symbolic', 'Your food log and daily calorie goal'],
     ['water', 'Water', 'weather-showers-symbolic', 'Your water log and daily hydration goal'],
     ['prayer', 'Prayer', 'preferences-system-time-symbolic', 'Prayer times for your selected city'],
+    ['vitals', 'Vitals', 'utilities-system-monitor-symbolic', 'CPU, memory, temperature, network and disk, sampled by the daemon'],
 ];
 
 /** The pages a shortcut of their own may open from anywhere, as the controller's SHORTCUT_PAGES, with their names. */
 const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, iconName]),
     ['phone', 'Phone', 'phone-symbolic'], ['apps', 'Apps', 'view-app-grid-symbolic'],
     ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic'],
-    ['weather', 'Weather', 'weather-clear-symbolic']];
+    ['weather', 'Weather', 'weather-clear-symbolic'], ['vitals', 'Vitals', 'utilities-system-monitor-symbolic']];
 
 /** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
 function shortcutsGroup(settings) {
@@ -2106,6 +2149,14 @@ function weatherGroup(settings, window) {
     });
     refresh();
     group.add(city);
+    const tempUnit = new Adw.ComboRow({title: 'Temperature unit',
+        subtitle: 'Automatic follows your system locale',
+        model: Gtk.StringList.new(['Automatic', 'Celsius (\u00b0C)', 'Fahrenheit (\u00b0F)']),
+        selected: Math.max(0, ['auto', 'celsius', 'fahrenheit'].indexOf(settings.get_string('weather-temperature-unit')))});
+    tempUnit.connect('notify::selected', () =>
+        settings.set_string('weather-temperature-unit', ['auto', 'celsius', 'fahrenheit'][tempUnit.selected]));
+    settings.bind('weather-enabled', tempUnit, 'sensitive', Gio.SettingsBindFlags.GET);
+    group.add(tempUnit);
     return group;
 }
 
@@ -2160,6 +2211,15 @@ function chooseCity(window, onPick, title = 'Add a City') {
 }
 
 /** The AI CLIs the voice assistant can ask, in the order "Automatic" tries them, signed-in ones first (as notchfolkd does). */
+/** A provider's models, asked for once per Settings window: the row is rebuilt on every keystroke
+ * in the model-id field, and each rebuild would otherwise cost another round trip to the router. */
+const modelLists = new Map();
+const modelList = id => {
+    if (!modelLists.has(id))
+        modelLists.set(id, apiModels(id));
+    return modelLists.get(id);
+};
+
 const AI_PROVIDERS = [
     {id: 'claude', name: 'Claude Code', planName: 'Claude', command: 'claude', modelKey: 'voice-claude-model',
         about: 'what Claude answers with'},
@@ -2170,15 +2230,15 @@ const AI_PROVIDERS = [
     {id: 'hermes', name: 'Hermes Agent', command: '', modelKey: 'voice-hermes-model',
         available: () => signedIn('hermes'),
         about: 'Hermes keeps its own personality and memory; Notchfolk adds its desktop instructions. A Hermes elsewhere: its endpoint and key below',
-        models: () => [['', 'Hermes default'], ...apiModels('hermes')]},
+        models: async () => [['', 'Hermes default'], ...await modelList('hermes')]},
     {id: 'openai-compatible', name: 'OpenAI-compatible API', command: '', modelKey: 'voice-openai-model',
         available: () => signedIn('openai-compatible'), about: 'The endpoint base URL and its API key, set in the rows below',
-        models: () => apiModels('openai-compatible')},
+        models: () => modelList('openai-compatible')},
     {id: 'oh-my-pi', name: 'Oh My Pi', command: 'omp', modelKey: 'voice-omp-model',
         about: 'Oh My Pi coding agent, with its own provider settings and Notchfolk desktop actions',
         // OMP discovers a large provider catalog in its own CLI. Fetching that from Settings
         // synchronously can block this window for seconds; use OMP's default or a manual id.
-        models: () => [['', 'Oh My Pi default']]},
+        models: async () => [['', 'Oh My Pi default']]},
     // Its plan is named whole ("OpenCode Go", "Free models"); its list: recent, free and plan models.
     {id: 'opencode', name: 'opencode', planName: '', command: 'opencode', modelKey: 'voice-opencode-model',
         about: 'your recent opencode models, your providers’, the free ones and your plan’s', noPlan: true},
@@ -2188,17 +2248,22 @@ const AI_PROVIDERS = [
 
 /** Model ids from API-backed providers. OMP uses its configured default or an optional manual model id. */
 function apiModels(provider) {
-    try {
-        const proxy = Gio.DBusProxy.new_for_bus_sync(Gio.BusType.SESSION, Gio.DBusProxyFlags.NONE,
-            null, DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, null);
-        const result = proxy.call_sync('ListModels', new GLib.Variant('(s)', [provider]),
-            Gio.DBusCallFlags.NONE, 8000, null);
-        const [models] = result.deep_unpack();
-        return JSON.parse(models).map(id => [id, id]);
-    } catch (e) {
-        console.warn(`Notchfolk: could not list ${provider} models: ${e.message}`);
-        return [];
-    }
+    // Asynchronous: a synchronous call here blocks the settings process for as long as the
+    // provider takes to answer (8 s and more against a router), and the shell's own D-Bus
+    // service waits behind it. The row fills in when the answer comes.
+    return new Promise(resolve => {
+        Gio.DBus.session.call(DAEMON, DAEMON_PATH, ASSISTANT_INTERFACE, 'ListModels',
+            new GLib.Variant('(s)', [provider]), new GLib.VariantType('(s)'), Gio.DBusCallFlags.NONE, 30000, null,
+            (bus, result) => {
+                try {
+                    const [models] = bus.call_finish(result).deep_unpack();
+                    resolve(JSON.parse(models).map(id => [id, id]));
+                } catch (e) {
+                    console.warn(`Notchfolk: could not list ${provider} models: ${e.message}`);
+                    resolve([]);
+                }
+            });
+    });
 }
 
 /** notchfolkd's `Models`: per AI `{plan, default, default_name, models: [{id, name}]}`, followed while Settings is open. */

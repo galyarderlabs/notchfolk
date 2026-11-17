@@ -59,10 +59,16 @@ export const ClipsView = GObject.registerClass({
         'activated': {param_types: [GObject.TYPE_JSOBJECT, GObject.TYPE_BOOLEAN]},
     },
 }, class ClipsView extends St.Widget {
+    /** How many files the Shelf can hold at once (Settings → Island → Shelf). */
+    get _capacity() {
+        return this._settings?.get_int('shelf-capacity') ?? SHELF_CAPACITY;
+    }
+
     /** A sideways strip of cards, with an empty state in its place when none match. */
-    _init(daemon) {
+    _init(daemon, settings = null) {
         super._init({layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true});
         this._daemon = daemon;
+        this._settings = settings;
         this._kind = null;
         this._pending = 0;
         this.connect('destroy', () => {
@@ -581,7 +587,7 @@ export const ClipsView = GObject.registerClass({
                 const fresh = item.kind === 'image'
                     ? 1
                     : item.uris.filter(uri => !shelf.some(file => file.uri === uri)).length;
-                if (shelf.length + fresh > SHELF_CAPACITY) {
+                if (shelf.length + fresh > this._capacity) {
                     this.flash(item, 'notchfolk-shelf', 'Files is full');
                     return;
                 }

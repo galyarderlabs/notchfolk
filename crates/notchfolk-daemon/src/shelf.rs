@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use log::warn;
-use notchfolk_core::shelf::{CAPACITY, Shelf, ShelfItem};
+use notchfolk_core::shelf::{Shelf, ShelfItem};
 use tokio::sync::oneshot::{self, error::TryRecvError};
 use tokio::sync::watch;
 use zbus::object_server::{InterfaceRef, SignalEmitter};
@@ -90,6 +90,11 @@ impl ShelfService {
         }
         true
     }
+
+    /// How many files the shelf can hold.
+    pub fn shelf_capacity(&self) -> usize {
+        self.shelf.capacity()
+    }
 }
 
 #[interface(name = "io.galyarderlabs.notchfolk.Shelf1")]
@@ -127,8 +132,9 @@ impl ShelfService {
             self.changed(&emitter).await?;
         }
         if !full.is_empty() {
+            let capacity = self.shelf.capacity();
             return Err(fdo::Error::LimitsExceeded(format!(
-                "the shelf holds {CAPACITY} files; remove one to add {}",
+                "the shelf holds {capacity} files; remove one to add {}",
                 full.join(" ")
             )));
         }
@@ -175,6 +181,26 @@ impl ShelfService {
             .await?;
         tokio::spawn(prune(own));
         Ok(())
+    }
+
+    /// Sets the shelf's capacity; existing files are kept.
+    async fn set_capacity(
+        &mut self,
+        capacity: u32,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+    ) -> fdo::Result<()> {
+        let before = self.shelf.capacity();
+        self.shelf.set_capacity(capacity as usize);
+        if self.shelf.capacity() != before {
+            self.changed(&emitter).await?;
+        }
+        Ok(())
+    }
+
+    /// The shelf's maximum capacity.
+    #[zbus(property)]
+    fn capacity(&self) -> u32 {
+        self.shelf.capacity() as u32
     }
 
     /// JSON array of `ShelfItem`, newest first.

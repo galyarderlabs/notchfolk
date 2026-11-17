@@ -77,6 +77,12 @@ struct Inner {
     dropped_at: Cell<i64>,
     /// Quits the helper once hidden for `IDLE_QUIT_SECS`.
     idle_quit: RefCell<Option<glib::SourceId>>,
+    /// The row is being moved to follow the island's: its own move is not reported back to it.
+    following: Rc<Cell<bool>>,
+    /// The offset the island asked the row to take, kept until the row is laid out far enough to take it.
+    wanted_scroll: Cell<i32>,
+    /// How many files the shelf can hold.
+    capacity: Cell<usize>,
 }
 
 impl ShelfWindow {
@@ -112,16 +118,44 @@ impl ShelfWindow {
             .build();
         // The island's tab draws the names under this window's pictures: it follows this row's scroll, told
         // by a signal (logical pixels, as the placement is). Only a whole pixel's move is told, so a smooth
-        // scroll does not flood the bus.
+        // scroll does not flood the bus; a move this window was told to make is not told back.
         let last = Rc::new(Cell::new(0));
+        let following = Rc::new(Cell::new(false));
+        let told = following.clone();
         scroller
             .hadjustment()
             .connect_value_changed(move |adjustment| {
                 let x = adjustment.value() as i32;
-                if last.replace(x) != x {
-                    service::announce_scrolled(x);
+                if told.get() || last.replace(x) == x {
+                    return;
                 }
+                service::announce_scrolled(x);
             });
+        // The wheel and a touchpad over the row move it sideways, as the island's own row does: the window
+        // covers that row, so the input reaches it here.
+        let wheel = gtk::EventControllerScroll::new(
+            gtk::EventControllerScrollFlags::HORIZONTAL | gtk::EventControllerScrollFlags::VERTICAL,
+        );
+        let moved = scroller.clone();
+        wheel.connect_scroll(move |_, dx, dy| {
+            let scroller = &moved;
+            let adjustment = scroller.hadjustment();
+            let room = adjustment.upper() - adjustment.page_size();
+            if room <= 0.0 {
+                return gtk::glib::Propagation::Proceed;
+            }
+            // A wheel click is one step; a touchpad's smooth delta is taken as it comes.
+            let step = if dx.abs() > dy.abs() { dx } else { dy };
+            let delta = if step.abs() >= 1.0 {
+                step.signum() * 45.0
+            } else {
+                step * 30.0
+            };
+            adjustment.set_value((adjustment.value() + delta).clamp(0.0, room));
+            gtk::glib::Propagation::Stop
+        });
+        scroller.hadjustment().set_step_increment(45.0);
+        scroller.add_controller(wheel);
         let filled = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         filled.append(&scroller);
 
@@ -151,6 +185,9 @@ impl ShelfWindow {
             dragged: RefCell::default(),
             dropped_at: Cell::new(i64::MIN / 2),
             idle_quit: RefCell::default(),
+            following,
+            wanted_scroll: Cell::default(),
+            capacity: Cell::new(CAPACITY),
         }));
         shelf.accept_drops();
         let weak = Rc::downgrade(&shelf.0);
@@ -164,6 +201,14 @@ impl ShelfWindow {
                 });
             }
             announce_first_frame(window);
+        });
+        // The row's first layout gives it a range: the offset asked for before the window was shown (see
+        // `set_scroll`) is taken then, before the first frame is drawn and the window fades in.
+        let weak = Rc::downgrade(&shelf.0);
+        shelf.0.scroller.hadjustment().connect_changed(move |_| {
+            if let Some(inner) = weak.upgrade() {
+                ShelfWindow(inner).apply_scroll();
+            }
         });
         // Another scale (GNOME's arriving after the helper started, or `set_scale`): the same place in X pixels.
         let weak = Rc::downgrade(&shelf.0);
@@ -315,6 +360,38 @@ impl ShelfWindow {
         }
     }
 
+    /// Scrolls the row to `x` logical pixels, after the island's own row moved there; the window's report
+    /// of it (`Scrolled`) is held back, as the island already is there.
+    pub fn set_scroll(&self, x: i32) {
+        // Kept until the row has a range to move in: a window not yet laid out clamps every value to 0, and
+        // the offset asked for before it is shown would be lost.
+        self.0.wanted_scroll.set(x);
+        self.apply_scroll();
+    }
+
+    /// Moves the row to the offset last asked for, once it can go that far.
+    fn apply_scroll(&self) {
+        let x = self.0.wanted_scroll.get();
+        let adjustment = self.0.scroller.hadjustment();
+        // Nothing to scroll in yet: kept for the row's first layout (see the adjustment's `changed`).
+        if adjustment.upper() <= adjustment.page_size() && x != 0 {
+            return;
+        }
+        self.0.following.set(true);
+        adjustment.set_value(f64::from(x));
+        self.0.following.set(false);
+    }
+
+    /// Sets the shelf's capacity.
+    pub fn set_capacity(&self, capacity: usize) {
+        self.0.capacity.set(capacity);
+    }
+
+    /// How many files the shelf holds.
+    pub fn capacity(&self) -> usize {
+        self.0.capacity.get()
+    }
+
     /// Why the files dragged in can't all land, if so; files already on the shelf only move to the front.
     fn refusal(&self) -> Option<Refusal> {
         let items = self.0.items.borrow();
@@ -327,7 +404,7 @@ impl ShelfWindow {
             // Not read yet: as long as there is room for one.
             None => 1,
         };
-        (fresh > 0 && items.len() + fresh > CAPACITY).then_some(Refusal::NoRoom)
+        (fresh > 0 && items.len() + fresh > self.capacity()).then_some(Refusal::NoRoom)
     }
 
     /// No action for a tile dragged out of here, or for files that can't land.

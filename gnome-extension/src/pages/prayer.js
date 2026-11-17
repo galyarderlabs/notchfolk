@@ -13,6 +13,15 @@ import {Page} from './page.js';
 
 const LOCAL_NAMES = {Fajr: 'Subuh', Dhuhr: 'Dzuhur', Asr: 'Ashar', Isha: 'Isya'};
 
+/** The time of day each prayer falls in, as the GNOME weather's own icon says it. */
+const TIME_ICONS = {
+    Fajr: 'weather-few-clouds-night-symbolic',
+    Dhuhr: 'weather-clear-symbolic',
+    Asr: 'weather-few-clouds-symbolic',
+    Maghrib: 'weather-sunset-symbolic',
+    Isha: 'weather-clear-night-symbolic',
+};
+
 function prayerName(name) {
     return LOCAL_NAMES[name] ?? name;
 }
@@ -129,6 +138,9 @@ class PrayerPage extends Page {
         const hero = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-prayer-hero', y_align: Clutter.ActorAlign.CENTER});
         const heroTop = new St.BoxLayout({style_class: 'notchfolk-prayer-hero-top'});
         heroTop.add_child(label('UP NEXT', 'notchfolk-prayer-eyebrow'));
+        this._timeIcon = new St.Icon({icon_name: 'weather-clear-symbolic', icon_size: 11,
+            style_class: 'notchfolk-prayer-time-icon'});
+        heroTop.add_child(this._timeIcon);
         hero.add_child(heroTop);
         hero.add_child(label(info ? prayerName(info.nextName) : 'Prayer times', 'notchfolk-prayer-next-name'));
         const nextDetails = new St.BoxLayout({style_class: 'notchfolk-prayer-next-details', y_align: Clutter.ActorAlign.CENTER});
@@ -188,6 +200,8 @@ class PrayerPage extends Page {
 
         this._nextIndex = info?.nextIndex ?? -1;
         this._nextIsTomorrow = Boolean(info?.isTomorrow);
+        if (this._timeIcon && info)
+            this._timeIcon.icon_name = TIME_ICONS[prayers[info.nextIndex]?.name] ?? 'weather-clear-symbolic';
         this._scheduleCountdown();
     }
 

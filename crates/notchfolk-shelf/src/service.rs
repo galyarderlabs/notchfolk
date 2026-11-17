@@ -61,6 +61,15 @@ const INTERFACE: &str = r#"
     <method name="SetDropping">
       <arg name="dropping" type="b" direction="in"/>
     </method>
+    <!-- The tab's own row scrolled sideways this far (logical pixels): this window's row follows, so its
+         pictures stay over the names the island draws. -->
+    <method name="SetScroll">
+      <arg name="x" type="i" direction="in"/>
+    </method>
+    <!-- Sets the shelf's capacity: the window refuses drops when full. -->
+    <method name="SetCapacity">
+      <arg name="capacity" type="i" direction="in"/>
+    </method>
     <!-- A file is being dragged out: the island must stay open meanwhile,
          or hiding this window would end the drag. -->
     <signal name="Dragging">
@@ -159,6 +168,20 @@ pub fn register(connection: &gio::DBusConnection, window: ShelfWindow) -> Result
                     invocation.return_value(None);
                 }
                 None => invocation.return_error(gio::DBusError::InvalidArgs, "expected a boolean"),
+            },
+            "SetScroll" => match params.get::<(i32,)>() {
+                Some((x,)) => {
+                    window.set_scroll(x);
+                    invocation.return_value(None);
+                }
+                None => invocation.return_error(gio::DBusError::InvalidArgs, "expected a position"),
+            },
+            "SetCapacity" => match params.get::<(i32,)>() {
+                Some((capacity,)) => {
+                    window.set_capacity(capacity.max(1) as usize);
+                    invocation.return_value(None);
+                }
+                None => invocation.return_error(gio::DBusError::InvalidArgs, "expected a capacity"),
             },
             _ => invocation.return_error(gio::DBusError::UnknownMethod, method),
         })

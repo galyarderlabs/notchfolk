@@ -7,6 +7,7 @@
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {VERTICAL, onUiScale} from '../compat.js';
@@ -15,7 +16,7 @@ import {DropLight} from '../dropLight.js';
 import {Thumbnails} from '../thumbnails.js';
 import {icon, iconButton, label, pillButton, setEnabled} from '../widgets.js';
 import {ClipsView} from './clips.js';
-import {FilesView, SHELF_CAPACITY} from './files.js';
+import {FilesView} from './files.js';
 import {Page} from './page.js';
 import {PhoneCode, PhoneView} from './phone.js';
 
@@ -51,6 +52,8 @@ export const ShelfPage = GObject.registerClass({
         'helper-area-changed': {},
         // ↓ on a file the Shelf keeps itself: save it into Downloads.
         'save-requested': {param_types: [GObject.TYPE_STRING]},
+        // The Files row scrolled here (stage pixels): the helper's window scrolls its own row to match.
+        'files-scrolled': {param_types: [GObject.TYPE_DOUBLE]},
     },
 }, class ShelfPage extends Page {
     /** `history` copies and pastes clipboard items; `settings` holds whether history is kept at all. */
@@ -92,16 +95,26 @@ export const ShelfPage = GObject.registerClass({
             this._files.light = level;
         });
 
-        this._clips = new ClipsView(daemon);
+        this._clips = new ClipsView(daemon, settings);
         this._clips.connect('activated', (_view, item, paste) => this._onActivated(item, paste));
         this._thumbnails = new Thumbnails();
-        this._files = new FilesView(daemon, this._thumbnails);
+        this._files = new FilesView(daemon, this._thumbnails, settings);
         this._files.connect('save', (_view, uri) => this.emit('save-requested', uri));
+        // The wheel or a touchpad scrolled the row here: the helper's window follows, so its pictures stay
+        // over these names.
+        this._files.connect('scrolled', (_view, x) => this.emit('files-scrolled', x));
         // The helper window must match the tab exactly, so it follows every
         // change of size or place (sync only reads them; nothing relayouts).
+        let lastBox = null;
         this._files.connect('notify::allocation', () => {
-            if (this._tab === 'files')
-                this.emit('helper-area-changed');
+            if (this._tab !== 'files')
+                return;
+            const box = this._files.get_allocation_box();
+            if (lastBox && box.x1 === lastBox.x1 && box.y1 === lastBox.y1 &&
+                box.x2 === lastBox.x2 && box.y2 === lastBox.y2)
+                return;
+            lastBox = box;
+            this.emit('helper-area-changed');
         });
 
         this._phone = new PhoneView();
@@ -133,9 +146,15 @@ export const ShelfPage = GObject.registerClass({
         });
         this.watch(['share'], () => this._syncShare());
         this._settingsChanged = settings.connect('changed::clipboard-history', () => this._refresh('clips'));
+        this._capacityChanged = settings.connect('changed::shelf-capacity', () => {
+            this._syncRefusal();
+            this._updateFilesHint();
+            this._files.update();
+        });
         this.connect('destroy', () => {
             this._destroyed = true;
             settings.disconnect(this._settingsChanged);
+            settings.disconnect(this._capacityChanged);
             this._thumbnails.destroy();
             this._light.destroy();
         });
@@ -212,11 +231,17 @@ export const ShelfPage = GObject.registerClass({
         this._clipboardControls.add_child(this._confirm);
         bar.add_child(this._clipboardControls);
 
-        // Files: what the tab is for, and sharing with a phone.
+        // Files: what the tab is for, and sharing with a phone. The hint takes what room the tabs and the
+        // phone button leave and ends in "…" there: without it, a long "12 of 24 · click to copy, or drag
+        // into any app" ran off the island's edge and was cut mid-word.
         this._filesHint = label('', 'notchfolk-shelf-hint', {
             x_expand: true,
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
+        });
+        this._filesHint.clutter_text.set({
+            ellipsize: Pango.EllipsizeMode.END,
+            single_line_mode: true,
         });
         bar.add_child(this._filesHint);
         const phone = new St.BoxLayout({style_class: 'notchfolk-shelf-phone-box'});
@@ -417,6 +442,11 @@ export const ShelfPage = GObject.registerClass({
         this._files.scrollX = x;
     }
 
+    /** The Files row's scroll in stage pixels, after the wheel or a touchpad moved it here. */
+    get filesScrollX() {
+        return this._files.scrollX;
+    }
+
     /** Whether the drag-and-drop helper is installed. */
     set helperAvailable(available) {
         this._files.helperAvailable = available;
@@ -506,6 +536,11 @@ export const ShelfPage = GObject.registerClass({
         return refused;
     }
 
+    /** The shelf holds this many files at once. */
+    get capacity() {
+        return this._settings.get_int('shelf-capacity');
+    }
+
     // Why the files on their way can't all land, as the helper refuses them: 'local' (none is on this
     // computer) or 'room' (more than fit; files already on the shelf only move up); else null.
     get _refusal() {
@@ -515,7 +550,7 @@ export const ShelfPage = GObject.registerClass({
             return 'local';
         // Not read yet: as long as there is room for one.
         const fresh = local ? local.filter(uri => !shelf.some(item => item.uri === uri)).length : 1;
-        return fresh > 0 && shelf.length + fresh > SHELF_CAPACITY ? 'room' : null;
+        return fresh > 0 && shelf.length + fresh > this.capacity ? 'room' : null;
     }
 
     /** The light, zone and hint say whether the files on their way can land. */
@@ -529,7 +564,8 @@ export const ShelfPage = GObject.registerClass({
     /** Says what the Files tab is for, and when it is full. */
     _updateFilesHint() {
         const count = this._files.items.length;
-        const full = count >= SHELF_CAPACITY;
+        const capacity = this.capacity;
+        const full = count >= capacity;
         const refusal = this._dropping ? this._refusal : null;
         let text;
         if (this._shareError && !this._dropping)
@@ -542,7 +578,7 @@ export const ShelfPage = GObject.registerClass({
         else if (refusal && full)
             text = 'Full · remove a file first';
         else if (refusal)
-            text = `Only ${SHELF_CAPACITY - count} more fit`;
+            text = `Only ${capacity - count} more fit`;
         else if (this._dropping)
             text = this._dropOver ? 'Release to add it' : 'Drop to keep it on the shelf';
         else if (this._added)
@@ -551,8 +587,8 @@ export const ShelfPage = GObject.registerClass({
             text = 'Full · remove a file to add another';
         else
             text = this._files.items.some(item => isShelfCopy(item.uri))
-                ? `${count} of ${SHELF_CAPACITY} · click to copy, ↓ to save, or drag out`
-                : `${count} of ${SHELF_CAPACITY} · click to copy, or drag into any app`;
+                ? `${count} of ${capacity} · click to copy, ↓ to save, or drag out`
+                : `${count} of ${capacity} · click to copy, or drag into any app`;
         this._filesHint.text = text;
         if (this._dropping || this._added)
             this._filesHint.add_style_class_name('active');

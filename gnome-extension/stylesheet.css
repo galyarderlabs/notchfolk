@@ -183,9 +183,12 @@
   border-radius: 999px; }
 
 /* The karaoke line: the sung line in the assistant's centre while it plays, at the
-   compact's own text size, capped so a long line never grows the island past its measure. */
+   compact's own text size, whole - the island widens to it, up to the room the screen has. */
 .notchfolk-compact-karaoke { font-size: 15px; font-weight: 600; letter-spacing: -0.2px;
-  max-width: 500px; color: rgba(255, 255, 255, 0.9); }
+  color: rgba(255, 255, 255, 0.9); }
+/* The line before it is sung (the intro): muted, so the notch says what is coming without
+   competing with the line that is actually on. */
+.notchfolk-compact-karaoke-coming { color: rgba(255, 255, 255, 0.45); }
 .notchfolk-compact-karaoke-button { border-radius: 8px; padding: 2px 6px; }
 .notchfolk-compact-karaoke-button:hover, .notchfolk-compact-karaoke-button:focus {
   background-color: rgba(255, 255, 255, 0.08); }
@@ -949,7 +952,7 @@
   border: 1px solid rgba(255, 255, 255, 0.10);
 }
 .notchfolk-prayer-hero-top { spacing: 5px; }
-.notchfolk-prayer-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.9px; color: rgba(255, 211, 107, 0.7); }
+.notchfolk-prayer-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.4px; color: rgba(255, 211, 107, 0.7); }
 .notchfolk-prayer-next-name { font-size: 25px; font-weight: 700; letter-spacing: -0.7px; color: #ffffff; }
 .notchfolk-prayer-next-details { spacing: 10px; }
 .notchfolk-prayer-next-time { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; color: #ffd36b; }
@@ -1289,6 +1292,14 @@
 /* In 1 px at the sides, as the helper's row inside its drop area's 1 px border (crates/notchfolk-shelf/src/style.css): the
  * window's tiles land on these exactly. */
 .notchfolk-shelf-row { spacing: 6px; }
+
+/* The row scrolls on the wheel alone: no bar is drawn. Shown, it takes ~20px off the row's height the moment
+ * the first layout gives it a range, which dropped the tiles a moment after the tab opened and ran them into
+ * their names. The policy stays AUTOMATIC (the wheel needs it, see `_overList`); only its drawing goes. */
+.notchfolk-shelf-files StScrollBar { min-width: 0; min-height: 0; margin: 0; padding: 0; }
+.notchfolk-shelf-files StScrollBar StButton#hhandle,
+.notchfolk-shelf-files StScrollBar StButton#vhandle,
+.notchfolk-shelf-files StScrollBar StBin#trough { background-color: transparent; border: none; }
 
 .notchfolk-shelf-tile {
   padding: 6px 0;
@@ -1976,6 +1987,9 @@
 .notchfolk-chat-archive-row:active { background-color: rgba(255, 255, 255, 0.16); }
 .notchfolk-chat-archive-when { font-size: 13px; font-weight: 600; }
 .notchfolk-chat-archive-count { font-size: 11px; color: rgba(255, 255, 255, 0.55); }
+/* The conversation going on: not archived, so it reads as the live one rather than another saved chat. */
+.notchfolk-chat-archive-now { background-color: rgba(255, 255, 255, 0.09); }
+.notchfolk-chat-archive-now .notchfolk-chat-archive-when { color: #7dd87d; }
 
 /* Router: a small live analytics surface sized for the island, not a page-sized dashboard. */
 .notchfolk-router-layout { spacing: 6px; }
@@ -2123,20 +2137,68 @@
 .notchfolk-weather-quake-meta { font-size: 11px; color: rgba(255, 255, 255, 0.74); }
 .notchfolk-weather-empty { font-size: 13px; color: rgba(255, 255, 255, 0.78); }
 
-/* The Vitals page: the machine's own pulse. */
-.notchfolk-vitals-top { spacing: 24px; padding: 8px 0 4px; }
-.notchfolk-vitals-cpu-percent { font-size: 16px; font-weight: 700; color: rgba(255, 255, 255, 0.9); }
-.notchfolk-vitals-temp { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-.notchfolk-vitals-bar-box { spacing: 4px; margin-top: 10px; }
-.notchfolk-vitals-bar-header { spacing: 8px; }
-.notchfolk-vitals-bar-name { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
-.notchfolk-vitals-bar-value { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.75); }
-.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.12); }
-.notchfolk-vitals-bar-fill { height: 4px; border-radius: 2px;
-  background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a; }
-.notchfolk-vitals-bottom { spacing: 16px; padding-top: 10px; }
-.notchfolk-vitals-net { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.65); }
-.notchfolk-vitals-battery { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.65); }
+/* The Vitals page: the machine's own pulse. Flat, on the island's own surface: the two
+   figures that matter at a glance, then a row per storage, then the network. */
+.notchfolk-vitals-column { spacing: 4px; padding: 0 6px; }
 
-/* The closed island's own vital: a small number beside the wave. */
-.notchfolk-compact-vital { font-size: 10px; font-weight: 600; color: rgba(255, 255, 255, 0.55); }
+/* The pulse: the load big left, the sparkline across, the temperature big right. */
+.notchfolk-vitals-pulse { spacing: 10px; padding: 2px 4px; }
+.notchfolk-vitals-figure { spacing: 1px; }
+.notchfolk-vitals-figure-value {
+  font-size: 24px; font-weight: 700; letter-spacing: -0.6px;
+  font-feature-settings: "tnum"; color: #ffffff;
+}
+.notchfolk-vitals-figure-name {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+}
+.notchfolk-vitals-figure-note {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; font-feature-settings: "tnum";
+}
+.notchfolk-vitals-spark { height: 28px; }
+
+/* The info rows: the cores, the load, the processes. */
+.notchfolk-vitals-info-row { spacing: 8px; padding: 0 4px; }
+.notchfolk-vitals-info-name {
+  width: 68px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.42);
+}
+.notchfolk-vitals-info-value {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
+  font-feature-settings: "tnum"; text-align: right;
+}
+.notchfolk-vitals-info-proc {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.5);
+  font-feature-settings: "tnum";
+}
+.notchfolk-vitals-cores { spacing: 2px; height: 18px; }
+.notchfolk-vitals-core-track {
+  width: 3px; height: 18px; border-radius: 1.5px;
+  background-color: rgba(255, 255, 255, 0.10);
+}
+.notchfolk-vitals-core-fill { width: 3px; border-radius: 1.5px; background-color: rgba(255, 255, 255, 0.55); }
+
+/* The storage rows. */
+.notchfolk-vitals-hairline { height: 1px; background-color: rgba(255, 255, 255, 0.07); margin: 4px 0; }
+.notchfolk-vitals-storage { spacing: 8px; padding: 0 4px; }
+.notchfolk-vitals-storage-name {
+  width: 68px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.42);
+}
+.notchfolk-vitals-storage-value {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.78);
+  font-feature-settings: "tnum";
+}
+.notchfolk-vitals-bar-track { height: 4px; border-radius: 2px; background-color: rgba(255, 255, 255, 0.08); }
+.notchfolk-vitals-bar-fill {
+  height: 4px; border-radius: 2px;
+  background-gradient-direction: horizontal; background-gradient-start: #ffce5c; background-gradient-end: #ff9f0a;
+}
+
+/* The footer. */
+.notchfolk-vitals-footer { spacing: 14px; padding: 0 4px; }
+.notchfolk-vitals-footer-value {
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.62);
+  font-feature-settings: "tnum";
+}

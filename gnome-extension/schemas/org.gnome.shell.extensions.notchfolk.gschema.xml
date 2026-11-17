@@ -209,6 +209,11 @@
       <summary>City used for current weather</summary>
       <description>An empty list follows the GNOME World Clock nearest the local time zone.</description>
     </key>
+    <key name="weather-temperature-unit" type="s">
+      <default>'auto'</default>
+      <summary>Temperature unit used for showing weather</summary>
+      <description>auto, celsius, or fahrenheit - automatic follows the system locale</description>
+    </key>
     <key name="hidden-pages" type="as">
       <default>[]</default>
       <summary>Pages left out of the island</summary>
@@ -352,6 +357,12 @@
       <summary>Keep a history of what you copy</summary>
       <description>Text, links, images and files, stored only on this computer.</description>
     </key>
+    <key name="shelf-capacity" type="i">
+      <range min="6" max="64"/>
+      <default>12</default>
+      <summary>Maximum number of files on the Shelf</summary>
+      <description>How many files the Shelf can hold at once, between 6 and 64.</description>
+    </key>
     <key name="clipboard-ignored-apps" type="as">
       <default>['org.keepassxc.KeePassXC.desktop', 'com.bitwarden.desktop.desktop', 'bitwarden.desktop', '1password.desktop', 'org.gnome.World.Secrets.desktop', 'org.gnome.seahorse.Application.desktop', 'proton-pass.desktop']</default>
       <summary>Apps whose copies are never kept</summary>
@@ -416,6 +427,11 @@
       <default>[]</default>
       <summary>Shortcut to the Weather page</summary>
       <description>Opens the island on the Weather page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
+    </key>
+    <key name="shortcut-vitals" type="as">
+      <default>[]</default>
+      <summary>Shortcut to the Vitals page</summary>
+      <description>Opens the island on the Vitals page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
     </key>
     <key name="shortcut-apps" type="as">
       <default>[]</default>

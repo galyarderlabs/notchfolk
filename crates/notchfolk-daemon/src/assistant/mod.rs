@@ -353,6 +353,8 @@ pub struct AssistantService {
     state: State,
     /// The conversation as the island shows it: JSON `[{role, text, spoken, command, status, at}]`.
     history: String,
+    /// History's list: the conversation going on, then the archived ones (see `chat::listing`).
+    archived: String,
     commands: mpsc::UnboundedSender<Command>,
 }
 
@@ -365,6 +367,7 @@ impl AssistantService {
         let service = Self {
             state: State::default(),
             history: "[]".into(),
+            archived: crate::assistant::chat::listing(None),
             commands,
         };
         (service, receiver)
@@ -543,7 +546,7 @@ impl AssistantService {
     /// island offers to resume. Only those still readable count; empty ones are left out.
     #[zbus(property)]
     fn archived_chats(&self) -> String {
-        crate::assistant::chat::archived()
+        self.archived.clone()
     }
 
     /// Stops the request being answered; the AI quits.
@@ -1327,6 +1330,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
     session.provider = Provider::from_id(&talk.chat.provider);
     session.conversation = Some(talk.chat.conversation.clone()).filter(|id| !id.is_empty());
     show_history(&iface, &talk.chat).await;
+    show_archived(&iface, &talk.chat).await;
     new_day(&mut session, &mut pruned);
     // The ids of the commands followed until they end and are told (see `Command::Settled`).
     let mut following = HashSet::new();
@@ -1360,6 +1364,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 _ = crate::clock::wait_until(check_at, &never) => {
                     if talk.end_if_over(&mut session, keep) {
                         show_history(&iface, &talk.chat).await;
+                        show_archived(&iface, &talk.chat).await;
                     }
                     new_day(&mut session, &mut pruned);
                     continue;
@@ -1384,6 +1389,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 keep = Keep::parse(&context.keep_chat);
                 if talk.end_if_over(&mut session, keep) {
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 session.resume(today());
                 session.adopt(*context);
@@ -1407,6 +1413,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 keep = Keep::parse(&context.keep_chat);
                 if talk.end_if_over(&mut session, keep) {
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 session.resume(today());
                 session.adopt(*context);
@@ -1428,6 +1435,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 keep = Keep::parse(&context.keep_chat);
                 if talk.end_if_over(&mut session, keep) {
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 session.resume(today());
                 session.adopt(*context);
@@ -1465,6 +1473,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 session.turns = 0;
                 talk.store.remove();
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 None
             }
             Command::UndoNewChat => {
@@ -1477,6 +1486,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                     talk.chat = old;
                     talk.save(&session);
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 None
             }
@@ -1512,6 +1522,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 tasks::forget(&task);
                 tasks::clean(&task);
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 // The alert says it in a line; why is in the chat, which a click on it opens (the
                 // shortcut may be another, or none).
                 let said = if status == "failed" {
@@ -1531,6 +1542,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 }
                 talk.archive(&mut session);
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 None
             }
             Command::ResumeChat(timestamp) => {
@@ -1549,6 +1561,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                     talk.save(&session);
                 }
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 None
             }
             Command::End => {
@@ -2368,6 +2381,20 @@ async fn show_history(iface: &InterfaceRef<AssistantService>, chat: &Chat) {
     service.history = history;
     if let Err(err) = service.history_changed(iface.signal_emitter()).await {
         warn!("could not publish the conversation: {err}");
+    }
+}
+
+/// Tells the island what History holds: the conversation going on, then the archived ones. Called whenever
+/// either changes, so the list is never stale (a closed conversation is still the one going on, and shows).
+async fn show_archived(iface: &InterfaceRef<AssistantService>, chat: &Chat) {
+    let mut service = iface.get_mut().await;
+    let archived = crate::assistant::chat::listing(Some(chat));
+    if service.archived == archived {
+        return;
+    }
+    service.archived = archived;
+    if let Err(err) = service.archived_chats_changed(iface.signal_emitter()).await {
+        warn!("could not publish the archived conversations: {err}");
     }
 }
 

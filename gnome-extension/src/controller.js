@@ -351,6 +351,7 @@ export class Controller {
         this._island.monitor = this._monitor;
         this._topBar.clockShown = !this._onBar;
         this._compact.inBar = inBar;
+        this._compact.screenWidth = this._monitor?.width ?? 0;
 
         const size = {
             width: this._compact.preferredWidth,
@@ -592,6 +593,17 @@ export class Controller {
         this._shelfHelper.connect('drag-files', (_helper, uris) => this._shelf.showDragged(uris));
         // ↓ on a file the Shelf keeps itself, from the island's own tile or the helper's.
         this._shelf.connect('save-requested', (_page, uri) => this._saveToDownloads(uri));
+        // The wheel or a touchpad scrolled the Files row here: the helper's window follows.
+        this._shelf.connect('files-scrolled', (_page, x) => this._shelfHelper?.scrollTo(x));
+        // The Shelf's capacity is one number, kept in Settings: notchfolkd enforces it for every way a file
+        // comes in, and the helper's window refuses drops by it too.
+        const syncCapacity = () => {
+            const capacity = this._settings.get_int('shelf-capacity');
+            this._daemon.call('shelf', 'SetCapacity', capacity);
+            this._shelfHelper?.setCapacity(capacity);
+        };
+        syncCapacity();
+        this._settings.connect('changed::shelf-capacity', syncCapacity);
         this._shelfHelper.connect('save', (_helper, uri) => this._saveToDownloads(uri));
         this._shelfHelper.connect('drag-end', (_helper, onShelf = false) => {
             // A full shelf turns the file away: the island shakes its head.
@@ -1611,6 +1623,7 @@ export class Controller {
         const top = onBar ? this._topBar.height : 0;
         const inBar = onBar && this._settings.get_boolean('island-in-top-bar');
         compact.inBar = this._compactInBar(onBar);
+        compact.screenWidth = this._monitor?.width ?? 0;
         const gap = this._pillGapOn(onBar);
         if (gap !== null) {
             // A pill: centred in the bar, or PILL_HEIGHT tall off it; round all over (the island caps the radius).
@@ -3109,6 +3122,10 @@ export class Controller {
         this._openWhenBack = false;
         this._daemon.call('assistant', 'NewChat');
         this._voice.showUndo(true);
+        // The new chat opens in the chat's own layout: the header, the empty list,
+        // the entry field as the input - the same face the chat always has.
+        this._voice.openChatForNew();
+        this._startTyping('');
         this._later('chat-undo', UNDO_MS, () => this._voice.showUndo(false));
     }
 

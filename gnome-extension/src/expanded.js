@@ -43,6 +43,7 @@ const TABS = {
     water: {icon: 'notchfolk-water-tab', label: 'Water'},
     prayer: {icon: 'notchfolk-prayer', label: 'Prayer'},
     weather: {icon: 'notchfolk-weather', label: 'Weather'},
+    vitals: {icon: 'notchfolk-heartbeat', label: 'Vitals'},
     apps: {icon: 'notchfolk-apps', label: 'Apps'},
     usage: {icon: 'notchfolk-gauge', label: 'Usage'},
     phone: {icon: 'notchfolk-devices', label: 'Phone'},
@@ -872,8 +873,9 @@ export const ExpandedView = GObject.registerClass({
             (this._smoothScrolling || Boolean(event.get_flags() & Clutter.EventFlags.POINTER_EMULATED));
     }
 
-    // Whether a wheel click is over a vertical list. St.ScrollView steps only on
-    // the click and ignores its smooth copy, so the click must reach it.
+    // Whether a wheel click is over a list or a sideways row. St.ScrollView steps only on the click and
+    // ignores its smooth copy, so the click must reach it: a row that scrolls sideways (the Shelf's files,
+    // the clipboard's cards) takes the wheel too, not only a vertical list.
     _overList(event) {
         const direction = event.get_scroll_direction();
         if (direction !== Clutter.ScrollDirection.UP && direction !== Clutter.ScrollDirection.DOWN)
@@ -882,8 +884,12 @@ export const ExpandedView = GObject.registerClass({
             return false;
         let actor = global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, ...event.get_coords());
         for (; actor && actor !== this; actor = actor.get_parent()) {
-            if (actor instanceof St.ScrollView)
+            if (actor instanceof St.ScrollView) {
+                // A row that scrolls sideways takes the wheel whatever its vertical policy says.
+                if (actor.hscrollbar_policy !== St.PolicyType.NEVER)
+                    return true;
                 return actor.vscrollbar_policy !== St.PolicyType.NEVER;
+            }
         }
         return false;
     }

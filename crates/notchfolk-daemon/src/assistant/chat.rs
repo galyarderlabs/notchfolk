@@ -267,6 +267,27 @@ pub fn archived_chat(timestamp: i64) -> Option<Chat> {
     (!chat.is_empty()).then_some(chat)
 }
 
+/// The list the island's History shows: the conversation going on first (`current`, tagged `now`), then the
+/// archived ones newest first, as JSON `[{timestamp, last, items, now?}]`. A closed conversation is not
+/// archived (it is kept to be resumed), so without it History would leave out the one being had.
+pub fn listing(current: Option<&Chat>) -> String {
+    let mut list: Vec<serde_json::Value> = current
+        .filter(|chat| !chat.is_empty())
+        .map(|chat| {
+            serde_json::json!({
+                "timestamp": chat.last.max(0),
+                "last": chat.last,
+                "items": chat.items.len(),
+                "now": true,
+            })
+        })
+        .into_iter()
+        .collect();
+    let archived: Vec<serde_json::Value> = serde_json::from_str(&archived()).unwrap_or_default();
+    list.extend(archived);
+    serde_json::to_string(&list).unwrap_or_else(|_| "[]".into())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -342,5 +363,28 @@ mod tests {
             mask_secrets("ẞ \u{212A}EY Password=x"),
             "ẞ \u{212A}EY Password= [hidden]"
         );
+    }
+
+    #[test]
+    fn the_listing_puts_the_conversation_going_on_first() {
+        let mut chat = Chat::default();
+        chat.push(Item::said("halo", false, 1_000));
+        chat.push(Item::answer("hai", 2_000));
+        let listed: Vec<serde_json::Value> = serde_json::from_str(&listing(Some(&chat))).unwrap();
+        // Whatever is archived on this machine, the live one comes first and is tagged; the rest follow.
+        let (first, rest) = listed
+            .split_first()
+            .expect("the conversation going on is listed");
+        assert_eq!(first["items"], 2);
+        assert_eq!(first["last"], 2_000);
+        assert_eq!(first["now"], true);
+        assert!(rest.iter().all(|chat| chat.get("now").is_none()));
+        // Nothing said yet: nothing to offer, and the archive alone is listed.
+        let archived: Vec<serde_json::Value> = serde_json::from_str(&archived()).unwrap();
+        let listed: Vec<serde_json::Value> =
+            serde_json::from_str(&listing(Some(&Chat::default()))).unwrap();
+        assert_eq!(listed, archived);
+        let listed: Vec<serde_json::Value> = serde_json::from_str(&listing(None)).unwrap();
+        assert_eq!(listed, archived);
     }
 }
