@@ -357,6 +357,12 @@
       <summary>Keep a history of what you copy</summary>
       <description>Text, links, images and files, stored only on this computer.</description>
     </key>
+    <key name="shelf-capacity" type="i">
+      <range min="6" max="64"/>
+      <default>12</default>
+      <summary>Maximum number of files on the Shelf</summary>
+      <description>How many files the Shelf can hold at once, between 6 and 64.</description>
+    </key>
     <key name="clipboard-ignored-apps" type="as">
       <default>['org.keepassxc.KeePassXC.desktop', 'com.bitwarden.desktop.desktop', 'bitwarden.desktop', '1password.desktop', 'org.gnome.World.Secrets.desktop', 'org.gnome.seahorse.Application.desktop', 'proton-pass.desktop']</default>
       <summary>Apps whose copies are never kept</summary>

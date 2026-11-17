@@ -15,7 +15,7 @@ import St from 'gi://St';
 
 import {VERTICAL, onUiScale, px, uiScale} from '../compat.js';
 import {isShelfCopy} from '../downloads.js';
-import {Lines, icon, iconButton, label} from '../widgets.js';
+import {Lines, icon, iconButton, label, scrollSideways} from '../widgets.js';
 
 /** The shelf holds this many files (as notchfolkd enforces). */
 export const SHELF_CAPACITY = 12;
@@ -67,13 +67,26 @@ function splitAtExtension(label, name, width) {
 /** How fast the ↓ shows and goes with the pointer. */
 const SAVE_FADE_MS = 120;
 
+/** How long two clicks count as one double click, in ms: the desktop's own setting (Clutter's
+ * `double_click_time` is not reachable from an extension on GNOME 51). */
+function doubleClickMs() {
+    try {
+        return new Gio.Settings({schema_id: 'org.gnome.desktop.peripherals.mouse'}).get_int('double-click');
+    } catch {
+        return 400;
+    }
+}
+
 // The tiles and drop zone St draws itself, seen whenever the helper window isn't over them. Signals:
-// `save` (uri) for ↓ on a file the Shelf keeps itself.
+// `save` (uri) for ↓ on a file the Shelf keeps itself, `scrolled` (stage pixels) when this row scrolls.
 export const FilesView = GObject.registerClass({
-    Signals: {'save': {param_types: [GObject.TYPE_STRING]}},
+    Signals: {
+        'save': {param_types: [GObject.TYPE_STRING]},
+        'scrolled': {param_types: [GObject.TYPE_DOUBLE]},
+    },
 }, class FilesView extends St.Widget {
     /** `thumbnails` loads the previews and keeps them while the files stay. */
-    _init(daemon, thumbnails) {
+    _init(daemon, thumbnails, settings = null) {
         super._init({
             style_class: 'notchfolk-shelf-files',
             layout_manager: new Clutter.BinLayout(),
@@ -82,6 +95,7 @@ export const FilesView = GObject.registerClass({
         });
         this._daemon = daemon;
         this._thumbnails = thumbnails;
+        this._settings = settings;
         /** notchfolkd's last list: kept while it is away, as the helper keeps its own, so the two never disagree. */
         this._items = [];
         this._helperActive = false;
@@ -99,22 +113,33 @@ export const FilesView = GObject.registerClass({
         this._lastClick = {uri: null, at: 0};
         /** Each file's tile, kept while the file stays, so its preview never reloads (and blinks). */
         this._tileFor = new Map();
+        /** Set while this row follows the helper's: its own move must not be told back. */
+        this._syncingScroll = false;
+        /** The padding a short row is centred with (see `_syncRowPadding`), kept to skip restyling. */
+        this._rowPad = 0;
 
         // One row of tiles, sideways scrollable: it fills from the middle out to the edges, and past the
         // width it scrolls, still one row — never two stacked. A short row sits in the middle, not against
         // the left edge (as the helper's, crates/notchfolk-shelf, does). The helper's window scrolls its own
         // row and reports it (see `scrollX`), so the names drawn here stay under its pictures.
-        this._tiles = new St.BoxLayout({
-            style_class: 'notchfolk-shelf-row',
-            x_align: Clutter.ActorAlign.CENTER,
-        });
+        // The row is NOT centred by `x_align`: a centred child of a ScrollView is given its natural width,
+        // so the adjustment never gets a range and the wheel has nothing to move. A short row is centred
+        // by padding instead (see `_syncRowPadding`), which leaves an overflowing one free to scroll.
+        this._tiles = new St.BoxLayout({style_class: 'notchfolk-shelf-row'});
         this._scroller = new St.ScrollView({
             hscrollbar_policy: St.PolicyType.AUTOMATIC,
             vscrollbar_policy: St.PolicyType.NEVER,
             x_expand: true,
             y_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
-            child: this._tiles,
+        });
+        this._scroller.set_child(this._tiles);
+        // Any wheel or touchpad direction moves the row sideways while it overflows, as the clipboard's
+        // strip does; the helper's window, over this tab, reports its own scroll the same way back.
+        this._scroller.connect('scroll-event', (_actor, event) => scrollSideways(this._scroller, event));
+        this._scroller.hadjustment.connect('notify::value', () => {
+            if (!this._syncingScroll)
+                this.emit('scrolled', this._scroller.hadjustment.value);
         });
         this.add_child(this._scroller);
 
@@ -156,6 +181,13 @@ export const FilesView = GObject.registerClass({
             this._tileFor.clear();
             this.update();
         }, {now: false});
+        // The tab grew or shrank (another page size, a wider island): a short row is centred again.
+        this._scroller.connect('notify::width', () => this._syncRowPadding());
+    }
+
+    /** How many files the shelf can hold at once. */
+    get capacity() {
+        return this._settings?.get_int('shelf-capacity') ?? SHELF_CAPACITY;
     }
 
     /** While the helper's window covers this tab, its pictures and × are the window's (see `update`). */
@@ -177,9 +209,18 @@ export const FilesView = GObject.registerClass({
     /** The row's scroll, in stage pixels: the helper's window scrolled its own row that far, so the names
      * drawn here move with its pictures. */
     set scrollX(x) {
-        const adjustment = this._scroller.hscroll;
-        if (adjustment)
-            adjustment.value = x;
+        const adjustment = this._scroller.hadjustment;
+        if (!adjustment || adjustment.value === x)
+            return;
+        // The helper moved its row: this one follows, and must not tell it back.
+        this._syncingScroll = true;
+        adjustment.value = x;
+        this._syncingScroll = false;
+    }
+
+    /** The row's scroll in stage pixels, as the helper's window should take it. */
+    get scrollX() {
+        return this._scroller.hadjustment?.value ?? 0;
     }
 
     /** A file is on its way: the zone and words say where it will land; the tiles stay as they are. */
@@ -278,17 +319,22 @@ export const FilesView = GObject.registerClass({
         }
         const items = this._items;
         this._syncTiles(items);
+        this._syncRowPadding();
         this._syncZone();
         this._scroller.visible = items.length > 0;
         this._empty.visible = items.length === 0;
-        // The helper's window draws its own scrollbar over the tab; this one's would double it, so it only
-        // shows while the tab draws itself.
-        this._scroller.hscrollbar_policy = this._helperActive ? St.PolicyType.NEVER : St.PolicyType.AUTOMATIC;
+        // Only while the helper's window is actually up over this tab does it draw the pictures and the
+        // scrollbar; with the helper away or never shown, the tab must draw both itself.
+        const covered = this._helperActive && this._helperAvailable;
+        // The policy stays AUTOMATIC, and is never set to NEVER: it also decides whether the wheel reaches
+        // this row at all (the island drops click-style scroll copies over a row whose policy is NEVER, see
+        // `_overList`). A bar under the helper's window is the one thing accepted: it draws over tiles that
+        // window covers anyway, and `hscrollbar-visible` is read-only in St.
         // Under the helper's window each tile's picture and × stay laid out but unseen (hidden, the tab would shrink
         // and the window go, blinking): the window draws them. The names are only ever drawn here, as the empty
         // shelf's words: GTK breaks and draws text its own way, and a name changing as the window came in blinked.
         for (const tile of this._tileFor.values())
-            tile._frame.opacity = this._helperActive ? 0 : 255;
+            tile._frame.opacity = covered ? 0 : 255;
         this._updateEmptyText();
     }
 
@@ -297,6 +343,18 @@ export const FilesView = GObject.registerClass({
         const dragging = this._dropping && this._helperAvailable;
         this._zone.visible = dragging || this._landed > 0 || this._items.length === 0;
         this._zone.queue_repaint();
+    }
+
+    /** Centres a row shorter than the viewport by padding it evenly; an overflowing row gets none, so it
+     * scrolls from its first tile. */
+    _syncRowPadding() {
+        const room = this._scroller.width;
+        const row = this._tiles.get_preferred_width(-1)[1];
+        const pad = room > 0 && row < room ? Math.floor((room - row) / 2) : 0;
+        if (pad === this._rowPad)
+            return;
+        this._rowPad = pad;
+        this._tiles.style = pad ? `padding-left: ${pad}px; padding-right: ${pad}px;` : null;
     }
 
     /** A tile per file, newest first, in one row, centred while it fits and sideways scrollable past that; a
@@ -334,7 +392,7 @@ export const FilesView = GObject.registerClass({
         else if (dragging && this._dropOver && this._refusal === 'local')
             [title, hint] = ['Only files on this computer', 'Links and files online can’t be kept'];
         else if (dragging && this._dropOver && this._refusal)
-            [title, hint] = ['Too many files', 'The shelf holds twelve at a time'];
+            [title, hint] = ['Too many files', `The shelf holds ${this.capacity} at a time`];
         else if (dragging)
             [title, hint] = [this._dropOver ? 'Release to add it' : 'Drop to add it', 'Then drag it into any app, or click to copy it'];
         this._emptyTitle.text = title;
@@ -453,7 +511,7 @@ export const FilesView = GObject.registerClass({
     _onClicked(item, copied) {
         const now = GLib.get_monotonic_time() / 1000;
         const double = this._lastClick.uri === item.uri &&
-            now - this._lastClick.at < Clutter.Settings.get_default().double_click_time;
+            now - this._lastClick.at < doubleClickMs();
         this._lastClick = {uri: double ? null : item.uri, at: now};
         if (double) {
             Gio.AppInfo.launch_default_for_uri_async(item.uri, global.create_app_launch_context(0, -1), null, null);

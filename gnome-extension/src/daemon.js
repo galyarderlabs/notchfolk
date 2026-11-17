@@ -64,8 +64,10 @@ const INTERFACES = {
             <method name="Remove"><arg name="uri" type="s" direction="in"/></method>
             <method name="Clear"/>
             <method name="Refresh"/>
-            <property name="Items" type="s" access="read"/>`),
-        properties: {Items: 'shelf'},
+            <method name="SetCapacity"><arg name="capacity" type="u" direction="in"/></method>
+            <property name="Items" type="s" access="read"/>
+            <property name="Capacity" type="u" access="read"/>`),
+        properties: {Items: 'shelf', Capacity: 'shelfCapacity'},
     },
     share: {
         xml: node('Share1', `
@@ -223,7 +225,7 @@ const INTERFACES = {
     },
 };
 /** State keys whose property is plain text rather than JSON. */
-const PLAIN = new Set(['updates']);
+const PLAIN = new Set(['updates', 'shelfCapacity']);
 
 // Signals: `changed` (key) when `state[key]` is new; `appeared` (interface), `running-changed` and `assistant-lost`
 // (a request in flight dies) as notchfolkd comes and goes; notchfolkd's own signals, renamed in `_onSignal`.

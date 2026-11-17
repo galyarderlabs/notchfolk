@@ -1293,6 +1293,14 @@
  * window's tiles land on these exactly. */
 .notchfolk-shelf-row { spacing: 6px; }
 
+/* The row scrolls on the wheel alone: no bar is drawn. Shown, it takes ~20px off the row's height the moment
+ * the first layout gives it a range, which dropped the tiles a moment after the tab opened and ran them into
+ * their names. The policy stays AUTOMATIC (the wheel needs it, see `_overList`); only its drawing goes. */
+.notchfolk-shelf-files StScrollBar { min-width: 0; min-height: 0; margin: 0; padding: 0; }
+.notchfolk-shelf-files StScrollBar StButton#hhandle,
+.notchfolk-shelf-files StScrollBar StButton#vhandle,
+.notchfolk-shelf-files StScrollBar StBin#trough { background-color: transparent; border: none; }
+
 .notchfolk-shelf-tile {
   padding: 6px 0;
   border-radius: 14px;

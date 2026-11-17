@@ -40,6 +40,8 @@ const ShelfWindowProxy = Gio.DBusProxy.makeProxyWrapper(`
   <method name="Scale"><arg name="scale" type="i" direction="out"/></method>
   <method name="SetScale"><arg name="scale" type="i" direction="in"/></method>
   <method name="SetDropping"><arg name="dropping" type="b" direction="in"/></method>
+  <method name="SetScroll"><arg name="x" type="i" direction="in"/></method>
+  <method name="SetCapacity"><arg name="capacity" type="i" direction="in"/></method>
   <signal name="Dragging"><arg name="active" type="b"/></signal>
   <signal name="Hovering"><arg name="uris" type="as"/></signal>
   <signal name="Drawn"/>
@@ -133,6 +135,8 @@ export class ShelfHelper extends Signals.EventEmitter {
         this._scaledOwner = null;
         /** Stage pixels per logical one the helper takes, if not `uiScale` (one that can't be set to match). */
         this._unit = null;
+        /** The Shelf's capacity last told to the helper, so a new one hears it too (see `setCapacity`). */
+        this._capacity = null;
         this._cancellable = new Gio.Cancellable();
 
         this._checkAvailable();
@@ -290,6 +294,10 @@ export class ShelfHelper extends Signals.EventEmitter {
             this._scaledOwner = owner;
             this._proxy.SetScaleRemote(this._helperScale, () => {});
         }
+        // The helper keeps its row's offset between shows, and the island's row may have moved meanwhile (or
+        // this helper is new and starts at 0): its offset is handed over before it comes up, so the two match
+        // from the first frame. A helper from before this has no such method; it just does without.
+        this._proxy.SetScrollRemote(Math.round(this._page.filesScrollX / unit), () => {});
         if (this._places)
             this._proxy.PlaceRemote(x, y, width, height, ax, ay, awidth, aheight, shown);
         else if (same(rect, area))
@@ -359,7 +367,9 @@ export class ShelfHelper extends Signals.EventEmitter {
                     if (this._reveal !== reveal || !reveal.framed || !reveal.drawn)
                         return;
                     this._cancelReveal();
-                    // Over the tab's own tiles, the same to the pixel: they stay, whole, until it is in (`helperActive`).
+                    // Over the tab's own tiles, the same to the pixel: they stay, whole, until it is in
+                    // (`helperActive`, set by `_windowIn`). Setting it here would hide them even when the
+                    // window never appears, leaving the tab with nothing drawn at all.
                     actor.ease({
                         opacity: 255,
                         duration: FADE_IN_MS,
@@ -552,6 +562,9 @@ export class ShelfHelper extends Signals.EventEmitter {
     _onOwnerChanged(proxy) {
         if (proxy.g_name_owner) {
             this._saySaves(proxy);
+            // A helper started anew (it quits when idle) hears the capacity again.
+            if (this._capacity !== null)
+                proxy.SetCapacityRemote(this._capacity, () => {});
             // Started again (after a crash, or quitting as the drag began): it must hear of the drag too.
             if (this._dragNear)
                 this._setDropping(true);
@@ -655,6 +668,19 @@ export class ShelfHelper extends Signals.EventEmitter {
     _setDropping(dropping) {
         // A helper from before 0.2 has no such method; it just does without.
         this._proxy?.SetDroppingRemote(dropping, () => {});
+    }
+
+    /** Scrolls the helper's own row to `x` stage pixels, after the tab's row moved here. */
+    scrollTo(x) {
+        const unit = this._unit ?? uiScale();
+        this._proxy?.SetScrollRemote(Math.round(x / unit), () => {});
+    }
+
+    /** Tells the helper how many files the Shelf holds, so its drop refusal agrees with the island's and
+     * notchfolkd's. Kept for a helper started later, which hears it as it comes up. */
+    setCapacity(capacity) {
+        this._capacity = capacity;
+        this._proxy?.SetCapacityRemote(capacity, () => {});
     }
 
     /** Disconnects everything and hides the window. */

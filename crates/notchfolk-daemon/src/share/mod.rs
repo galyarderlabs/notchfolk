@@ -331,6 +331,10 @@ impl Host for BusHost {
         self.shelf.get().await.answering()
     }
 
+    async fn capacity(&self) -> usize {
+        self.shelf.get().await.shelf_capacity()
+    }
+
     async fn shelve(&self, path: PathBuf) -> bool {
         let emitter = self.shelf.signal_emitter();
         self.shelf

@@ -14,6 +14,7 @@ use tokio::net::TcpSocket;
 use super::*;
 use crate::share::net::Lan;
 use crate::share::session::{Limits, PER_ADDRESS};
+use notchfolk_core::shelf::DEFAULT_CAPACITY as CAPACITY;
 
 #[derive(Clone)]
 struct Fake {
@@ -26,6 +27,10 @@ struct Fake {
 impl Host for Fake {
     async fn items(&self) -> Vec<ShelfItem> {
         self.items.lock().unwrap().clone()
+    }
+
+    async fn capacity(&self) -> usize {
+        CAPACITY
     }
 
     async fn shelve(&self, path: PathBuf) -> bool {
