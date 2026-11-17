@@ -16,8 +16,16 @@ clock sits in the middle with what's running beside it — a song, a call, a
 timer. Rest the pointer on it and it springs open into a small panel with
 tabs for each page; pin it open to keep it there while you work elsewhere.
 
+<table>
+<tr>
+<td width="50%" valign="top">
 <img src="docs/images/pill.png" alt="The closed island as a floating pill: avatar, time, mascot, date, signal" width="100%"><br>
+</td>
+<td width="50%" valign="top">
 <img src="docs/images/notch.png" alt="The closed island as a notch attached to the top edge: avatar, time, mascot, date, signal" width="100%"><br>
+</td>
+</tr>
+</table>
 
 </div>
 
