@@ -58,7 +58,8 @@ chime already uses (`play_from_theme`). For our own sounds the player's
 `play(file, app, callback)` plays a bundled file on the event audio stream - no
 daemon, no `pw-play`, no subprocess, no new moving parts. The sound files live in
 the extension's own directory (`gnome-extension/sounds/`), named exactly as the
-table above, in Ogg Vorbis (the format GNOME's theme sounds ship in).
+table above, in WAV (synthesised by Notchfolk's own one-off script, CC0; GStreamer
+plays them as it does the theme's Ogg).
 
 Where a freedesktop sound-theme name fits a moment well (today: none does better
 than our own files), `play_from_theme` is the fallback if a bundled file is

@@ -1,0 +1,6 @@
+The island's six interaction sounds (open, close, tab, click, send, answer) are
+synthesised by Notchfolk itself - sine bursts, sweeps and chimes written as PCM
+in a one-off Python script during development (docs/island-sounds-plan.md). They
+contain no third-party material and are dedicated to the public domain under
+CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/). You may use,
+modify and redistribute them for any purpose, with no attribution required.

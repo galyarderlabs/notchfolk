@@ -15,6 +15,7 @@ import St from 'gi://St';
 
 import {onUiScale, px, uiScale} from './compat.js';
 import * as Theme from './theme.js';
+import {islandSound} from './sounds.js';
 
 let iconDir = null;
 /** Icons by name, made once: a GIcon never changes, and looking for the file is a disk access. */
@@ -202,7 +203,10 @@ export function iconButton(iconName, styleClass, onClick, {size = 16, accessible
         accessible_name: accessibleName,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    button.connect('clicked', () => onClick());
+    button.connect('clicked', () => {
+        islandSound('click');
+        onClick();
+    });
     return button;
 }
 
@@ -244,7 +248,10 @@ export function pillButton(text, styleClass, onClick) {
         can_focus: true,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    button.connect('clicked', () => onClick());
+    button.connect('clicked', () => {
+        islandSound('click');
+        onClick();
+    });
     return button;
 }
 

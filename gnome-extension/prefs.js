@@ -1314,6 +1314,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         alerts.add(eventMinutes);
         alerts.add(switchRow(settings, 'track-peek', 'New song', 'Briefly show the song when the track changes'));
         alerts.add(switchRow(settings, 'lyrics-online', 'Lyrics', 'Look up the playing song’s lyrics on LRCLIB'));
+        alerts.add(switchRow(settings, 'island-sounds', 'Island sounds', 'Soft sounds when the island opens, tabs turn and messages go - one switch for all of them'));
         alerts.add(switchRow(settings, 'chimes', 'Sounds', 'Chime when a focus session or break ends, and for reminders'));
         page.add(alerts);
 

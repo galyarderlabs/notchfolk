@@ -525,6 +525,7 @@ export class Controller {
         }
         const expanded = new ExpandedView(this._daemon, this._privacy, this._call, this._settings, pages);
         expanded.connect('page-changed', () => {
+            islandSound('tab');
             // Picked by hand (a tab) while open; not when opening, nor when a page
             // (the call's) goes away by itself.
             if (this._expandWanted && expanded.pickedByHand)
@@ -2179,6 +2180,7 @@ export class Controller {
         // An action finishing after Notchfolk was turned off.
         if (this._destroying)
             return;
+        islandSound('open');
         this._hasOpened = true;
         // A close still pending (the pointer just left) would shut it again.
         this._cancel('expand');
@@ -2200,6 +2202,7 @@ export class Controller {
 
     /** Closes the open island or the assistant, then shows what waited. */
     collapse() {
+        islandSound('close');
         if (this._destroying)
             return;
         this._cancel('collapse');
@@ -3069,6 +3072,7 @@ export class Controller {
         }
         if (state.phase === 'reply' && state.turn !== this._voiceTurn) {
             this._voiceTurn = state.turn;
+            islandSound('answer');
             runActions(state.actions, this._voiceActions());
             // In the conversation the answer is already in the list: the field is ready for the next word.
             if (this._voice.chatOpen && !state.listen) {
@@ -3099,6 +3103,7 @@ export class Controller {
             return;
         if (state.phase === 'reply' && state.turn !== this._voiceTurn) {
             this._voiceTurn = state.turn;
+            islandSound('answer');
             runActions(state.actions, this._voiceActions());
         } else if (state.phase !== 'error') {
             return;

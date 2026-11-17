@@ -24,6 +24,7 @@ import {answerPlain} from './format.js';
 import {VERTICAL, eventActor, maximize, onUiScale, px, uiScale, unmaximize} from './compat.js';
 import {plainBody} from './notifications.js';
 import {cornerClose, icon, iconButton, label, pillButton, revealClose, wrapLines} from './widgets.js';
+import {islandSound} from './sounds.js';
 
 
 /** Sizes in CSS pixels (see `px`). */
@@ -756,8 +757,10 @@ export const VoiceView = GObject.registerClass({
     /** Sends what was typed, unless it is blank. */
     _send() {
         const text = this._entry.text.trim();
-        if (text)
+        if (text) {
+            islandSound('send');
             this.emit('typed', text);
+        }
     }
 
     // Dim until there is something to send.
