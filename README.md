@@ -118,11 +118,11 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/apps.png" alt="App usage: Ghostty 2h 54m today, then BitChord, Brave Origin and Extensions" width="100%"><br>
+<img src="docs/images/apps.png" alt="App usage: Firefox 1h 36m today, then ChatGPT, Muse and Files" width="100%"><br>
 <b>App usage.</b> Where your time goes: the app in front today, over the last seven days, or the last 30, with its icon, a bar and its time. Off until you turn it on; five idle minutes pause it, locking the screen stops it; kept on this computer for 30 days.
 </td>
 <td width="50%" valign="top">
-<img src="docs/images/glass.png" alt="The conversation in the glass island, the desktop behind it showing through, blurred" width="100%"><br>
+<img src="docs/images/glass.png" alt="App usage in the glass island: Ghostty 2h 54m today, the desktop behind it showing through, blurred" width="100%"><br>
 <b>Glass.</b> The island in clear dark glass instead of black, if you prefer: what is behind it shows through, blurred, as you work. Choose it in Settings → Appearance → Island.
 </td>
 </tr>
