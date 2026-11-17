@@ -8,19 +8,20 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
-### Added
-
-- **Vitals — the machine's own pulse in the island.** A page in the expanded island
-  (CPU ring, temperature colour-coded, memory and disk bars, network rates, battery),
-  and (optionally, off by default) one vital in the closed island beside the wave. The
-  daemon samples the vitals itself every 2 s from `/proc`, `sysfs` and `df` — the
-  sources it already knows — and publishes them over D-Bus as the weather is
-  (issues #104-#109, plan: `docs/vitals-spec.md`).
-
 ## [1.5.0] - 2026-11-13
 
 ### Added
 
+- **Vitals — the machine's own pulse in the island.** A page in the expanded island:
+  the CPU load and the temperature (colour-coded, its band in words) big with the last
+  minute of load drawn as a sparkline between them; each core a bar; the load averages
+  and the process count; memory, swap and disk as bars with their bytes; the network's
+  rates, the battery and the uptime. The daemon samples every vital itself every 2 s
+  from `/proc`, `sysfs` and `df` — uptime, load, processes and the CPU's frequency
+  included — and publishes them over D-Bus as the weather is. The page grows a little
+  above the base height for its content, and (optionally, off by default) one vital
+  rides the closed island beside the wave
+  (issues #104-#109, plan: `docs/vitals-spec.md`). One less extension on the machine.
 - **The world MCP: the Skills domain.** The world knows how to do things: the skill trees on
   the machine (two roots of the user's own configuration), read directly - seven read-only
   tools on the default key's skills:read: the list and the search of the catalogue, a skill
@@ -50,6 +51,39 @@ Isle's changelog from before the fork, kept for reference.
   when one runs long, and keeps the assistant's own click: nothing the mode shows costs the
   assistant its home. Off, paused, or a song without synced lyrics, the closed island is
   exactly what it is without it.
+- **Weather reads in your own unit.** Settings → Weather carries the temperature unit -
+  auto (the locale's own), Celsius or Fahrenheit - and the page, the alert and the closed
+  island follow it (issue #112).
+- **The shelf's Files row scrolls, and its capacity is yours.** A row of files longer
+  than the shelf's width scrolls instead of overflowing, and Settings → Shelf carries
+  how many files the shelf holds - set it free, from a handful to as many as the row
+  can scroll through (PR #117).
+- **The chat's own close.** A conversation open above the pill carries its close in its
+  header - one × where there was none, and never two. A new chat opens in the chat's own
+  layout (the header, the empty list, the entry field as the input), not a small floating
+  field; and the History list carries the conversation going on.
+- **Settings carries the world.** The three MCP domains have their own face in
+  Settings: the scope picker for each (the default key, or a scope of its own) and a
+  switch for every backend, so the world offers only what is turned on and what it can
+  reach.
+- **The Router page tells its own time.** The Today / 24h / 7d periods are the island's own
+  segmented toggle (the Apps page's own shape), the page grows for its content, and the
+  recent requests scroll when they run past the room.
+- **The Prayer page knows the time of day.** The next prayer's card carries the sky it falls
+  in - dawn for Subuh, sun for Dzuhur, afternoon for Ashar, sunset for Maghrib, night for
+  Isya - beside its UP NEXT eyebrow.
+
+- The model row in Settings says it is fetching while the router thinks - no silent
+  wait for a list that is on its way.
+
+### Fixed
+
+- The karaoke line centres in the width its last long line held: a short line after a long
+  one no longer leaves a dead wing between the word and the wave.
+- The vitals and the router pages grow at build time, not only when Large toggles - their
+  content no longer clips at the base height.
+- The new chat's entry field stays in view: the "Started a new chat" note above it is
+  measured with it.
 
 ## [1.4.0] - 2026-11-12
 
