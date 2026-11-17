@@ -47,6 +47,31 @@ Isle's changelog from before the fork, kept for reference.
   when one runs long, and keeps the assistant's own click: nothing the mode shows costs the
   assistant its home. Off, paused, or a song without synced lyrics, the closed island is
   exactly what it is without it.
+- **Weather reads in your own unit.** Settings → Weather carries the temperature unit -
+  auto (the locale's own), Celsius or Fahrenheit - and the page, the alert and the closed
+  island follow it (issue #112).
+- **The shelf's Files row scrolls.** A row of files longer than the shelf's width scrolls
+  instead of overflowing, and Settings → Shelf carries the row's capacity - how many
+  files it holds before the oldest give way (PR #117).
+- **The chat's own close.** A conversation open above the pill carries its close in its
+  header - one × where there was none, and never two. A new chat opens in the chat's own
+  layout (the header, the empty list, the entry field as the input), not a small floating
+  field; and the History list carries the conversation going on.
+- **The Router page tells its own time.** The Today / 24h / 7d periods are the island's own
+  segmented toggle (the Apps page's own shape), the page grows for its content, and the
+  recent requests scroll when they run past the room.
+- **The Prayer page knows the time of day.** The next prayer's card carries the sky it falls
+  in - dawn for Subuh, sun for Dzuhur, afternoon for Ashar, sunset for Maghrib, night for
+  Isya - beside its UP NEXT eyebrow.
+
+### Fixed
+
+- The karaoke line centres in the width its last long line held: a short line after a long
+  one no longer leaves a dead wing between the word and the wave.
+- The vitals and the router pages grow at build time, not only when Large toggles - their
+  content no longer clips at the base height.
+- The new chat's entry field stays in view: the "Started a new chat" note above it is
+  measured with it.
 
 ## [1.4.0] - 2026-11-12
 
