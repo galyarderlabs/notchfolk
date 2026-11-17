@@ -26,6 +26,7 @@ import {Daemon} from './daemon.js';
 import {ShellProxy} from './shellProxy.js';
 import {BOTTOM_PADDING, ExpandedView, PAGE_HEIGHT} from './expanded.js';
 import {Island} from './island.js';
+import {initSounds, islandSound} from './sounds.js';
 import {MirrorIsland} from './mirror.js';
 import {AudioOutputs} from './audio.js';
 import {CallMonitor} from './call.js';
@@ -894,6 +895,10 @@ export class Controller {
             }, this._sharing));
         });
         notifications.connect('dnd-changed', () => this._setCompact('doNotDisturb', notifications.dnd));
+        // The island's own sounds: the gate reads the setting and the DND as they are.
+        initSounds({dir: this._extension.dir.get_child('sounds'),
+            isEnabled: () => this._settings.get_boolean('island-sounds'),
+            isDnd: () => notifications.dnd});
         notifications.connect('changed', () => this._syncUnseen());
         notifications.connect('seen-changed', () => this._syncUnseen());
         this._setCompact('doNotDisturb', notifications.dnd);
