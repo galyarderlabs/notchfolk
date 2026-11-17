@@ -8,7 +8,14 @@ all-features = true
 [advisories]
 # Unmaintained crates are reported for those Notchfolk uses directly, not for everything below them.
 unmaintained = "workspace"
-ignore = []
+ignore = [
+    # chrono is unmaintained (RUSTSEC-2026-0543, chronotope/chrono#1768): not a
+    # security hole - the crate works, it only gets no updates. The daemon uses it
+    # for the calendar, the clock, the prayer times and the app usage; the move to
+    # jiff (the recommended successor) is its own task, tracked in the issue this
+    # ignore points to. Until then, the advisory is known and accepted.
+    "RUSTSEC-2026-0543",
+]
 
 [licenses]
 # All compatible with the GPL version 3 (Apache-2.0 is not with version 2, which Notchfolk does not use).
