@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{debug, info};
-use notchfolk_core::shelf::{CAPACITY, ShelfItem};
+use notchfolk_core::shelf::ShelfItem;
 use serde_json::json;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -46,6 +46,8 @@ const FREE_CHECK_EVERY: u64 = 32 * 1024 * 1024;
 pub trait Host: Clone + Send + Sync + 'static {
     /// The shelf's items, newest first, without those whose check hangs (a network mount gone away).
     fn items(&self) -> impl Future<Output = Vec<ShelfItem>> + Send;
+    /// How many files the shelf can hold.
+    fn capacity(&self) -> impl Future<Output = usize> + Send;
     /// Puts a received file on the shelf; false when it is full.
     fn shelve(&self, path: PathBuf) -> impl Future<Output = bool> + Send;
     /// Changes whenever the shelf does.
@@ -440,7 +442,8 @@ async fn state<H: Host>(
             "view": files::shows_inline(&item.name),
         }));
     }
-    let room = CAPACITY.saturating_sub(items.len() + session.uploading());
+    let capacity = host.capacity().await;
+    let room = capacity.saturating_sub(items.len() + session.uploading());
     Response::json(
         200,
         &json!({
@@ -448,7 +451,7 @@ async fn state<H: Host>(
             "status": status,
             "items": listed,
             "room": room,
-            "capacity": CAPACITY,
+            "capacity": capacity,
             "max_file": session.config.limits.max_file,
             "left": session.room_left(),
         }),
@@ -562,7 +565,8 @@ async fn upload<H: Host>(
         return Answer::refused(507, "disk");
     }
     let shelved = host.items().await.len();
-    let reservation = match session.reserve(length, shelved, CAPACITY, free_space(dir)) {
+    let capacity = host.capacity().await;
+    let reservation = match session.reserve(length, shelved, capacity, free_space(dir)) {
         Ok(reservation) => reservation,
         Err(Refusal::TooBig) => return Answer::refused(413, "too-big"),
         Err(Refusal::SessionFull) => return Answer::refused(413, "session-full"),

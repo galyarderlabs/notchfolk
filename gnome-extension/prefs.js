@@ -1176,6 +1176,13 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         });
         page.add(ignored);
         fillIgnoredApps(ignored, settings);
+
+        const shelf = new Adw.PreferencesGroup({
+            title: 'Shelf',
+            description: 'The files tray kept on the island.',
+        });
+        shelf.add(spinRow(settings, 'shelf-capacity', 'Maximum files', 'How many files the Shelf can hold at once', 6, 64, 1));
+        page.add(shelf);
         return page;
     }
 

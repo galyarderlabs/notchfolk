@@ -593,6 +593,17 @@ export class Controller {
         this._shelfHelper.connect('drag-files', (_helper, uris) => this._shelf.showDragged(uris));
         // ↓ on a file the Shelf keeps itself, from the island's own tile or the helper's.
         this._shelf.connect('save-requested', (_page, uri) => this._saveToDownloads(uri));
+        // The wheel or a touchpad scrolled the Files row here: the helper's window follows.
+        this._shelf.connect('files-scrolled', (_page, x) => this._shelfHelper?.scrollTo(x));
+        // The Shelf's capacity is one number, kept in Settings: notchfolkd enforces it for every way a file
+        // comes in, and the helper's window refuses drops by it too.
+        const syncCapacity = () => {
+            const capacity = this._settings.get_int('shelf-capacity');
+            this._daemon.call('shelf', 'SetCapacity', capacity);
+            this._shelfHelper?.setCapacity(capacity);
+        };
+        syncCapacity();
+        this._settings.connect('changed::shelf-capacity', syncCapacity);
         this._shelfHelper.connect('save', (_helper, uri) => this._saveToDownloads(uri));
         this._shelfHelper.connect('drag-end', (_helper, onShelf = false) => {
             // A full shelf turns the file away: the island shakes its head.
