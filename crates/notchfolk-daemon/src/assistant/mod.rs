@@ -1330,6 +1330,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
     session.provider = Provider::from_id(&talk.chat.provider);
     session.conversation = Some(talk.chat.conversation.clone()).filter(|id| !id.is_empty());
     show_history(&iface, &talk.chat).await;
+    show_archived(&iface, &talk.chat).await;
     new_day(&mut session, &mut pruned);
     // The ids of the commands followed until they end and are told (see `Command::Settled`).
     let mut following = HashSet::new();
@@ -1363,6 +1364,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 _ = crate::clock::wait_until(check_at, &never) => {
                     if talk.end_if_over(&mut session, keep) {
                         show_history(&iface, &talk.chat).await;
+                        show_archived(&iface, &talk.chat).await;
                     }
                     new_day(&mut session, &mut pruned);
                     continue;
@@ -1387,6 +1389,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 keep = Keep::parse(&context.keep_chat);
                 if talk.end_if_over(&mut session, keep) {
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 session.resume(today());
                 session.adopt(*context);
@@ -1410,6 +1413,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 keep = Keep::parse(&context.keep_chat);
                 if talk.end_if_over(&mut session, keep) {
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 session.resume(today());
                 session.adopt(*context);
@@ -1431,6 +1435,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 keep = Keep::parse(&context.keep_chat);
                 if talk.end_if_over(&mut session, keep) {
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 session.resume(today());
                 session.adopt(*context);
@@ -1468,6 +1473,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 session.turns = 0;
                 talk.store.remove();
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 None
             }
             Command::UndoNewChat => {
@@ -1480,6 +1486,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                     talk.chat = old;
                     talk.save(&session);
                     show_history(&iface, &talk.chat).await;
+                    show_archived(&iface, &talk.chat).await;
                 }
                 None
             }
@@ -1515,6 +1522,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 tasks::forget(&task);
                 tasks::clean(&task);
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 // The alert says it in a line; why is in the chat, which a click on it opens (the
                 // shortcut may be another, or none).
                 let said = if status == "failed" {
@@ -1534,6 +1542,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                 }
                 talk.archive(&mut session);
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 None
             }
             Command::ResumeChat(timestamp) => {
@@ -1552,6 +1561,7 @@ pub async fn run(iface: InterfaceRef<AssistantService>, data: Sources, mut comma
                     talk.save(&session);
                 }
                 show_history(&iface, &talk.chat).await;
+                show_archived(&iface, &talk.chat).await;
                 None
             }
             Command::End => {
