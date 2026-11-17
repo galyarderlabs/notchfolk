@@ -5,7 +5,8 @@ What is kept where, and what leaves your computer. Also see [SECURITY.md](../SEC
 ## Data & network
 
 Notchfolk has no Notchfolk-operated server and no telemetry; your clipboard history, reminders,
-events, timer, app usage and the assistant's chats stay in `~/.local/share/notchfolk`, and
+events, timer, app usage, the assistant's chats and the machine's vitals (sampled from
+`/proc`, `sysfs` and `df` every 2 s, kept on this computer only) stay in `~/.local/share/notchfolk`, and
 speech is recognised on this computer. It goes online only for synced lyrics
 ([LRCLIB](https://lrclib.net)) and cover art, once per song (lyrics can be
 turned off in Settings); your Claude plan's usage (`api.anthropic.com`, with

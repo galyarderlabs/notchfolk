@@ -40,7 +40,7 @@ Click the gear right of the clock in the open island (or Notchfolk's gear in the
 - **Island:** Notchfolk's own black island, or Glass, clear dark glass that shows what
   is behind it (windows and wallpaper) blurred, with a slider from clear to dark smoked glass; the top bar on a slider from glass (default) to black, and black anyway while a window reaches it (off by default);
   a little space below the island inside the bar (on by default); auto-hide (always, with a top bar that hides, or beside maximized windows; off by default); a 24- or 12-hour clock (or as GNOME's); privacy dots; which pages the open island has (Music,
-  Notifications, Timer, Reminders, Shelf, Calendar, Apps, AI Usage) and whether it
+  Notifications, Timer, Reminders, Shelf, Calendar, Apps, AI Usage, Vitals) and whether it
   has the AI assistant at all; world clocks, and their cities;
   the closed island inside the bar or hanging below it; with more than one
   display, on the main one or the one you are using; opening when the
@@ -51,10 +51,17 @@ Click the gear right of the clock in the open island (or Notchfolk's gear in the
   a reminder before calendar events, and how many minutes before.
   Alerts other than a low battery are not shown while Do Not Disturb is on.
 - **Calls:** show calls in the island, and the live preview of the call.
+- **Weather:** the city, or following the GNOME World Clock nearest your time
+  zone; the temperature's unit — auto, Celsius or Fahrenheit.
 - **Clipboard:** turn the history on or off, clear it, what Super+V opens (the
   clipboard history, or GNOME's calendar), and choose apps whose copies are never
   kept (password managers are on the list from the start).
+- **Shelf:** how many files the files tray holds — as many as you like; a long
+  row scrolls.
 - **Timer:** session and break lengths, Do Not Disturb while focusing.
+- **Vitals:** the page on or off, which vital rides the closed island beside the
+  wave (none by default), and the temperature's unit — auto (the locale's own),
+  Celsius or Fahrenheit.
 - **Assistant:** the bot's look (shape, colour, glow, with a live
   preview); the assistant on or off, its shortcut, which AI answers and with
   which model (only those your plan includes, with your plan's name), speech recognition, language, and whether it may use the text

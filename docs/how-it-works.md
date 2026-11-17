@@ -34,6 +34,11 @@ else lives in Rust behind a D-Bus API.
 | `docs/product-spec.md` | How the island looks and behaves: sizes, motion, pages, alerts. |
 | `docs/dbus-api.md` | The D-Bus interfaces of `notchfolkd` and `notchfolk-shelf`. |
 
+The daemon also samples the machine's vitals every 2 s from `/proc`, `sysfs` and
+`df` — CPU, memory, swap, temperature, network, disk, battery, uptime, load,
+processes, the CPU's frequency — and publishes them over D-Bus as it does the
+weather; the Vitals page and (optionally) the closed island's own vital read them.
+
 ## Resource usage
 
 Notchfolk is built to run all day unnoticed. Measured on Ubuntu 24.04 with

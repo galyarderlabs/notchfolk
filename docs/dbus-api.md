@@ -276,6 +276,17 @@ Every method is GNOME Shell's: the history names every app the user ran.
 | `GetStats() → s` | | `{today: [{id, name, ms}], week: [{id, name, ms}], month: [{id, name, ms}]}`, most used first; `week` is the last seven days including today, and `month` the last 30 (all that is kept). |
 | `Clear()` | | Forgets every day. |
 
+
+## io.galyarderlabs.notchfolk.Vitals1
+
+The machine's vitals, sampled every 2 s from `/proc`, `sysfs` and `df` — uptime,
+load, processes and the CPU's frequency included — published as the weather is.
+
+| Member | Type | Description |
+|---|---|---|
+| `Vitals` | property `s` | JSON `Vitals`: `{cpu_percent, cpu_cores[], memory_used_bytes, memory_total_bytes, swap_used_bytes, swap_total_bytes, temperature_c, network_down_bytes_per_s, network_up_bytes_per_s, disk_used_bytes, disk_total_bytes, uptime_seconds, load_1, load_5, load_15, process_count, cpu_frequency_mhz}`. |
+| `VitalsChanged` | signal | Emitted when a sample differs from the one before it. |
+
 ## io.galyarderlabs.notchfolk.Assistant1
 
 The voice assistant. notchfolkd records the microphone, turns speech into text
