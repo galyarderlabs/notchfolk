@@ -107,7 +107,7 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 </tr>
 <tr>
 <td width="50%" valign="top">
-<img src="docs/images/apps.png" alt="App usage: Firefox 1h 36m today, then ChatGPT, Muse and Files" width="100%"><br>
+<img src="docs/images/apps.png" alt="App usage: Ghostty 2h 54m today, then BitChord, Brave Origin and Extensions" width="100%"><br>
 <b>App usage.</b> Where your time goes: the app in front today, over the last seven days, or the last 30, with its icon, a bar and its time. Off until you turn it on; five idle minutes pause it, locking the screen stops it; kept on this computer for 30 days.
 </td>
 <td width="50%" valign="top">
