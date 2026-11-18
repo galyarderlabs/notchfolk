@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+[package]
+name = "notchfolk-terminal"
+description = "Notch-anchored terminal with independent live shell tabs for GNOME"
+version.workspace = true
+edition.workspace = true
+# Required by gtk-rs 0.11.
+rust-version = "1.92"
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+gtk4.workspace = true
+glib-unix = "0.22"
+libc.workspace = true
+vte4 = "0.10"

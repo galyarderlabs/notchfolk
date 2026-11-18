@@ -4,17 +4,18 @@ members = [
     "crates/notchfolk-core",
     "crates/notchfolk-daemon",
     "crates/notchfolk-shelf",
+    "crates/notchfolk-terminal",
     "crates/notchfolk-whisper",
 ]
-# notchfolk-shelf needs the GTK 4 development files, and notchfolk-whisper cmake, a C++
-# compiler, libclang and (for the GPU) the Vulkan headers and glslc, so they
-# are only built when asked for: `cargo build -p notchfolk-shelf -p notchfolk-whisper`.
+# The GTK helpers need GTK 4 development files (the terminal also needs VTE 4).
+# notchfolk-whisper needs cmake, a C++ compiler, libclang and, for the GPU, Vulkan
+# headers and glslc. Build these optional helpers explicitly with `cargo build -p <helper>`.
 default-members = ["crates/notchfolk-core", "crates/notchfolk-daemon"]
 
 [workspace.package]
 version = "1.5.0"
 edition = "2024"
-# notchfolk-core and notchfolkd use let chains (1.88); notchfolk-shelf sets its own, for gtk-rs.
+# notchfolk-core and notchfolkd use let chains (1.88); GTK helpers set their own minimum for gtk-rs.
 rust-version = "1.88"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/galyarderlabs/notchfolk"
@@ -66,8 +67,8 @@ lto = "fat"
 codegen-units = 1
 strip = true
 
-# The service and the shelf are small and mostly wait: built for size. notchfolk-whisper keeps
-# full speed for transcribing.
+# The service and GTK helpers are small and mostly wait: built for size.
+# notchfolk-whisper keeps full speed for transcribing.
 [profile.release.package.notchfolk-daemon]
 opt-level = "s"
 
@@ -75,6 +76,9 @@ opt-level = "s"
 opt-level = "s"
 
 [profile.release.package.notchfolk-shelf]
+opt-level = "s"
+
+[profile.release.package.notchfolk-terminal]
 opt-level = "s"
 
 # Their libraries too (zbus, tokio, image, ureq...): less code for notchfolkd to hold in memory. Not

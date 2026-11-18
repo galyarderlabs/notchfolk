@@ -1,0 +1,180 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* Shell supplies the page header; GSK clips the native terminal card. */
+window.termi-notch,
+.termi-notch .terminal-body {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.termi-notch label {
+    color: #d8d8d8;
+}
+
+.termi-notch .terminal-header {
+    margin: 4px 12px 2px;
+    padding: 3px 8px;
+    background: #171717;
+    border: none;
+    border-radius: 10px;
+}
+
+.termi-notch .terminal-cwd {
+    font-size: 11px;
+    color: #9c9c9c;
+    margin-right: 8px;
+}
+
+.termi-notch button,
+.terminal-menu button {
+    min-width: 24px;
+    min-height: 24px;
+    padding: 2px;
+    background: transparent;
+    background-image: none;
+    color: #a9a9a9;
+    border: none;
+    border-radius: 6px;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.termi-notch button image {
+    -gtk-icon-size: 14px;
+}
+
+.termi-notch button:hover,
+.terminal-menu button:hover {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+
+.termi-notch button:active,
+.terminal-menu button:active {
+    background: #303030;
+}
+
+.termi-notch button:disabled,
+.terminal-menu button:disabled {
+    background: transparent;
+    color: #505050;
+}
+
+.termi-notch button:focus-visible,
+.terminal-menu button:focus-visible {
+    outline: 2px solid #dddddd;
+    outline-offset: -2px;
+}
+
+.termi-notch .terminal-message {
+    padding: 6px 14px;
+    background: #151515;
+}
+
+.termi-notch notebook,
+.termi-notch notebook > stack {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.termi-notch notebook > header {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0 8px 2px;
+}
+
+.termi-notch notebook > header tab {
+    min-height: 24px;
+    margin: 0;
+    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.termi-notch notebook > header tab:checked {
+    background: #181818;
+}
+
+.termi-notch .terminal-tab label {
+    font-size: 11px;
+    color: #929292;
+}
+
+.termi-notch notebook > header tab:checked label {
+    color: #e0e0e0;
+}
+
+.termi-notch button.tab-close {
+    min-width: 20px;
+    min-height: 20px;
+    padding: 0;
+}
+
+.termi-notch notebook > header > tabs > arrow {
+    min-width: 20px;
+    min-height: 20px;
+    background: transparent;
+    color: #a9a9a9;
+    border: none;
+}
+
+.terminal-menu > contents {
+    background: #101010;
+    color: #dedede;
+    border: 1px solid #303030;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.terminal-menu label {
+    color: #dedede;
+}
+
+.terminal-menu button {
+    padding: 6px 10px;
+}
+
+.termi-notch .terminal-footer {
+    padding: 6px 12px 10px;
+    background: transparent;
+}
+
+.termi-notch .terminal-handoff > button {
+    min-height: 24px;
+    padding: 4px 14px;
+    background: #242424;
+    border: 1px solid #343434;
+    border-radius: 999px;
+    color: #d8d8d8;
+}
+
+.termi-notch .terminal-handoff label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #dedede;
+}
+
+.termi-notch .terminal-handoff > button:hover {
+    background: #303030;
+    border-color: #454545;
+}
+
+.termi-notch .terminal-handoff > button:active {
+    background: #3a3a3a;
+}
+
+.termi-notch .terminal-handoff > button:disabled {
+    background: #171717;
+    border-color: #262626;
+    color: #626262;
+}
+
+.termi-notch .terminal-handoff:disabled label {
+    color: #626262;
+}
