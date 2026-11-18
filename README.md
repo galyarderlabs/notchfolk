@@ -33,8 +33,8 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 
 <table>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/music.png" alt="Music page: Merry Christmas, Please Don't Call by Bleachers at 0:15, with Karaoke" width="100%"><br>
+<td valign="top">
+<img src="docs/images/music.png" alt="Music page: Merry Christmas, Please Don't Call by Bleachers at 0:15, with Karaoke" width="640"><br>
 <b>Music.</b><br>
 Your music in the island — cover, scrubber and controls.<br>
 <table>
@@ -45,8 +45,10 @@ Your music in the island — cover, scrubber and controls.<br>
 <tr><td>Click the other player's icon</td><td>Switch players, with two music players running</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/lyrics.png" alt="Synced lyrics: the line being sung large and bright, Little Dark Age by MGMT" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/lyrics.png" alt="Synced lyrics: the line being sung large and bright, Little Dark Age by MGMT" width="640"><br>
 <b>Synced lyrics.</b><br>
 The line being sung, large and bright.<br>
 <table>
@@ -58,8 +60,8 @@ The line being sung, large and bright.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/call.png" alt="A Telegram voice call in the island: 0:08, with Mute and Open" width="100%"><br>
+<td valign="top">
+<img src="docs/images/call.png" alt="A Telegram voice call in the island: 0:08, with Mute and Open" width="640"><br>
 <b>Calls.</b><br>
 Your calls in the island.<br>
 <table>
@@ -69,8 +71,10 @@ Your calls in the island.<br>
 <tr><td>Right-click the notch</td><td>Bring the call to the front</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/timer.png" alt="Timer page: the ring at 40:42, Work 60 and Break 15, with Pause" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/timer.png" alt="Timer page: the ring at 40:42, Work 60 and Break 15, with Pause" width="640"><br>
 <b>Timer.</b><br>
 A Pomodoro timer with breaks and Do Not Disturb while you focus.<br>
 <table>
@@ -82,8 +86,8 @@ A Pomodoro timer with breaks and Do Not Disturb while you focus.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/reminders.png" alt="Reminders page: 1/1 tasks completed, with a checked task" width="100%"><br>
+<td valign="top">
+<img src="docs/images/reminders.png" alt="Reminders page: 1/1 tasks completed, with a checked task" width="640"><br>
 <b>Reminders.</b><br>
 Tasks that clear themselves at midnight.<br>
 <table>
@@ -93,14 +97,16 @@ Tasks that clear themselves at midnight.<br>
 <tr><td>Tick a task</td><td>Finish it — done ones clear at midnight</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/clipboard.png" alt="Shelf: clipboard history of images, with their sizes" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/clipboard.png" alt="Shelf: clipboard history of images, with their sizes" width="640"><br>
 Clipboard history<br>
-<img src="docs/images/files.png" alt="The files tray: 13 of 14 files, click to copy or drag into any app" width="100%"><br>
+<img src="docs/images/files.png" alt="The files tray: 13 of 14 files, click to copy or drag into any app" width="640"><br>
 Files tray<br>
-<img src="docs/images/phone.png" alt="Shelf on your phone: scan the QR code to access the shelf files" width="100%"><br>
+<img src="docs/images/phone.png" alt="Shelf on your phone: scan the QR code to access the shelf files" width="640"><br>
 Shelf on your phone<br>
-<img src="docs/images/devices.png" alt="Devices: galyarder connected via GSConnect, battery 50%, not charging, with Ring phone and Send clipboard" width="100%"><br>
+<img src="docs/images/devices.png" alt="Devices: galyarder connected via GSConnect, battery 50%, not charging, with Ring phone and Send clipboard" width="640"><br>
 Devices<br>
 <b>Shelf.</b><br>
 Clipboard, files and your phone, in the island.<br>
@@ -116,8 +122,8 @@ Clipboard, files and your phone, in the island.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/weather.png" alt="Weather page: Bogor conditions, hourly temperature chart, five-day forecast and a recent earthquake" width="100%"><br>
+<td valign="top">
+<img src="docs/images/weather.png" alt="Weather page: Bogor conditions, hourly temperature chart, five-day forecast and a recent earthquake" width="640"><br>
 <b>Weather.</b><br>
 Your city's weather and the week ahead.<br>
 <table>
@@ -128,8 +134,10 @@ Your city's weather and the week ahead.<br>
 <tr><td>Look for earthquakes</td><td>Nearby ones from BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="640"><br>
 <b>Calendar.</b><br>
 The month beside the chosen day's events.<br>
 <table>
@@ -142,8 +150,8 @@ The month beside the chosen day's events.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/notifications.png" alt="Notifications: a Telegram notification, with Clear" width="100%"><br>
+<td valign="top">
+<img src="docs/images/notifications.png" alt="Notifications: a Telegram notification, with Clear" width="640"><br>
 <b>Notifications.</b><br>
 GNOME's notifications as a plain list.<br>
 <table>
@@ -155,8 +163,10 @@ GNOME's notifications as a plain list.<br>
 <tr><td>Right-click the notch</td><td>Put an alert away</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/voice.png" alt="Voice assistant: the island asking “How can I help?”, with History" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/voice.png" alt="Voice assistant: the island asking “How can I help?”, with History" width="441"><br>
 <b>Voice assistant.</b><br>
 Press Super+I and ask, in English or Indonesian.<br>
 <table>
@@ -170,8 +180,8 @@ Press Super+I and ask, in English or Indonesian.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/command.png" alt="The install command running: sudo pacman -S --needed vlc, asking to proceed" width="100%"><br>
+<td valign="top">
+<img src="docs/images/command.png" alt="The install command running: sudo pacman -S --needed vlc, asking to proceed" width="640"><br>
 <b>Installs and fixes things.</b><br>
 Ask it to install or fix something on your Linux.<br>
 <table>
@@ -182,10 +192,12 @@ Ask it to install or fix something on your Linux.<br>
 <tr><td>Wait for the answer</td><td>The assistant checks it worked before saying so</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/conversation.png" alt="Chatting with the AI: it remembers the unfinished filmcraft build after four hours" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/conversation.png" alt="Chatting with the AI: it remembers the unfinished filmcraft build after four hours" width="640"><br>
 Conversation<br>
-<img src="docs/images/chat-history.png" alt="Chat history: past conversations with their message counts, New chat and Conversation" width="100%"><br>
+<img src="docs/images/chat-history.png" alt="Chat history: past conversations with their message counts, New chat and Conversation" width="640"><br>
 Chat history<br>
 <b>Speak or type, and talk it through.</b><br>
 The conversation is the chat itself.<br>
@@ -198,8 +210,8 @@ The conversation is the chat itself.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/bot-looks.png" alt="The bot in eight shapes and several colours, with matching glows" width="100%"><br>
+<td valign="top">
+<img src="docs/images/bot-looks.png" alt="The bot in eight shapes and several colours, with matching glows" width="640"><br>
 <b>A bot of your own.</b><br>
 Eight shapes, eleven colours, one glow to match.<br>
 <table>
@@ -209,8 +221,10 @@ Eight shapes, eleven colours, one glow to match.<br>
 <tr><td>Open the live preview</td><td>See the bot before you pick it</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/usage.png" alt="AI usage: Claude Max, 5 hours 42% (resets in 2h 18m), Week 18% (resets in 4d)" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/usage.png" alt="AI usage: Claude Max, 5 hours 42% (resets in 2h 18m), Week 18% (resets in 4d)" width="640"><br>
 <b>AI usage.</b><br>
 How much of your Claude and ChatGPT plan limits is used.<br>
 <table>
@@ -223,8 +237,8 @@ How much of your Claude and ChatGPT plan limits is used.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/prayer-alert.png" alt="Prayer alert: Dzuhur, it's time to pray in Bogor, 11:36" width="100%"><br>
+<td valign="top">
+<img src="docs/images/prayer-alert.png" alt="Prayer alert: Dzuhur, it's time to pray in Bogor, 11:36" width="640"><br>
 <b>Alerts.</b><br>
 Everything that needs you, in one place instead of the middle of the screen.<br>
 <table>
@@ -235,8 +249,10 @@ Everything that needs you, in one place instead of the middle of the screen.<br>
 <tr><td>Switch each alert on or off in Settings</td><td>Only those alerts show</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/approvals.png" alt="Notchfolk wants to run sudo pacman -S --needed vlc, with Deny and Run" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/approvals.png" alt="Notchfolk wants to run sudo pacman -S --needed vlc, with Deny and Run" width="581"><br>
 <b>AI agents.</b><br>
 Answer agent permission requests from the island.<br>
 <table>
@@ -250,8 +266,8 @@ Answer agent permission requests from the island.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/apps.png" alt="App usage: Firefox 1h 36m today, then ChatGPT, Muse and Files" width="100%"><br>
+<td valign="top">
+<img src="docs/images/apps.png" alt="App usage: Firefox 1h 36m today, then ChatGPT, Muse and Files" width="640"><br>
 <b>App usage.</b><br>
 Where your time goes.<br>
 <table>
@@ -262,8 +278,10 @@ Where your time goes.<br>
 <tr><td>Look back later</td><td>Kept on this computer for 30 days</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/glass.png" alt="App usage in the glass island: Ghostty 2h 54m today, the desktop behind it showing through, blurred" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/glass.png" alt="App usage in the glass island: Ghostty 2h 54m today, the desktop behind it showing through, blurred" width="640"><br>
 <b>Glass.</b><br>
 The island in clear dark glass instead of black, if you prefer.<br>
 <table>
@@ -274,8 +292,8 @@ The island in clear dark glass instead of black, if you prefer.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/vitals.png" alt="Vitals page: CPU load with its sparkline, temperature, cores, memory and disk bars, network and uptime" width="100%"><br>
+<td valign="top">
+<img src="docs/images/vitals.png" alt="Vitals page: CPU load with its sparkline, temperature, cores, memory and disk bars, network and uptime" width="640"><br>
 <b>Vitals.</b><br>
 The machine's own pulse in the island.<br>
 <table>
@@ -286,8 +304,10 @@ The machine's own pulse in the island.<br>
 <tr><td>Set the temperature's unit</td><td>Auto, Celsius or Fahrenheit</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/karaoke.png" alt="Karaoke in the closed island: the line being sung centred between the cover and the wave" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/karaoke.png" alt="Karaoke in the closed island: the line being sung centred between the cover and the wave" width="563"><br>
 <b>Karaoke.</b><br>
 The line being sung, in the closed island.<br>
 <table>
@@ -298,10 +318,10 @@ The line being sung, in the closed island.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/router.png" alt="Router: 7,349 requests, 643.8M / 4.8M tokens, $54.53 estimated cost, connected" width="100%"><br>
+<td valign="top">
+<img src="docs/images/router.png" alt="Router: 7,349 requests, 643.8M / 4.8M tokens, $54.53 estimated cost, connected" width="640"><br>
 Router<br>
-<img src="docs/images/router-settings.png" alt="Router settings: Remote connection to router.niyatna.com, Compatible proxy API key saved in GNOME Keyring, Last 7 days period, Show on the notch on, connected" width="100%"><br>
+<img src="docs/images/router-settings.png" alt="Router settings: Remote connection to router.niyatna.com, Compatible proxy API key saved in GNOME Keyring, Last 7 days period, Show on the notch on, connected" width="554"><br>
 Router settings<br>
 <b>Router.</b><br>
 What your AI gateway reports.<br>
@@ -312,12 +332,14 @@ What your AI gateway reports.<br>
 <tr><td>Turn on Show on the notch</td><td>Router stats ride the closed island</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/calories.png" alt="Calories: today's intake 650 of 2,000 kcal, with a meal logged" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/calories.png" alt="Calories: today's intake 650 of 2,000 kcal, with a meal logged" width="640"><br>
 Calories<br>
-<img src="docs/images/water.png" alt="Water: 0.8 of 2.0 L today, with the intake chart" width="100%"><br>
+<img src="docs/images/water.png" alt="Water: 0.8 of 2.0 L today, with the intake chart" width="640"><br>
 Water<br>
-<img src="docs/images/prayer.png" alt="Prayer: Isya next at 19:04 in 42 minutes, with the day's prayer times on a sun arc" width="100%"><br>
+<img src="docs/images/prayer.png" alt="Prayer: Isya next at 19:04 in 42 minutes, with the day's prayer times on a sun arc" width="640"><br>
 Prayer<br>
 <b>Everyday tools.</b><br>
 Water, calories and prayer times.<br>
@@ -329,12 +351,12 @@ Water, calories and prayer times.<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
-<img src="docs/images/mcp-settings.png" alt="MCP settings: External AI agents, service running on 127.0.0.1:8765/mcp, client key folky with write scopes" width="100%"><br>
+<td valign="top">
+<img src="docs/images/mcp-settings.png" alt="MCP settings: External AI agents, service running on 127.0.0.1:8765/mcp, client key folky with write scopes" width="554"><br>
 MCP settings<br>
-<img src="docs/images/mcp-access-remote.png" alt="MCP settings: Access scopes with Read access and Write actions off, Remote access via Cloudflare Tunnel with public hostname" width="100%"><br>
+<img src="docs/images/mcp-access-remote.png" alt="MCP settings: Access scopes with Read access and Write actions off, Remote access via Cloudflare Tunnel with public hostname" width="558"><br>
 MCP access<br>
-<img src="docs/images/mcp-world.png" alt="The world: camofox browser backend, CDP port 9222, Hindsight endpoint, skill trees, OfficeCLI path" width="100%"><br>
+<img src="docs/images/mcp-world.png" alt="The world: camofox browser backend, CDP port 9222, Hindsight endpoint, skill trees, OfficeCLI path" width="558"><br>
 The world<br>
 <b>MCP server.</b><br>
 An optional MCP server for agents outside Notchfolk.<br>
@@ -347,12 +369,14 @@ An optional MCP server for agents outside Notchfolk.<br>
 <tr><td>Run without a backend</td><td>A domain whose backend is absent is not offered at all</td></tr>
 </table>
 </td>
-<td width="50%" valign="top">
-<img src="docs/images/more-ais.png" alt="The AI picker: OpenAI-compatible API selected, with the provider list open — Automatic, Claude Code, Codex, Hermes Agent, Oh My Pi, opencode, Antigravity" width="100%"><br>
+</tr>
+<tr>
+<td valign="top">
+<img src="docs/images/more-ais.png" alt="The AI picker: OpenAI-compatible API selected, with the provider list open — Automatic, Claude Code, Codex, Hermes Agent, Oh My Pi, opencode, Antigravity" width="599"><br>
 The AI picker<br>
-<img src="docs/images/more-ais-compatible.png" alt="OpenAI-compatible API selected, with model claude-mythos-5" width="100%"><br>
+<img src="docs/images/more-ais-compatible.png" alt="OpenAI-compatible API selected, with model claude-mythos-5" width="562"><br>
 OpenAI-compatible API<br>
-<img src="docs/images/more-ais-hermes.png" alt="Hermes Agent selected, with its endpoint at 100.85.83.76:8642/v1" width="100%"><br>
+<img src="docs/images/more-ais-hermes.png" alt="Hermes Agent selected, with its endpoint at 100.85.83.76:8642/v1" width="554"><br>
 Hermes Agent<br>
 <b>More AIs.</b><br>
 More AIs for the assistant.<br>
