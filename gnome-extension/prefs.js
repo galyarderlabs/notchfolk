@@ -706,7 +706,8 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
 
         // Automatic is the first signed in, else the first installed: as notchfolkd picks (brain.rs `pick`).
         const automatic = installed.find(p => signedIn(p.id)) ?? installed[0];
-        // Only the AIs installed here are offered; with none, the assistant says how to get one.
+        // Only the AIs installed here are offered — except OpenAI-compatible, which is always
+        // offered because its endpoint is set up in Settings; with none, the assistant says how to get one.
         const provider = choiceRow(settings, 'voice-provider', 'AI', installed.length
             ? 'Answers with your own sign-in; Notchfolk runs its actions'
             : 'Install an assistant CLI, enable Hermes API, or configure an OpenAI-compatible endpoint', [
@@ -2232,7 +2233,9 @@ const AI_PROVIDERS = [
         about: 'Hermes keeps its own personality and memory; Notchfolk adds its desktop instructions. A Hermes elsewhere: its endpoint and key below',
         models: async () => [['', 'Hermes default'], ...await modelList('hermes')]},
     {id: 'openai-compatible', name: 'OpenAI-compatible API', command: '', modelKey: 'voice-openai-model',
-        available: () => signedIn('openai-compatible'), about: 'The endpoint base URL and its API key, set in the rows below',
+        // Always offered: its endpoint and key are set up in the rows below, which write
+        // ai.env — gating on signed-in hid it from anyone who had not set it up yet (#120).
+        available: () => true, about: 'The endpoint base URL and its API key, set in the rows below',
         models: () => modelList('openai-compatible')},
     {id: 'oh-my-pi', name: 'Oh My Pi', command: 'omp', modelKey: 'voice-omp-model',
         about: 'Oh My Pi coding agent, with its own provider settings and Notchfolk desktop actions',
