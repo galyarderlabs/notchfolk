@@ -35,132 +35,332 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/music.png" alt="Music page: Merry Christmas, Please Don't Call by Bleachers at 0:15, with Karaoke" width="100%"><br>
-<b>Music.</b> Spotify, YouTube in your browser, or any MPRIS player: cover, scrubber and controls, with the playing app's icon on the cover. Volume and output switching one click away.
+<b>Music.</b><br>
+Your music in the island — cover, scrubber and controls.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Play from Spotify, YouTube in your browser, or any MPRIS player</td><td>Cover, scrubber and controls, with the playing app's icon on the cover</td></tr>
+<tr><td>Middle-click the notch</td><td>Play or pause</td></tr>
+<tr><td>Right-click the notch</td><td>Bring the music player to the front</td></tr>
+<tr><td>Click the other player's icon</td><td>Switch players, with two music players running</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/lyrics.png" alt="Synced lyrics: the line being sung large and bright, Little Dark Age by MGMT" width="100%"><br>
-<b>Synced lyrics</b> from <a href="https://lrclib.net">LRCLIB</a>: the line being sung large and bright, pauses as breathing dots; click a line to jump. The island widens and takes the cover's colour.
+<b>Synced lyrics.</b><br>
+The line being sung, large and bright.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Turn on lyrics online</td><td>Lyrics load from LRCLIB while songs play</td></tr>
+<tr><td>Click a line</td><td>Jump to it</td></tr>
+<tr><td>Play a song LRCLIB does not know</td><td>Shows "No lyrics found"</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/call.png" alt="A Telegram voice call in the island: 0:08, with Mute and Open" width="100%"><br>
-<b>Calls</b> in WhatsApp, Telegram, Zoom, Meet and other call apps, or call pages in a browser: a green phone in the closed island, the call's length on the Call page. Open it to watch live while you work elsewhere, mute, or jump back to the call.
+<b>Calls.</b><br>
+Your calls in the island.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Take a call in WhatsApp, Telegram, Zoom, Meet or a browser call page</td><td>A green phone in the closed island, the call's length on the Call page</td></tr>
+<tr><td>Open the call</td><td>Watch it live while you work elsewhere, mute, or jump back to the call</td></tr>
+<tr><td>Right-click the notch</td><td>Bring the call to the front</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/timer.png" alt="Timer page: the ring at 40:42, Work 60 and Break 15, with Pause" width="100%"><br>
-<b>Timer.</b> A Pomodoro timer with breaks and Do Not Disturb while you focus: a ring with the time left, work and break lengths to type or step with − and + (locked from Start until Reset). Its time left stays in the closed island; beside a song or a call it shows as a small ring.
+<b>Timer.</b><br>
+A Pomodoro timer with breaks and Do Not Disturb while you focus.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Type or step with − and +</td><td>Set the work and break lengths (locked from Start until Reset)</td></tr>
+<tr><td>Press Start</td><td>The timer runs; Do Not Disturb stays on while you focus</td></tr>
+<tr><td>Glance at the closed island</td><td>The time left stays there; beside a song or a call it shows as a small ring</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/reminders.png" alt="Reminders page: 1/1 tasks completed, with a checked task" width="100%"><br>
-<b>Reminders</b>, with the number still open beside the list: add tasks, rename in place, tick to finish — done ones clear at midnight. A long title wraps as far as it needs.
+<b>Reminders.</b><br>
+Tasks that clear themselves at midnight.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Add a task</td><td>It joins the list, with the number still open beside it</td></tr>
+<tr><td>Rename in place</td><td>Change a task's title</td></tr>
+<tr><td>Tick a task</td><td>Finish it — done ones clear at midnight</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/clipboard.png" alt="Shelf: clipboard history of images, with their sizes" width="100%"><br>
+Clipboard history<br>
 <img src="docs/images/files.png" alt="The files tray: 13 of 14 files, click to copy or drag into any app" width="100%"><br>
+Files tray<br>
 <img src="docs/images/phone.png" alt="Shelf on your phone: scan the QR code to access the shelf files" width="100%"><br>
+Shelf on your phone<br>
 <img src="docs/images/devices.png" alt="Devices: galyarder connected via GSConnect, battery 50%, not charging, with Ring phone and Send clipboard" width="100%"><br>
-<b>Shelf.</b> Clipboard history of text, links, images and files — search, filter, pin; Super+V to paste. Files tray: drop files on the island — as many as you set in Settings — drag them into any app or click to copy; a long row scrolls. Phone: scan the QR to save shelf files on your phone or send files back, in the browser, same Wi-Fi, nothing through the internet.
+Devices<br>
+<b>Shelf.</b><br>
+Clipboard, files and your phone, in the island.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Press Super+V</td><td>Open the clipboard history with search ready; Enter pastes</td></tr>
+<tr><td>Search, filter, pin</td><td>Find text, links, images and files you copied</td></tr>
+<tr><td>Drag a file towards the notch</td><td>Open the files tray to drop it — as many as you set in Settings; a long row scrolls</td></tr>
+<tr><td>Drag a file out of the tray, or click it</td><td>Drop it into any app, or copy it</td></tr>
+<tr><td>Scan the QR</td><td>Save shelf files on your phone or send files back, in the browser, same Wi-Fi, nothing through the internet</td></tr>
+<tr><td>Ring phone, Send clipboard</td><td>Reach your GSConnect phone from the Devices image</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/weather.png" alt="Weather page: Bogor conditions, hourly temperature chart, five-day forecast and a recent earthquake" width="100%"><br>
-<b>Weather.</b> Choose a city in Settings, or follow the GNOME World Clock nearest your time zone; the temperature reads in your own unit — auto, Celsius or Fahrenheit. See current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by each forecast condition, and the five-day forecast. Nearby earthquakes use BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event. The closed island stays quiet.
+<b>Weather.</b><br>
+Your city's weather and the week ahead.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Choose a city in Settings, or follow the GNOME World Clock</td><td>The forecast for that city, or the one nearest your time zone</td></tr>
+<tr><td>Set the temperature's unit</td><td>Auto, Celsius or Fahrenheit</td></tr>
+<tr><td>Open the page</td><td>Current conditions, humidity, wind, sunrise and sunset, an hourly curve colored by each forecast condition, and the five-day forecast</td></tr>
+<tr><td>Look for earthquakes</td><td>Nearby ones from BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="100%"><br>
-<b>Calendar.</b> The month beside the chosen day's events, from your desktop calendars (Google and others through Online Accounts). Add an event in one line: "Dinner 8:00 pm". A reminder 5 minutes before, with <b>Join</b> for Meet, Zoom, Teams or Webex. World clocks underneath.
+<b>Calendar.</b><br>
+The month beside the chosen day's events.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Connect your desktop calendars</td><td>Google and others through Online Accounts</td></tr>
+<tr><td>Type "Dinner 8:00 pm"</td><td>Add an event in one line</td></tr>
+<tr><td>Wait 5 minutes before</td><td>A reminder, with Join for Meet, Zoom, Teams or Webex</td></tr>
+<tr><td>Look underneath</td><td>World clocks</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/notifications.png" alt="Notifications: a Telegram notification, with Clear" width="100%"><br>
-<b>Notifications.</b> GNOME's notifications as a plain list, newest first, with their buttons under the pointer, Clear, and Do Not Disturb a click away.
+<b>Notifications.</b><br>
+GNOME's notifications as a plain list.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Open the list</td><td>Newest first, with their buttons under the pointer</td></tr>
+<tr><td>Press Clear</td><td>Clear the list</td></tr>
+<tr><td>Rest the pointer on an alert</td><td>Keep it until the pointer leaves</td></tr>
+<tr><td>Swipe up or down on an alert (touchpad)</td><td>Put it away, or open it</td></tr>
+<tr><td>Right-click the notch</td><td>Put an alert away</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/voice.png" alt="Voice assistant: the island asking “How can I help?”, with History" width="100%"><br>
-<b>Voice assistant.</b> Press Super+I and ask, in English or Indonesian: play a song, find a file, add a reminder. It works as an agent: a request with several steps is done one after another, each step checked, with the AI you already use (Claude Code, Codex, Grok, Hermes, Oh My Pi, opencode or Antigravity).
+<b>Voice assistant.</b><br>
+Press Super+I and ask, in English or Indonesian.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Press Super+I, then speak</td><td>Ask: play a song, find a file, add a reminder</td></tr>
+<tr><td>Press Super+I again</td><td>Finish speaking, or after an answer, ask more</td></tr>
+<tr><td>Start typing (or click the keyboard)</td><td>Type the request instead</td></tr>
+<tr><td>Ask for something with several steps</td><td>It is done one step after another, each step checked</td></tr>
+<tr><td>Pick the AI in Settings</td><td>Claude Code, Codex, Grok, Hermes, Oh My Pi, opencode or Antigravity answers</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/command.png" alt="The install command running: sudo pacman -S --needed vlc, asking to proceed" width="100%"><br>
-<b>Installs and fixes things.</b> "Install LibreOffice", "pasang codex": it checks what your Linux has, searches the web when unsure, and shows the one command it wants to run, with what to know first. Press <b>Run</b> or <b>Deny</b>. It runs in the background while you carry on, and the assistant checks it worked before saying so.
+<b>Installs and fixes things.</b><br>
+Ask it to install or fix something on your Linux.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Say "Install LibreOffice" or "pasang codex"</td><td>It checks what your Linux has, searches the web when unsure, and shows the one command it wants to run, with what to know first</td></tr>
+<tr><td>Press Run</td><td>It runs in the background while you carry on</td></tr>
+<tr><td>Press Deny</td><td>It does not run</td></tr>
+<tr><td>Wait for the answer</td><td>The assistant checks it worked before saying so</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/conversation.png" alt="Chatting with the AI: it remembers the unfinished filmcraft build after four hours" width="100%"><br>
+Conversation<br>
 <img src="docs/images/chat-history.png" alt="Chat history: past conversations with their message counts, New chat and Conversation" width="100%"><br>
-<b>Speak or type, and talk it through.</b> The conversation is the chat itself — your messages and the assistant's replies, with Ask anything at the bottom to keep talking. Chat history lists your past conversations with their message counts; pick one to reopen it, or + New chat to start a new one.
+Chat history<br>
+<b>Speak or type, and talk it through.</b><br>
+The conversation is the chat itself.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Type in Ask anything at the bottom</td><td>Keep talking</td></tr>
+<tr><td>Pick a past conversation</td><td>Reopen it, with its message count beside it</td></tr>
+<tr><td>Press + New chat</td><td>Start a new one</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/bot-looks.png" alt="The bot in eight shapes and several colours, with matching glows" width="100%"><br>
-<b>A bot of your own.</b> Eight shapes, from a circle to a cloud or a ghost, eleven colours or your own, softly shaded, and a glow round the island that matches it.
+<b>A bot of your own.</b><br>
+Eight shapes, eleven colours, one glow to match.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Pick a shape in Settings</td><td>From a circle to a cloud or a ghost</td></tr>
+<tr><td>Pick a colour, or your own</td><td>The glow round the island matches it</td></tr>
+<tr><td>Open the live preview</td><td>See the bot before you pick it</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/usage.png" alt="AI usage: Claude Max, 5 hours 42% (resets in 2h 18m), Week 18% (resets in 4d)" width="100%"><br>
-<b>AI usage.</b> How much of your Claude and ChatGPT plan limits is used: one plan at a time with its logo, a bar per limit and when each resets; scroll or click the dots to switch. A warning comes as one nears its end; only plans you're signed in to show.
+<b>AI usage.</b><br>
+How much of your Claude and ChatGPT plan limits is used.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Open the page</td><td>One plan at a time with its logo, a bar per limit and when each resets</td></tr>
+<tr><td>Scroll or click the dots</td><td>Switch plans</td></tr>
+<tr><td>Choose plans in Settings</td><td>Only those plans show; only plans you're signed in to show at all</td></tr>
+<tr><td>Watch for the warning</td><td>One comes as a limit nears its end</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/prayer-alert.png" alt="Prayer alert: Dzuhur, it's time to pray in Bogor, 11:36" width="100%"><br>
-<b>Alerts</b> for volume, brightness, Caps Lock, charging, low battery, Bluetooth battery, going offline, reminders, meetings about to start, AI plan limits and GNOME notifications with their buttons — in the same place instead of the middle of the screen. Hold the pointer on one to keep it; × or swipe up to put it away.
+<b>Alerts.</b><br>
+Everything that needs you, in one place instead of the middle of the screen.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Wait for an alert</td><td>Volume, brightness, Caps Lock, charging, low battery, Bluetooth battery, going offline, reminders, meetings about to start, AI plan limits and GNOME notifications with their buttons</td></tr>
+<tr><td>Hold the pointer on one</td><td>Keep it</td></tr>
+<tr><td>Press × or swipe up</td><td>Put it away</td></tr>
+<tr><td>Switch each alert on or off in Settings</td><td>Only those alerts show</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/approvals.png" alt="Notchfolk wants to run sudo pacman -S --needed vlc, with Deny and Run" width="100%"><br>
-<b>AI agents.</b> When Claude Code or Codex asks permission to run something, answer from the island: <b>Deny</b>, <b>Allow</b> or, for Claude Code, <b>Always</b>. When one is done, the island says what it did. Nothing shows while you are in its window.
+<b>AI agents.</b><br>
+Answer agent permission requests from the island.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Press Deny</td><td>It does not run</td></tr>
+<tr><td>Press Allow</td><td>It runs once</td></tr>
+<tr><td>Press Always (Claude Code)</td><td>Always allow it</td></tr>
+<tr><td>Wait for the island</td><td>When one is done, it says what it did</td></tr>
+<tr><td>Switch an agent off in Settings</td><td>Its approvals stop showing</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/apps.png" alt="App usage: Firefox 1h 36m today, then ChatGPT, Muse and Files" width="100%"><br>
-<b>App usage.</b> Where your time goes: the app in front today, over the last seven days, or the last 30, with its icon, a bar and its time. Off until you turn it on; five idle minutes pause it, locking the screen stops it; kept on this computer for 30 days.
+<b>App usage.</b><br>
+Where your time goes.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Turn it on</td><td>Tracking starts — off until you turn it on</td></tr>
+<tr><td>Pick today, the last seven days, or the last 30</td><td>The app in front then, with its icon, a bar and its time</td></tr>
+<tr><td>Leave the computer idle for five minutes</td><td>Tracking pauses; locking the screen stops it</td></tr>
+<tr><td>Look back later</td><td>Kept on this computer for 30 days</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/glass.png" alt="App usage in the glass island: Ghostty 2h 54m today, the desktop behind it showing through, blurred" width="100%"><br>
-<b>Glass.</b> The island in clear dark glass instead of black, if you prefer: what is behind it shows through, blurred, as you work. Choose it in Settings → Appearance → Island.
+<b>Glass.</b><br>
+The island in clear dark glass instead of black, if you prefer.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Choose Glass in Settings → Appearance → Island</td><td>What is behind it shows through, blurred, as you work</td></tr>
+<tr><td>Move the slider</td><td>From clear to dark smoked glass</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/vitals.png" alt="Vitals page: CPU load with its sparkline, temperature, cores, memory and disk bars, network and uptime" width="100%"><br>
-<b>Vitals.</b> The machine's own pulse in the island: the CPU load and the temperature big with the last minute drawn as a sparkline between them, each core a bar, the load averages and the process count, memory / swap / disk bars with their bytes, the network's rates, the battery and the uptime — sampled every 2 s from /proc, no extension needed. Optionally, one vital rides the closed island beside the wave.
+<b>Vitals.</b><br>
+The machine's own pulse in the island.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Open the page</td><td>CPU load and temperature big with the last minute drawn as a sparkline between them, each core a bar, the load averages and the process count, memory / swap / disk bars with their bytes, the network's rates, the battery and the uptime</td></tr>
+<tr><td>Wait 2 s</td><td>Fresh numbers, sampled from /proc, no extension needed</td></tr>
+<tr><td>Pick a vital in Settings</td><td>It rides the closed island beside the wave</td></tr>
+<tr><td>Set the temperature's unit</td><td>Auto, Celsius or Fahrenheit</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/karaoke.png" alt="Karaoke in the closed island: the line being sung centred between the cover and the wave" width="100%"><br>
-<b>Karaoke.</b> While a song plays with synced lyrics, the closed island's centre becomes the line being sung — the cover left, the wave right, the clock waiting. The line holds one width for the whole song, so the island never pumps; a short line centres in the room its last long line held.
+<b>Karaoke.</b><br>
+The line being sung, in the closed island.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Play a song with synced lyrics</td><td>The closed island's centre becomes the line being sung — the cover left, the wave right, the clock waiting</td></tr>
+<tr><td>Sing along</td><td>The line holds one width for the whole song, so the island never pumps; a short line centres in the room its last long line held</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/router.png" alt="Router: 7,349 requests, 643.8M / 4.8M tokens, $54.53 estimated cost, connected" width="100%"><br>
+Router<br>
 <img src="docs/images/router-settings.png" alt="Router settings: Remote connection to router.niyatna.com, Compatible proxy API key saved in GNOME Keyring, Last 7 days period, Show on the notch on, connected" width="100%"><br>
-<b>Router.</b> What your AI gateway reports: requests, tokens in and out, its cost estimate, the top models as bars, and the last ten requests. A health dot once connected; off by default.
+Router settings<br>
+<b>Router.</b><br>
+What your AI gateway reports.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Connect</td><td>Requests, tokens in and out, its cost estimate, the top models as bars, and the last ten requests — a health dot once connected</td></tr>
+<tr><td>Set the period</td><td>Last 7 days, or your choice</td></tr>
+<tr><td>Turn on Show on the notch</td><td>Router stats ride the closed island</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/calories.png" alt="Calories: today's intake 650 of 2,000 kcal, with a meal logged" width="100%"><br>
+Calories<br>
 <img src="docs/images/water.png" alt="Water: 0.8 of 2.0 L today, with the intake chart" width="100%"><br>
+Water<br>
 <img src="docs/images/prayer.png" alt="Prayer: Isya next at 19:04 in 42 minutes, with the day's prayer times on a sun arc" width="100%"><br>
-<b>Everyday tools.</b> Water and calories logged through the day, and prayer times for your city, all kept on this computer.
+Prayer<br>
+<b>Everyday tools.</b><br>
+Water, calories and prayer times.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Log water and calories through the day</td><td>Today's totals, kept on this computer</td></tr>
+<tr><td>Open the Prayer page</td><td>The day's prayer times on a sun arc, with the next one and how long until it</td></tr>
+</table>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="docs/images/mcp-settings.png" alt="MCP settings: External AI agents, service running on 127.0.0.1:8765/mcp, client key folky with write scopes" width="100%"><br>
+MCP settings<br>
 <img src="docs/images/mcp-access-remote.png" alt="MCP settings: Access scopes with Read access and Write actions off, Remote access via Cloudflare Tunnel with public hostname" width="100%"><br>
+MCP access<br>
 <img src="docs/images/mcp-world.png" alt="The world: camofox browser backend, CDP port 9222, Hindsight endpoint, skill trees, OfficeCLI path" width="100%"><br>
-<b>MCP server.</b> An optional MCP server for agents outside Notchfolk: read tools for your data and actions, writes only what you list in <code>~/.config/notchfolk/mcp.env</code>, on loopback by default and remote access through an authenticated tunnel. Beyond the island's own data, the world domains — seven, 150 tools in all: <b>System</b> (the machine itself — stats, logs, files, processes, updates, the sharp tools behind their own scope), <b>Browser</b> (the web through a real browser: Camoufox, or your own Chromium over CDP), <b>Memory</b> (the Hindsight engine's 39 tools — what the agent learns, kept across conversations), <b>Notes</b> (your own vault of Markdown notes, and memory's fallback), <b>Skills</b> (the world knows how to do things: the skill trees on the machine), <b>Office</b> (the world makes documents) and <b>Composio</b> (the world reaches your accounts — mail and drive, read on the default key, writes behind their own scope). A domain whose backend is absent is not offered at all; a restricted tool is not even visible to a key without its scope.
+The world<br>
+<b>MCP server.</b><br>
+An optional MCP server for agents outside Notchfolk.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>List writes in <code>~/.config/notchfolk/mcp.env</code></td><td>Those writes are allowed; read tools work for your data and actions</td></tr>
+<tr><td>Give a key no scope</td><td>Its restricted tools are not even visible to it</td></tr>
+<tr><td>Open remote access</td><td>Reach it through an authenticated tunnel; on loopback by default</td></tr>
+<tr><td>Look at the world domains</td><td>Seven, 150 tools in all: System (the machine itself — stats, logs, files, processes, updates, the sharp tools behind their own scope), Browser (the web through a real browser: Camoufox, or your own Chromium over CDP), Memory (the Hindsight engine's 39 tools — what the agent learns, kept across conversations), Notes (your own vault of Markdown notes, and memory's fallback), Skills (the world knows how to do things: the skill trees on the machine), Office (the world makes documents) and Composio (the world reaches your accounts — mail and drive, read on the default key, writes behind their own scope)</td></tr>
+<tr><td>Run without a backend</td><td>A domain whose backend is absent is not offered at all</td></tr>
+</table>
 </td>
 <td width="50%" valign="top">
 <img src="docs/images/more-ais.png" alt="The AI picker: OpenAI-compatible API selected, with the provider list open — Automatic, Claude Code, Codex, Hermes Agent, Oh My Pi, opencode, Antigravity" width="100%"><br>
+The AI picker<br>
 <img src="docs/images/more-ais-compatible.png" alt="OpenAI-compatible API selected, with model claude-mythos-5" width="100%"><br>
+OpenAI-compatible API<br>
 <img src="docs/images/more-ais-hermes.png" alt="Hermes Agent selected, with its endpoint at 100.85.83.76:8642/v1" width="100%"><br>
-<b>More AIs.</b> The assistant also runs Hermes and Oh My Pi with the providers they are configured for, plus any OpenAI-compatible API.
+Hermes Agent<br>
+<b>More AIs.</b><br>
+More AIs for the assistant.<br>
+<table>
+<tr><th>Do this</th><th>To</th></tr>
+<tr><td>Pick a provider in Settings</td><td>The assistant runs Hermes and Oh My Pi with the providers they are configured for</td></tr>
+<tr><td>Choose OpenAI-compatible API</td><td>Any OpenAI-compatible API answers</td></tr>
+</table>
 </td>
 </tr>
 </table>
@@ -272,4 +472,5 @@ from [Lucide](https://lucide.dev)'s "calendar-days", under the ISC License
 [![Give Notchfolk a star](docs/images/footer.png)](https://github.com/galyarderlabs/notchfolk)
 
 </div>
+
 
