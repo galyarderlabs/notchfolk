@@ -26,7 +26,7 @@ const TERMINAL_FONT_KEY: &str = "terminal-font";
 const DEFAULT_TERMINAL_FONT: &str = "Monospace 10";
 const COMPACT_SIZE: (i32, i32) = (460, 240);
 const EXPANDED_SIZE: (i32, i32) = (880, 480);
-const HELP: &str = "Termi-notch — Notchfolk's live shell tabs\n\
+const HELP: &str = "Notchfolk Terminal — live shell tabs\n\
 Usage: notchfolk-terminal [--toggle | --quit | --help | --version]\n\
   No option   Show the terminal, keeping existing tabs\n\
   --toggle    Hide or show without stopping shells\n\
@@ -50,8 +50,8 @@ previous-tab=<Control>Page_Up\n\
 next-tab=<Control>Page_Down\n\
 handoff=\n\
 Use GTK accelerator syntax. Empty disables an action's shortcut; missing or\n\
-invalid entries keep its default. The global toggle is configured in GNOME\n\
-extension preferences and defaults to Super+Return.\n";
+invalid entries keep its default. The global shortcut starts unset; choose one\n\
+in the extension's Island → Shortcuts settings.\n";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Request {
@@ -108,6 +108,7 @@ fn main() -> glib::ExitCode {
         Request::Show | Request::Toggle => {}
     }
 
+    glib::set_application_name("Notchfolk Terminal");
     let app = gtk::Application::builder()
         .application_id(APP_ID)
         .flags(gio::ApplicationFlags::HANDLES_COMMAND_LINE)
@@ -122,6 +123,7 @@ fn main() -> glib::ExitCode {
     );
     let state = Rc::new(RefCell::new(None::<Rc<TerminalWindow>>));
     app.connect_startup(|_| {
+        gtk::Window::set_default_icon_name(APP_ID);
         let provider = gtk::CssProvider::new();
         provider.load_from_string(include_str!("style.css"));
         if let Some(display) = gdk::Display::default() {
@@ -406,7 +408,7 @@ impl TerminalWindow {
     fn new(app: &gtk::Application) -> Rc<Self> {
         let window = gtk::ApplicationWindow::builder()
             .application(app)
-            .title("Termi-notch")
+            .title("Notchfolk Terminal")
             .decorated(false)
             .default_width(COMPACT_SIZE.0)
             .default_height(COMPACT_SIZE.1)

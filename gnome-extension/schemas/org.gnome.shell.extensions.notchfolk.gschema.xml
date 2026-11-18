@@ -31,7 +31,7 @@
     <key name="terminal-font" type="s">
       <default>'Monospace 10'</default>
       <summary>Terminal font</summary>
-      <description>A full Pango font description, including the family, style and point size, for Termi-notch shell text only. Applies to open and new terminal tabs without changing the island or desktop fonts.</description>
+      <description>A Pango font description for the Terminal page. Applies to open and new shell tabs without changing the island or desktop fonts.</description>
     </key>
     <key name="clock-format" type="s">
       <choices>
@@ -454,9 +454,9 @@
       <description>Opens the island on the AI Usage page from anywhere, holding the keyboard; pressed again, it closes. None at first.</description>
     </key>
     <key name="shortcut-terminal" type="as">
-      <default><![CDATA[['<Super>Return']]]></default>
+      <default>[]</default>
       <summary>Shortcut to the Terminal page</summary>
-      <description>Opens the island on its Terminal page, or closes it when its terminal is visible on this workspace. A minimized or off-workspace terminal is recalled. Switching pages or closing the island hides the helper without ending its shell tabs or running jobs. The Terminal tab and its Open button explicitly open the shell; hovering and warming pages never start one. Disabling the extension leaves the helper independently usable. Change or clear this shortcut in Island → Shortcuts if another application uses Super+Return.</description>
+      <description>Opens the island on the Terminal page, or closes it when the terminal is visible on this workspace. None at first.</description>
     </key>
     <key name="voice-shortcut" type="as">
       <default><![CDATA[['<Super>i']]]></default>

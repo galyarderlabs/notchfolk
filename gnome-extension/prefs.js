@@ -1678,7 +1678,7 @@ function switchRow(settings, key, title, subtitle) {
 /** An installed font and point size for the terminal, without changing the rest of the island. */
 function terminalFontRow(settings, window) {
     const row = new Adw.ActionRow({title: 'Terminal font',
-        subtitle: 'Font and size for Termi-notch shell text only'});
+        subtitle: 'Font and size for text in the Terminal page'});
     // No monospace filter: some Nerd Font families do not advertise themselves as monospace.
     const font = new Gtk.FontDialogButton({
         dialog: new Gtk.FontDialog({title: 'Terminal font'}),

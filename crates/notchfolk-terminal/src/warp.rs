@@ -118,7 +118,7 @@ fn write_config(writer: &mut impl Write, socket_name: &str, token: &str) -> io::
     // The existing tmux pane already owns the actual shell and cwd.
     writeln!(
         writer,
-        "name = \"Termi-notch handoff\"\n\
+        "name = \"Notchfolk Terminal handoff\"\n\
          \n\
          [[panes]]\n\
          id = \"terminal\"\n\
@@ -174,7 +174,7 @@ mod tests {
         let toml = fs::read_to_string(&path).unwrap();
         assert_eq!(
             toml,
-            "name = \"Termi-notch handoff\"\n\
+            "name = \"Notchfolk Terminal handoff\"\n\
              \n\
              [[panes]]\n\
              id = \"terminal\"\n\
