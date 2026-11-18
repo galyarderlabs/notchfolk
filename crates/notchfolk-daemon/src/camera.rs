@@ -315,6 +315,16 @@ impl CameraService {
             self.publish(&emitter).await?;
             return Err(fdo::Error::Failed(reason));
         }
+        // The recording is really running: its stderr must be drained for the
+        // whole of it. The pipe is only read above, on an early exit — left
+        // unread, ffmpeg blocks once its errors fill the pipe buffer, and the
+        // recording stalls. A drain task owns the handle from here; it ends
+        // on its own when ffmpeg exits and the pipe closes.
+        if let Some(mut stderr) = child.stderr.take() {
+            tokio::spawn(async move {
+                let _ = tokio::io::copy(&mut stderr, &mut tokio::io::sink()).await;
+            });
+        }
         let started_ms = now_ms();
         self.recording = Some(Recording {
             child,
