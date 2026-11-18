@@ -186,6 +186,7 @@ Hermes Agent<br>
 </table>
 
 ## Usage
+
 **Music.**
 Your music in the island — cover, scrubber and controls.
 
@@ -194,12 +195,14 @@ Your music in the island — cover, scrubber and controls.
 | Play from Spotify, YouTube in your browser, or any MPRIS player | Cover, scrubber and controls, with the playing app's icon on the cover |
 | Middle-click the notch | Play or pause |
 | Right-click the notch | Bring the music player to the front |
+
 **Synced lyrics.**
 The line being sung, large and bright.
 
 | Do this | To |
 |---|---|
 | Turn on lyrics online | Lyrics load from LRCLIB while songs play |
+
 **Calls.**
 Your calls in the island.
 
@@ -207,6 +210,7 @@ Your calls in the island.
 |---|---|
 | Take a call in WhatsApp, Telegram, Zoom, Meet or a browser call page | A green phone in the closed island, the call's length on the Call page |
 | Right-click the notch | Bring the call to the front |
+
 **Timer.**
 A Pomodoro timer with breaks and Do Not Disturb while you focus.
 
@@ -214,8 +218,10 @@ A Pomodoro timer with breaks and Do Not Disturb while you focus.
 |---|---|
 | Press Start | The timer runs; Do Not Disturb stays on while you focus |
 | Glance at the closed island | The time left stays there; beside a song or a call it shows as a small ring |
+
 **Reminders.**
 Tasks that clear themselves at midnight.
+
 **Installs and fixes things.**
 Ask it to install or fix something on your Linux.
 
@@ -223,6 +229,7 @@ Ask it to install or fix something on your Linux.
 |---|---|
 | Say "Install LibreOffice" or "pasang codex" | It checks what your Linux has, searches the web when unsure, and shows the one command it wants to run, with what to know first |
 | Wait for the answer | The assistant checks it worked before saying so |
+
 **Weather.**
 Your city's weather and the week ahead.
 
@@ -230,6 +237,7 @@ Your city's weather and the week ahead.
 |---|---|
 | Choose a city in Settings, or follow the GNOME World Clock | The forecast for that city, or the one nearest your time zone |
 | Look for earthquakes | Nearby ones from BMKG in Indonesia and USGS elsewhere; USGS fills in when BMKG has no nearby recent event |
+
 **Calendar.**
 The month beside the chosen day's events.
 
@@ -238,6 +246,7 @@ The month beside the chosen day's events.
 | Connect your desktop calendars | Google and others through Online Accounts |
 | Type "Dinner 8:00 pm" | Add an event in one line |
 | Wait 5 minutes before | A reminder, with Join for Meet, Zoom, Teams or Webex |
+
 **Notifications.**
 GNOME's notifications as a plain list.
 
@@ -245,6 +254,7 @@ GNOME's notifications as a plain list.
 |---|---|
 | Swipe up or down on an alert (touchpad) | Put it away, or open it |
 | Right-click the notch | Put an alert away |
+
 **Voice assistant.**
 Press Super+I and ask, in English or Indonesian.
 
@@ -253,6 +263,7 @@ Press Super+I and ask, in English or Indonesian.
 | Press Super+I, then speak | Ask: play a song, find a file, add a reminder |
 | Press Super+I again | Finish speaking, or after an answer, ask more |
 | Ask for something with several steps | It is done one step after another, each step checked |
+
 **Shelf.**
 Clipboard, files and your phone, in the island.
 
@@ -262,10 +273,13 @@ Clipboard, files and your phone, in the island.
 | Drag a file towards the notch | Open the files tray to drop it — as many as you set in Settings; a long row scrolls |
 | Drag a file out of the tray, or click it | Drop it into any app, or copy it |
 | Scan the QR | Save shelf files on your phone or send files back, in the browser, same Wi-Fi, nothing through the internet |
+
 **Speak or type, and talk it through.**
 The conversation is the chat itself.
+
 **A bot of your own.**
 Eight shapes, eleven colours, one glow to match.
+
 **AI usage.**
 How much of your Claude and ChatGPT plan limits is used.
 
@@ -273,6 +287,7 @@ How much of your Claude and ChatGPT plan limits is used.
 |---|---|
 | Choose plans in Settings | Only those plans show; only plans you're signed in to show at all |
 | Watch for the warning | One comes as a limit nears its end |
+
 **Alerts.**
 Everything that needs you, in one place instead of the middle of the screen.
 
@@ -280,6 +295,7 @@ Everything that needs you, in one place instead of the middle of the screen.
 |---|---|
 | Wait for an alert | Volume, brightness, Caps Lock, charging, low battery, Bluetooth battery, going offline, reminders, meetings about to start, AI plan limits and GNOME notifications with their buttons |
 | Switch each alert on or off in Settings | Only those alerts show |
+
 **AI agents.**
 Answer agent permission requests from the island.
 
@@ -288,6 +304,7 @@ Answer agent permission requests from the island.
 | Press Always (Claude Code) | Always allow it |
 | Wait for the island | When one is done, it says what it did |
 | Switch an agent off in Settings | Its approvals stop showing |
+
 **App usage.**
 Where your time goes.
 
@@ -295,28 +312,34 @@ Where your time goes.
 |---|---|
 | Turn it on | Tracking starts — off until you turn it on |
 | Leave the computer idle for five minutes | Tracking pauses; locking the screen stops it |
+
 **Glass.**
 The island in clear dark glass instead of black, if you prefer.
 
 | Do this | To |
 |---|---|
 | Choose Glass in Settings → Appearance → Island | What is behind it shows through, blurred, as you work |
+
 **Vitals.**
 The machine's own pulse in the island.
 
 | Do this | To |
 |---|---|
 | Pick a vital in Settings | It rides the closed island beside the wave |
+
 **Karaoke.**
 The line being sung, in the closed island.
+
 **Router.**
 What your AI gateway reports.
 
 | Do this | To |
 |---|---|
 | Turn on Show on the notch | Router stats ride the closed island |
+
 **Everyday tools.**
 Water, calories and prayer times.
+
 **MCP server.**
 An optional MCP server for agents outside Notchfolk.
 
@@ -325,6 +348,7 @@ An optional MCP server for agents outside Notchfolk.
 | List writes in <code>~/.config/notchfolk/mcp.env</code> | Those writes are allowed; read tools work for your data and actions |
 | Give a key no scope | Its restricted tools are not even visible to it |
 | Open remote access | Reach it through an authenticated tunnel; on loopback by default |
+
 **More AIs.**
 More AIs for the assistant.
 
