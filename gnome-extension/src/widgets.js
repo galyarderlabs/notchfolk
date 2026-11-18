@@ -17,6 +17,15 @@ import {onUiScale, px, uiScale} from './compat.js';
 import * as Theme from './theme.js';
 import {islandSound} from './sounds.js';
 
+/** Gives an island button its click sound and action in one place. */
+export function soundOnClick(button, onClick) {
+    button.connect('clicked', () => {
+        islandSound('click');
+        onClick();
+    });
+    return button;
+}
+
 let iconDir = null;
 /** Icons by name, made once: a GIcon never changes, and looking for the file is a disk access. */
 const icons = new Map();
@@ -203,10 +212,7 @@ export function iconButton(iconName, styleClass, onClick, {size = 16, accessible
         accessible_name: accessibleName,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    button.connect('clicked', () => {
-        islandSound('click');
-        onClick();
-    });
+    soundOnClick(button, onClick);
     return button;
 }
 
@@ -248,10 +254,7 @@ export function pillButton(text, styleClass, onClick) {
         can_focus: true,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    button.connect('clicked', () => {
-        islandSound('click');
-        onClick();
-    });
+    soundOnClick(button, onClick);
     return button;
 }
 

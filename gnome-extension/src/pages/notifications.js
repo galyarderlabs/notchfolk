@@ -13,7 +13,7 @@ import St from 'gi://St';
 import {VERTICAL, px} from '../compat.js';
 import * as Format from '../format.js';
 import {notificationIcon, plainBody} from '../notifications.js';
-import {Lines, WrapLayout, icon, iconButton, isSymbolic, label, ownIcon, pillButton, setButtonIcon, wrapLines} from '../widgets.js';
+import {Lines, WrapLayout, icon, iconButton, isSymbolic, label, ownIcon, pillButton, setButtonIcon, soundOnClick, wrapLines} from '../widgets.js';
 import {Page} from './page.js';
 
 /** A card offers at most this many of its notification's buttons ("Mark as read", "Accept"). */
@@ -224,7 +224,7 @@ class NotificationsPage extends Page {
         content.add_child(corner);
 
         const row = new St.Button({style_class: 'notchfolk-notification-row', child: content, x_expand: true, can_focus: true});
-        row.connect('clicked', () => {
+        soundOnClick(row, () => {
             notification.activate();
             this.emit('request-close');
         });

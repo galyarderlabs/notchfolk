@@ -17,7 +17,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {REMINDER_LATE_MS, occurrenceKey, parseReminderId, spanOf, standsInFor} from '../calendarRules.js';
 import {VERTICAL, onUiScale, px} from '../compat.js';
 import * as Format from '../format.js';
-import {icon, iconButton, label} from '../widgets.js';
+import {icon, iconButton, label, soundOnClick} from '../widgets.js';
 import * as WorldClocks from '../worldClocks.js';
 import {Page} from './page.js';
 import {onHover} from './tasks.js';
@@ -305,7 +305,7 @@ export const CalendarPage = GObject.registerClass({
         title.add_child(this._monthName);
         title.add_child(this._year);
         const titleButton = new St.Button({style_class: 'notchfolk-cal-month-title', child: title, can_focus: true, accessible_name: 'Go to today', x_expand: true, x_align: Clutter.ActorAlign.START});
-        titleButton.connect('clicked', () => this._goToToday());
+        soundOnClick(titleButton, () => this._goToToday());
         // Its text on the page's edge, as the other pages' titles; the pill it lights on hover reaches past it.
         onUiScale(titleButton, scale => (titleButton.translation_x = -4 * scale));
         header.add_child(titleButton);
@@ -352,12 +352,12 @@ export const CalendarPage = GObject.registerClass({
         this._worldButton.child.opacity = 150;
         header.add_child(this._worldButton);
         this._todayButton = new St.Button({style_class: 'notchfolk-cal-today', label: 'Today', can_focus: true, y_align: Clutter.ActorAlign.CENTER});
-        this._todayButton.connect('clicked', () => this._goToToday());
+        soundOnClick(this._todayButton, () => this._goToToday());
         header.add_child(this._todayButton);
         // While picking where new events go: back to the day, the field with them.
         this._doneButton = new St.Button({style_class: 'notchfolk-cal-today', label: 'Done', can_focus: true,
             y_align: Clutter.ActorAlign.CENTER, visible: false});
-        this._doneButton.connect('clicked', () => this._setPicking(false));
+        soundOnClick(this._doneButton, () => this._setPicking(false));
         header.add_child(this._doneButton);
         column.add_child(header);
 
@@ -415,7 +415,7 @@ export const CalendarPage = GObject.registerClass({
         // With no calendar account at all, where to add one.
         this._noAccounts = new St.Button({style_class: 'notchfolk-cal-accounts', label: 'Add calendars in Online Accounts',
             can_focus: true, x_align: Clutter.ActorAlign.CENTER, visible: false});
-        this._noAccounts.connect('clicked', () => {
+        soundOnClick(this._noAccounts, () => {
             GLib.spawn_async(null, ['gnome-control-center', 'online-accounts'], null, GLib.SpawnFlags.SEARCH_PATH, null);
             this.emit('request-close');
         });
@@ -437,7 +437,7 @@ export const CalendarPage = GObject.registerClass({
         this._worldStrip = new St.Button({style_class: 'notchfolk-cal-world-strip', can_focus: true, x_expand: true,
             visible: false, accessible_name: 'World clocks'});
         this._worldStrip.set_child(new St.BoxLayout({style_class: 'notchfolk-cal-world-strip-box'}));
-        this._worldStrip.connect('clicked', () => this._setShowingWorld(true));
+        soundOnClick(this._worldStrip, () => this._setShowingWorld(true));
         column.add_child(this._worldStrip);
         return column;
     }
@@ -782,7 +782,7 @@ export const CalendarPage = GObject.registerClass({
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        button.connect('clicked', () => this._select(day));
+        soundOnClick(button, () => this._select(day));
         button._day = day;
         this._dayButtons.push(button);
         cell.add_child(button);
@@ -991,7 +991,7 @@ export const CalendarPage = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER, opacity: chosen ? 255 : 0});
         box.add_child(tick);
         const row = new St.Button({style_class: 'notchfolk-cal-target-row', child: box, x_expand: true, can_focus: true});
-        row.connect('clicked', () => {
+        soundOnClick(row, () => {
             this._settings.set_string('event-calendar', calendar.uid);
             this._setPicking(false);
         });

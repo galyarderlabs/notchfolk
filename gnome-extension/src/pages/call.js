@@ -17,7 +17,7 @@ import {PAGE_HEIGHT} from '../expanded.js';
 import * as Format from '../format.js';
 import {roundCorners} from '../glass.js';
 import * as Theme from '../theme.js';
-import {icon, label, setEnabled} from '../widgets.js';
+import {icon, label, setEnabled, soundOnClick} from '../widgets.js';
 import {Page} from './page.js';
 
 /** Sizes in CSS pixels (see `px`). */
@@ -244,7 +244,7 @@ class CallPage extends Page {
             accessible_name: 'Go to the call',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._previewButton.connect('clicked', () => this._open());
+        soundOnClick(this._previewButton, () => this._open());
         this._previewButton.connect('notify::hover', () => (this._preview.hovered = this._previewButton.hover));
         this.add_child(this._previewButton);
 
@@ -299,7 +299,7 @@ class CallPage extends Page {
             accessible_name: caption,
             x_align: Clutter.ActorAlign.CENTER,
         });
-        button.connect('clicked', () => onClick());
+        soundOnClick(button, () => onClick());
         const text = label(caption, 'notchfolk-call-control-label', {x_align: Clutter.ActorAlign.CENTER});
         const box = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-call-control-box'});
         box.add_child(button);

@@ -23,7 +23,7 @@ import {isTerminal} from './clipboard.js';
 import {answerPlain} from './format.js';
 import {VERTICAL, eventActor, maximize, onUiScale, px, uiScale, unmaximize} from './compat.js';
 import {plainBody} from './notifications.js';
-import {cornerClose, icon, iconButton, label, pillButton, revealClose, wrapLines} from './widgets.js';
+import {cornerClose, icon, iconButton, label, pillButton, revealClose, soundOnClick, wrapLines} from './widgets.js';
 import {islandSound} from './sounds.js';
 
 
@@ -251,7 +251,7 @@ export const VoiceView = GObject.registerClass({
             accessible_name: 'Speak',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._faceButton.connect('clicked', () => this.emit(this.typing ? 'speak' : 'orb-clicked'));
+        soundOnClick(this._faceButton, () => this.emit(this.typing ? 'speak' : 'orb-clicked'));
         // Over an answer, under the pointer, a × on the face's corner puts it away, as an alert's does.
         this._pointerOn = false;
         this._close = cornerClose(() => this.emit('close-requested'), {out: 10});
@@ -271,7 +271,6 @@ export const VoiceView = GObject.registerClass({
         heardRow.add_child(this._heard);
         this._heardButton = new St.Button({child: heardRow, style_class: 'notchfolk-voice-heard-button', reactive: false,
             x_align: Clutter.ActorAlign.START, accessible_name: 'Show the conversation'});
-        this._heardButton.connect('clicked', () => this.openChat());
         // A labelled History pill is easier to recognize than an icon tucked beside Close.
         const chatButtonContent = new St.BoxLayout({style_class: 'notchfolk-voice-chat-content'});
         chatButtonContent.add_child(new St.Icon({gicon: icon('notchfolk-history'), icon_size: 13,
@@ -281,7 +280,7 @@ export const VoiceView = GObject.registerClass({
             child: chatButtonContent, can_focus: true, accessible_name: 'Open chat history',
             y_align: Clutter.ActorAlign.CENTER});
         this._chatButton.tooltip_text = 'Open chat history';
-        this._chatButton.connect('clicked', () => this.openHistory());
+        soundOnClick(this._chatButton, () => this.openHistory());
         // After +: the old conversation can come back for a moment.
         this._undo = new St.BoxLayout({style_class: 'notchfolk-voice-undo', visible: false});
         this._undo.add_child(new St.Label({text: 'Started a new chat', style_class: 'notchfolk-voice-undo-text', y_align: Clutter.ActorAlign.CENTER}));

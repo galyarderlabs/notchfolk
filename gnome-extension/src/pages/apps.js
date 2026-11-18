@@ -13,7 +13,7 @@ import St from 'gi://St';
 
 import {VERTICAL} from '../compat.js';
 import * as Format from '../format.js';
-import {icon, label} from '../widgets.js';
+import {icon, label, soundOnClick} from '../widgets.js';
 import {Page} from './page.js';
 
 const PERIODS = [
@@ -84,7 +84,7 @@ class AppsPage extends Page {
         this._buttons = new Map();
         for (const {name, label: text} of PERIODS) {
             const button = new St.Button({style_class: 'notchfolk-segment', label: text, can_focus: true});
-            button.connect('clicked', () => this._show(name));
+            soundOnClick(button, () => this._show(name));
             this._buttons.set(name, button);
             toggle.add_child(button);
         }

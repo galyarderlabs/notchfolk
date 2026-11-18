@@ -11,7 +11,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
-import {icon, label} from '../widgets.js';
+import {icon, label, soundOnClick} from '../widgets.js';
 import {LARGE_PAGE_HEIGHT, PAGE_HEIGHT} from '../expanded.js';
 import {Page} from './page.js';
 
@@ -92,7 +92,7 @@ class RouterPage extends Page {
         for (const period of PERIODS) {
             const button = new St.Button({style_class: 'notchfolk-segment', can_focus: true,
                 label: PERIOD_LABELS[period], accessible_name: `Router period ${PERIOD_LABELS[period]}`});
-            button.connect('clicked', () => this._setPeriod(period));
+            soundOnClick(button, () => this._setPeriod(period));
             this._periodToggle.add_child(button);
             this._periodButtons[period] = button;
         }

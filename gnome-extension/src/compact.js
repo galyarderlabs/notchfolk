@@ -18,7 +18,7 @@ import * as Format from './format.js';
 import * as Palette from './palette.js';
 import * as Playback from './playback.js';
 import {watchClock} from './wallClock.js';
-import {Art, Bars, PrivacyDots, RecordingDot, Ring, icon, restsAt, label} from './widgets.js';
+import {Art, Bars, PrivacyDots, RecordingDot, Ring, icon, restsAt, label, soundOnClick} from './widgets.js';
 
 /** The assistant at rest, in the centre. */
 const ASSISTANT_SIZE = 26;
@@ -153,11 +153,11 @@ export const CompactView = GObject.registerClass({
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         this._assistantButton = new St.Button({style_class: 'notchfolk-compact-assistant-button', child: this._assistant,
             can_focus: true, track_hover: true, accessible_name: 'AI assistant', y_align: Clutter.ActorAlign.CENTER});
-        this._assistantButton.connect('clicked', () => {
+        soundOnClick(this._assistantButton, () => {
             this._cancel('assistant-hover');
             this.emit('assistant-requested');
         });
-        this._karaokeButton.connect('clicked', () => {
+        soundOnClick(this._karaokeButton, () => {
             this._cancel('assistant-hover');
             this.emit('assistant-requested');
         });
