@@ -178,6 +178,10 @@ fn main() -> glib::ExitCode {
     let hide_state = state.clone();
     hide.connect_activate(move |_, _| hide_existing_window(&hide_state));
     app.add_action(&hide);
+    let restore = gio::SimpleAction::new("restore", None);
+    let restore_state = state.clone();
+    restore.connect_activate(move |_, _| restore_existing_window(&restore_state));
+    app.add_action(&restore);
     let expanded = expanded_state_action();
     app.add_action(&expanded);
     let fit = gio::SimpleAction::new(
@@ -308,6 +312,17 @@ fn hide_existing_window(state: &RefCell<Option<Rc<TerminalWindow>>>) {
     let window = state.borrow().clone();
     if let Some(window) = window {
         window.hide();
+    }
+}
+
+fn restore_existing_window(state: &RefCell<Option<Rc<TerminalWindow>>>) {
+    let window = state.borrow().clone();
+    if let Some(window) = window
+        && !window.quitting.get()
+    {
+        // Page navigation is not application activation: preserve even an empty
+        // notebook, and map without present(), focus_current() or a new shell.
+        window.window.set_visible(true);
     }
 }
 
@@ -1643,6 +1658,14 @@ mod tests {
         let state = RefCell::new(None);
         hide_existing_window(&state);
         hide_existing_window(&state);
+        assert!(state.borrow().is_none());
+    }
+
+    #[test]
+    fn restoring_an_uncreated_window_never_creates_a_shell_or_window() {
+        let state = RefCell::new(None);
+        restore_existing_window(&state);
+        restore_existing_window(&state);
         assert!(state.borrow().is_none());
     }
 

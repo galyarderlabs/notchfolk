@@ -15,6 +15,7 @@ import {GlassBackdrop} from './glass.js';
 import {RIM_FUNCTIONS, RIM_UNIFORMS, rimCode, rimUniforms} from './glow.js';
 import {effectPoint, shaderEffect} from './shader.js';
 import {GENTLE, Spring, SpringDriver} from './spring.js';
+import {terminalFitsShape} from './terminalRules.js';
 import * as Theme from './theme.js';
 import {fence, setEnabled, slideBy} from './widgets.js';
 
@@ -500,13 +501,21 @@ export const Island = GObject.registerClass({
         };
     }
 
-    /** Whether the island's shape, as it is right now, covers `rect`. */
-    covers({x, y, width, height}) {
+    /** Native terminal clients need the rounded silhouette; shelf placement retains its rectangular contract. */
+    covers(rect, {rounded = false} = {}) {
         const [left, top] = this.get_transformed_position();
-        const bodyLeft = left + Math.max(0, this._shoulder.value);
-        const bodyRight = bodyLeft + Math.max(0, this._width.value);
-        return x >= bodyLeft && x + width <= bodyRight && y >= top + (this._pillGap ?? 0) &&
-            y + height <= top + Math.max(0, this._height.value);
+        if (!rounded) {
+            const bodyLeft = left + Math.max(0, this._shoulder.value);
+            const bodyRight = bodyLeft + Math.max(0, this._width.value);
+            return rect.x >= bodyLeft && rect.x + rect.width <= bodyRight && rect.y >= top + (this._pillGap ?? 0) &&
+                rect.y + rect.height <= top + Math.max(0, this._height.value);
+        }
+        const height = Math.max(0, this._height.value);
+        const box = this._box(height);
+        return terminalFitsShape(rect, {
+            x: left + this._islandFraction + box.left, y: top + this._lift + box.gap,
+            width: box.right - box.left, height: height - box.gap, radius: box.radius, crown: box.crown,
+        });
     }
 
     /** Whether the island's shape will cover `rect` once it settles: its body is centred on the monitor. */

@@ -6,7 +6,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 
-import {ownsTerminalWindow, terminalCanOpen, terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from '../../gnome-extension/src/terminalRules.js';
+import {ownsTerminalWindow, terminalActorViewport, terminalCanOpen, terminalCanRestore, terminalFitsShape,
+    terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from '../../gnome-extension/src/terminalRules.js';
 
 const owner = {busName: ':1.42', pid: 4200};
 const terminal = {appId: TERMINAL_APP_ID, busName: owner.busName, pid: owner.pid};
@@ -80,4 +81,60 @@ test('unallocated, invalid or wholly off-screen geometry never moves a native wi
     assert.equal(terminalViewport({...card, x: Infinity}, workArea), null);
     assert.equal(terminalViewport({...card, y: 1080}, workArea), null);
     assert.equal(terminalViewport(card, {...workArea, width: -1}), null);
+});
+
+test('passive re-entry needs a remembered live verified primary on the same workspace', () => {
+    const returning = {active: true, available: true, managed: true, verified: true, live: true,
+        sameWorkspace: true, locked: false, overview: false};
+    assert.equal(terminalCanRestore(returning), true);
+    for (const key of ['active', 'available', 'managed', 'verified', 'live', 'sameWorkspace'])
+        assert.equal(terminalCanRestore({...returning, [key]: false}), false, key);
+    for (const key of ['locked', 'overview'])
+        assert.equal(terminalCanRestore({...returning, [key]: true}), false, key);
+    assert.equal(terminalCanRestore({}), false);
+});
+
+test('pill top, bottom and rounded corners are contained, not just their bounding box', () => {
+    const pill = {x: 660, y: 40, width: 600, height: 306, radius: 32, crown: 32};
+    const card = {x: 680, y: 86, width: 560, height: 240};
+    assert.equal(terminalFitsShape(card, pill), true);
+    assert.equal(terminalFitsShape({...card, y: 39}, pill), false);
+    assert.equal(terminalFitsShape({...card, height: 261}, pill), false);
+    // These rectangles pass a bounding-box check but cross the rounded top/bottom silhouette.
+    assert.equal(terminalFitsShape({x: 660, y: 40, width: 20, height: 20}, pill), false);
+    assert.equal(terminalFitsShape({x: 1240, y: 326, width: 20, height: 20}, pill), false);
+    const notch = {...pill, y: 0, height: 306, crown: 0};
+    assert.equal(terminalFitsShape({x: 660, y: 0, width: 20, height: 20}, notch), true);
+    assert.equal(terminalFitsShape({x: 1240, y: 286, width: 20, height: 20}, notch), false);
+});
+
+test('rounded containment follows negative monitors, scale and subpixel placement', () => {
+    const shape = {x: -1260.5, y: 240, width: 1200, height: 612, radius: 64, crown: 64};
+    assert.equal(terminalFitsShape({x: -1220, y: 332, width: 1120, height: 480}, shape), true);
+    assert.equal(terminalFitsShape({x: -1261, y: 400, width: 1120, height: 400}, shape), false);
+    assert.equal(terminalFitsShape({x: -1220, y: 332, width: 1120, height: 521}, shape), false);
+});
+
+test('GTK logical viewport dimensions round inward at 200 percent and fractional scale', () => {
+    const card = {x: 300.5, y: 80.25, width: 560.25, height: 240.5};
+    assert.deepEqual(terminalViewport(card, workArea, 2), {x: 301, y: 81, width: 558, height: 238});
+    assert.deepEqual(terminalViewport(card, workArea, 1.5), {x: 301, y: 81, width: 558, height: 239});
+    assert.equal(terminalViewport({...card, width: 1}, workArea, 2), null);
+    assert.equal(terminalViewport(card, workArea, 0), null);
+});
+
+test('actual Meta frame excludes GTK shadow buffer at every edge', () => {
+    const frame = {x: 680, y: 86, width: 560, height: 240};
+    const buffer = {x: 668, y: 74, width: 584, height: 264};
+    const geometry = {frame, target: frame, buffer, actor: buffer, width: 584, height: 264};
+    assert.deepEqual(terminalActorViewport(geometry), {x: 12, y: 12, width: 560, height: 240});
+    // GNOME versions can use scaled actor-local coordinates while Meta remains in stage coordinates.
+    assert.deepEqual(terminalActorViewport({...geometry, width: 292, height: 132}),
+        {x: 6, y: 6, width: 280, height: 120});
+    assert.equal(terminalActorViewport({...geometry, frame: {...frame, height: 300}}), null);
+    assert.equal(terminalActorViewport({...geometry, frame: {...frame, width: 640}}), null);
+    assert.equal(terminalActorViewport({...geometry, frame: {...frame, y: 74}}), null);
+    assert.equal(terminalActorViewport({...geometry, actor: {...buffer, width: 600}}), null);
+    assert.equal(terminalActorViewport({...geometry, buffer: {...buffer, height: 200}}), null);
+    assert.equal(terminalActorViewport({...geometry, width: 0}), null);
 });

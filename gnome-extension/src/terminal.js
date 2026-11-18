@@ -10,7 +10,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Signals from 'resource:///org/gnome/shell/misc/signals.js';
 
 import {uiScale} from './compat.js';
-import {ownsTerminalWindow, terminalCanOpen, terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from './terminalRules.js';
+import {ownsTerminalWindow, terminalActorViewport, terminalCanOpen, terminalCanRestore,
+    terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from './terminalRules.js';
 
 const PROGRAM = 'notchfolk-terminal';
 const OPEN_TIMEOUT_MS = 10000;
@@ -42,6 +43,12 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._identity = null;
         this._window = null;
         this._windowSignals = [];
+        this._clippedActor = null;
+        this._previousClip = null;
+        this._placementError = null;
+        this._restoreOwner = null;
+        this._restoreWorkspace = null;
+        this._restoreAvailable = false;
         this._wanted = false;
         this._managed = false;
         this._pendingHide = false;
@@ -59,10 +66,14 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._destroyed = false;
         this._cancellable = new Gio.Cancellable();
         this._signals = [
-            [page, page.connect('active-changed', () => page.active ? this.sync() : this.hide())],
+            [page, page.connect('active-changed', () => page.active ? this.restore() : this.hide())],
             [page, page.connect('open-requested', () => this.open())],
-            [page, page.connect('helper-area-changed', () => this.sync())],
-            [island, island.connect('geometry-changed', () => this.sync())],
+            [page, page.connect('helper-area-changed', () => this._geometryChanged())],
+            [island, island.connect('geometry-changed', () => {
+                if (island.morphing)
+                    this._hideBody();
+                this.sync();
+            })],
             [island, island.connect('notify::mapped', () => this.sync())],
             [Main.layoutManager, Main.layoutManager.connect('monitors-changed', () => this._geometryChanged())],
             [global.display, global.display.connect('workareas-changed', () => this._geometryChanged())],
@@ -73,7 +84,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             [Main.overview, Main.overview.connect('hidden', () => this._visibilityChanged())],
             [Main.sessionMode, Main.sessionMode.connect('updated', () => {
                 if (Main.sessionMode.isLocked)
-                    this.hide();
+                    this.hide({remember: false});
                 this._visibilityChanged();
             })],
         ];
@@ -82,6 +93,8 @@ export class TerminalHelper extends Signals.EventEmitter {
             (connection, _name, owner) => this._verifyOwner(connection, owner), () => {
                 this._owner = null;
                 this._identity = null;
+                this._restoreOwner = null;
+                this._restoreWorkspace = null;
                 this._dropActions();
                 this._forgetWindow();
                 if (this._wanted && !this._opening)
@@ -162,10 +175,39 @@ export class TerminalHelper extends Signals.EventEmitter {
         }
     }
 
+    /** Re-enter only the verified primary whose existing window this page hid. The restore action maps
+     * that window without Activate/present or creating a first shell; warmUp never activates the page. */
+    restore() {
+        if (this._destroyed || this._wanted || !this._restoreAvailable || !terminalCanRestore({
+            active: this._page.active, available: this._page.available, managed: this._managed,
+            verified: Boolean(this._identity && this._owner === this._identity.busName),
+            live: Boolean(this._restoreOwner && this._restoreOwner === this._identity?.busName),
+            sameWorkspace: this._restoreWorkspace === global.workspace_manager.get_active_workspace(),
+            locked: Main.sessionMode.isLocked, overview: Main.overview.visible,
+        }))
+            return;
+        ++this._request;
+        this._wanted = true;
+        this._pendingHide = false;
+        this._focusRequested = false;
+        this._hideBody();
+        this._beginOpening();
+        this.emit('opening');
+        this._applicationCall('ActivateAction', new GLib.Variant('(sava{sv})', ['restore', [], {}]), this._request);
+    }
+
     /** Clear drawing and input immediately; the existing primary then hides without ending any shell. */
-    hide() {
+    hide({remember = true} = {}) {
+        if (!remember) {
+            this._restoreOwner = null;
+            this._restoreWorkspace = null;
+        }
         if (!this._wanted && !this._opening && !this._revealed)
             return;
+        if (remember && this._window && this._identity) {
+            this._restoreOwner = this._identity.busName;
+            this._restoreWorkspace = global.workspace_manager.get_active_workspace();
+        }
         this._wanted = false;
         this._focusRequested = false;
         this._pendingHide = !this._window;
@@ -189,10 +231,7 @@ export class TerminalHelper extends Signals.EventEmitter {
                     connection.call_finish(result);
                     if (this._destroyed || request !== this._request)
                         return;
-                    if (!this._wanted)
-                        this._restoreBody();
-                    else
-                        this._visibilityChanged();
+                    this._visibilityChanged();
                 } catch (error) {
                     if (error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                         return;
@@ -210,10 +249,11 @@ export class TerminalHelper extends Signals.EventEmitter {
 
     _beginOpening() {
         this._endOpening();
+        this._placementError = null;
         this._page.setStatus('opening');
         this._opening = GLib.timeout_add(GLib.PRIORITY_DEFAULT, OPEN_TIMEOUT_MS, () => {
             this._opening = 0;
-            this._fail('The terminal did not open. Check that the helper and tmux are installed.');
+            this._fail(this._placementError ?? 'The terminal did not open. Check that the helper and tmux are installed.');
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -225,7 +265,7 @@ export class TerminalHelper extends Signals.EventEmitter {
     }
 
     _fail(message) {
-        this.hide();
+        this.hide({remember: false});
         this._page.setStatus('error', message);
         this.emit('held-changed');
     }
@@ -234,6 +274,8 @@ export class TerminalHelper extends Signals.EventEmitter {
     _verifyOwner(connection, owner) {
         this._owner = owner;
         this._identity = null;
+        this._restoreOwner = null;
+        this._restoreWorkspace = null;
         this._forgetWindow();
         this._dropActions();
         connection.call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
@@ -267,7 +309,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             '/io/galyarderlabs/notchfolk/Terminal');
         this._actionSignals = [
             this._actions.connect('action-added', (_group, name) => {
-                if (name === 'expanded' || name === 'fit-viewport')
+                if (name === 'expanded' || name === 'fit-viewport' || name === 'restore')
                     this._syncActions();
             }),
             this._actions.connect('action-state-changed', (_group, name) => {
@@ -286,6 +328,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             return;
         this._fitAvailable = actions.has_action('fit-viewport') &&
             actions.get_action_parameter_type('fit-viewport')?.dup_string() === '(ii)';
+        this._restoreAvailable = actions.has_action('restore') && !actions.get_action_parameter_type('restore');
         const state = actions.has_action('expanded') ? actions.get_action_state('expanded') : null;
         if (!state)
             return;
@@ -305,6 +348,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             }
             this._page.setExpanded(expanded);
         }
+        this.restore();
         this.sync();
     }
 
@@ -315,6 +359,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._actions = null;
         this._expandedMode = null;
         this._fitAvailable = false;
+        this._restoreAvailable = false;
         this._fitSent = null;
     }
 
@@ -327,12 +372,14 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._forgetWindow();
         this._window = window;
         const actor = window.get_compositor_private();
+        if (this._managed && (this._wanted || this._pendingHide))
+            this._hideBody();
         const watch = (object, name, callback) => this._windowSignals.push([object, object.connect(name, callback)]);
         watch(window, 'unmanaged', () => {
-            const closed = this._wanted && this._revealed;
+            const closed = this._wanted && !this._opening;
             this._forgetWindow();
             if (closed) {
-                this.hide();
+                this.hide({remember: false});
                 this.emit('closed');
             }
         });
@@ -342,11 +389,13 @@ export class TerminalHelper extends Signals.EventEmitter {
                 this._fitSent = null;
             this._geometryChanged();
         });
-        watch(window, 'position-changed', () => this.sync());
+        watch(window, 'position-changed', () => this._geometryChanged());
         watch(window, 'notify::minimized', () => this._visibilityChanged());
         watch(window, 'workspace-changed', () => this._visibilityChanged());
-        if (actor)
+        if (actor) {
+            watch(actor, 'notify::allocation', () => this._geometryChanged());
             watch(actor, 'notify::mapped', () => this._visibilityChanged());
+        }
         if (this._pendingHide && !this._wanted) {
             this._pendingHide = false;
             this._hideBody();
@@ -360,11 +409,15 @@ export class TerminalHelper extends Signals.EventEmitter {
         if (this._destroyed)
             return;
         const actor = this._window?.get_compositor_private();
+        // Hide's D-Bus reply can precede the compositor unmap. Keep the old frame clipped/invisible
+        // until it is really gone, otherwise its GTK shadow flashes outside the closing island.
+        if (!this._wanted && !actor?.mapped)
+            this._restoreBody();
         this._shown = Boolean(!Main.sessionMode.isLocked && !Main.overview.visible && actor?.mapped &&
             !this._window.minimized && this._window.showing_on_its_workspace() &&
             this._window.located_on_workspace(global.workspace_manager.get_active_workspace()));
-        if (!this._shown && this._wanted && this._revealed && !Main.overview.visible) {
-            this.hide();
+        if (!this._shown && this._wanted && !this._opening && !Main.overview.visible) {
+            this.hide({remember: false});
             this.emit('closed');
             return;
         }
@@ -388,6 +441,14 @@ export class TerminalHelper extends Signals.EventEmitter {
     }
 
     _restoreBody() {
+        if (this._clippedActor) {
+            if (this._previousClip)
+                this._clippedActor.set_clip(...this._previousClip);
+            else
+                this._clippedActor.remove_clip();
+        }
+        this._clippedActor = null;
+        this._previousClip = null;
         const actor = this._window?.get_compositor_private();
         if (actor && this._managed)
             actor.opacity = 255;
@@ -419,18 +480,16 @@ export class TerminalHelper extends Signals.EventEmitter {
                 }
                 const monitor = this._monitor();
                 const area = monitor && global.workspace_manager.get_active_workspace().get_work_area_for_monitor(monitor.index);
-                const target = terminalViewport(rect, area);
+                const scale = uiScale();
+                const target = terminalViewport(rect, area, scale);
                 const actor = window.get_compositor_private();
-                if (!target || !actor || !this._island.covers(target)) {
+                if (!target || !actor || !this._island.covers(target, {rounded: true})) {
                     this._hideBody();
                     return GLib.SOURCE_REMOVE;
                 }
                 // GTK owns sizing on Wayland. Never send a compositor resize or a transient page allocation.
-                const scale = uiScale();
-                const width = Math.max(1, Math.floor(target.width / scale));
-                const height = Math.max(1, Math.floor(target.height / scale));
-                target.width = Math.round(width * scale);
-                target.height = Math.round(height * scale);
+                const width = Math.round(target.width / scale);
+                const height = Math.round(target.height / scale);
                 if (!this._fitSent || this._fitSent.width !== width || this._fitSent.height !== height) {
                     this._hideBody();
                     if (!this._opening)
@@ -444,6 +503,21 @@ export class TerminalHelper extends Signals.EventEmitter {
                     this._hideBody();
                     window.move_frame(false, target.x, target.y);
                 } else if (frame.width === target.width && frame.height === target.height) {
+                    const [x, y] = actor.get_transformed_position();
+                    const [actorWidth, actorHeight] = actor.get_transformed_size();
+                    const clip = terminalActorViewport({frame, buffer: window.get_buffer_rect(), target,
+                        actor: {x, y, width: actorWidth, height: actorHeight}, width: actor.width, height: actor.height});
+                    if (!clip) {
+                        this._hideBody();
+                        return GLib.SOURCE_REMOVE;
+                    }
+                    // Meta's frame is the interactive client; its buffer/actor can include GTK shadows.
+                    // GTK clips its own 12px corners; the actor clip removes all pixels outside the frame.
+                    if (!this._clippedActor) {
+                        this._clippedActor = actor;
+                        this._previousClip = actor.has_clip ? actor.get_clip() : null;
+                    }
+                    actor.set_clip(clip.x, clip.y, clip.width, clip.height);
                     this._island.nativeViewport = target;
                     actor.opacity = 255;
                     this._revealed = true;
@@ -454,6 +528,8 @@ export class TerminalHelper extends Signals.EventEmitter {
                         Main.activateWindow(window);
                     }
                 } else {
+                    this._placementError = `The terminal's ${frame.width} × ${frame.height} window does not fit ` +
+                        `the ${target.width} × ${target.height} page. Try a smaller terminal font or a larger display.`;
                     this._hideBody();
                 }
             } catch (error) {

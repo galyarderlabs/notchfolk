@@ -15,6 +15,12 @@ export function terminalCanOpen({active, available, explicit}) {
     return active === true && available === true && explicit === true;
 }
 
+/** Passive re-entry may reveal only a live window we already managed on this workspace. */
+export function terminalCanRestore({active, available, managed, verified, live, sameWorkspace, locked, overview}) {
+    return active === true && available === true && managed === true && verified === true &&
+        live === true && sameWorkspace === true && locked === false && overview === false;
+}
+
 /** A newly mapped page can still have its empty state's natural size. Never fit a client to that size. */
 export function terminalViewportSettled({rect, position, size, morphing, opacity}) {
     // Transformed allocations can round differently; a subpixel gap is fine, a whole stage pixel isn't.
@@ -26,8 +32,8 @@ export function terminalViewportSettled({rect, position, size, morphing, opacity
 }
 
 /** Fit the native card to its real page allocation, rounding inward in stage coordinates. */
-export function terminalViewport(rect, workArea) {
-    if (![rect, workArea].every(box => box &&
+export function terminalViewport(rect, workArea, scale = 1) {
+    if (!Number.isFinite(scale) || scale <= 0 || ![rect, workArea].every(box => box &&
         ['x', 'y', 'width', 'height'].every(key => Number.isFinite(box[key])) &&
         box.width > 0 && box.height > 0))
         return null;
@@ -35,5 +41,42 @@ export function terminalViewport(rect, workArea) {
     const y = Math.ceil(Math.max(rect.y, workArea.y));
     const right = Math.floor(Math.min(rect.x + rect.width, workArea.x + workArea.width));
     const bottom = Math.floor(Math.min(rect.y + rect.height, workArea.y + workArea.height));
-    return right > x && bottom > y ? {x, y, width: right - x, height: bottom - y} : null;
+    const width = Math.round(Math.floor((right - x) / scale) * scale);
+    const height = Math.round(Math.floor((bottom - y) / scale) * scale);
+    return width > 0 && height > 0 ? {x, y, width, height} : null;
+}
+
+/** A rectangle fits a rounded body only if all four corners fit; the notch has no top corner radius. */
+export function terminalFitsShape(rect, {x, y, width, height, radius = 0, crown = 0}) {
+    if (![rect, {x, y, width, height}].every(box => box &&
+        ['x', 'y', 'width', 'height'].every(key => Number.isFinite(box[key])) &&
+        box.width > 0 && box.height > 0) || ![radius, crown].every(Number.isFinite))
+        return false;
+    const right = x + width, bottom = y + height;
+    if (rect.x < x || rect.y < y || rect.x + rect.width > right || rect.y + rect.height > bottom)
+        return false;
+    const inside = (cx, cy) => {
+        const r = Math.max(0, Math.min(cy < y + height / 2 ? crown : radius, width / 2, height / 2));
+        const nearestX = Math.max(x + r, Math.min(cx, right - r));
+        const nearestY = Math.max(y + r, Math.min(cy, bottom - r));
+        return (cx - nearestX) ** 2 + (cy - nearestY) ** 2 <= r ** 2;
+    };
+    return inside(rect.x, rect.y) && inside(rect.x + rect.width, rect.y) &&
+        inside(rect.x, rect.y + rect.height) && inside(rect.x + rect.width, rect.y + rect.height);
+}
+
+/** Convert an acknowledged Meta frame into actor-local clipping bounds, excluding client shadows.
+ * GTK minimum sizes must actually fit: never crop an oversized client and hide its footer. */
+export function terminalActorViewport({frame, buffer, target, actor, width, height}) {
+    if (![frame, buffer, target, actor].every(box => box &&
+        ['x', 'y', 'width', 'height'].every(key => Number.isFinite(box[key])) &&
+        box.width > 0 && box.height > 0) || !Number.isFinite(width) || !Number.isFinite(height) ||
+        width <= 0 || height <= 0 ||
+        !['x', 'y', 'width', 'height'].every(key => frame[key] === target[key]) ||
+        !['x', 'y', 'width', 'height'].every(key => Math.abs(actor[key] - buffer[key]) < 1) ||
+        !terminalFitsShape(frame, buffer) || !terminalFitsShape(frame, actor))
+        return null;
+    const sx = width / actor.width, sy = height / actor.height;
+    return {x: (frame.x - actor.x) * sx, y: (frame.y - actor.y) * sy,
+        width: frame.width * sx, height: frame.height * sy};
 }
