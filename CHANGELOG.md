@@ -10,16 +10,10 @@ Isle's changelog from before the fork, kept for reference.
 
 ### Added
 
-- **Island sounds.** Island gestures answer in audio: a swell as it opens, the reverse
-  as it closes, a tick as a tab turns, a click as a control is pressed, a pop as a
-  message goes, and a two-note chime as the assistant answers. Successful water
-  and meal logs also get a clear glug and a rounded bite/crunch. Never stacked (nothing within
-  80 ms of the last), silent under Do Not Disturb and on the lock screen, with one
-  switch for all of them (Settings → Alerts), on by default but mastered quiet.
-  The sounds are Notchfolk's own synthesis, CC0.
 - **Terminal.** Run a shell inside the island. Pin it above other windows while
   you work, switch pages without ending the job, or move the shell to a desktop
   terminal from its header.
+- **Camera — a photo, or a video, with the computer's camera.** A page in the expanded island (off by default; turn it on in Settings → Pages): a shutter button for a photo, a record button that starts and stops a video, and the last capture as a thumbnail — tap it and it opens in the default viewer. The daemon owns capture (`Camera1` over ffmpeg, as the spoken-reply decode does): a photo is one frame, a video is libx264 (or mpeg4 when libx264 is not there), saved in Pictures as `notchfolk-YYYYMMDD-HHMMSS-photo.jpg` / `-video.mp4`. No camera or no ffmpeg is said in the page's own words, never a blank page; a capture lights the privacy dot, as it should. A live preview fills the page while it is open.
 
 ## [1.5.0] - 2026-11-13
 

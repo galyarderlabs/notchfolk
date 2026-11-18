@@ -1908,6 +1908,17 @@
 .notchfolk-devices-dense .notchfolk-device-status, .notchfolk-devices-dense .notchfolk-device-none { font-size: 11px; }
 .notchfolk-devices-dense .notchfolk-device-level { min-width: 32px; font-size: 12px; }
 .notchfolk-devices-scroll { -st-vfade-offset: 16px; }
+
+/* The camera page: the shutter, the record toggle, and the last capture. */
+.notchfolk-camera-body { spacing: 10px; }
+.notchfolk-camera-controls { spacing: 10px; }
+.notchfolk-camera-shutter { padding: 10px; }
+.notchfolk-camera-record { color: #ff453a; }
+.notchfolk-camera-hint { font-size: 13px; color: rgba(255, 255, 255, 0.7); font-feature-settings: "tnum"; }
+.notchfolk-camera-capture { spacing: 12px; }
+.notchfolk-camera-thumb { background-color: transparent; padding: 0; }
+.notchfolk-camera-name { font-size: 13px; color: rgba(255, 255, 255, 0.85); }
+.notchfolk-camera-status { font-size: 13px; color: rgba(255, 255, 255, 0.7); text-align: center; }
 .notchfolk-phone-page-list { spacing: 12px; }
 .notchfolk-phone-page-card {
   spacing: 12px;

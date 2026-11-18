@@ -530,6 +530,7 @@ export class Controller {
             () => page('./pages/gsconnect.js', 'PhonePage', [this._daemon, () => this._botLook.palette.glow, size]),
             () => page('./pages/devices.js', 'DevicesPage', [this._daemon, size]),
             () => page('./pages/vitals.js', 'VitalsPage', [this._daemon, this._settings, size]),
+            () => page('./pages/camera.js', 'CameraPage', [this._daemon, size]),
         ];
     }
 
