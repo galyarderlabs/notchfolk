@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   package:
-    # Built against Ubuntu 24.04's GLib and GTK, the oldest GNOME 46 system.
+    # Built against Ubuntu 24.04's GLib, GTK and VTE, the oldest GNOME 46 system.
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -30,7 +30,7 @@ jobs:
           grep -q "\"version-name\": \"$version\"" gnome-extension/metadata.json ||
             { echo "metadata.json is not at $version"; exit 1; }
           grep -q "^## \[$version\]" CHANGELOG.md || { echo "CHANGELOG.md has no $version"; exit 1; }
-      # GTK 4 for notchfolk-shelf, rpmbuild for the .rpm; cmake, libclang, the Vulkan headers and glslc for notchfolk-whisper.
+      # GTK 4/VTE 4 for the GTK helpers, rpmbuild for the .rpm; cmake, libclang, Vulkan and glslc for whisper.cpp.
       - name: Install build dependencies
         run: |
           # man-db's index rebuild can stall apt for many minutes on the runners; nothing here needs it.
@@ -39,7 +39,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config rpm file cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libvte-2.91-gtk4-dev tmux libdbus-1-dev libudev-dev pkg-config rpm file cmake g++ clang libclang-dev libvulkan-dev glslc
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Package

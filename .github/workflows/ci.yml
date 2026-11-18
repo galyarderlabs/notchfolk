@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      # GTK 4 for notchfolk-shelf; cmake, libclang, the Vulkan headers and glslc for notchfolk-whisper (whisper.cpp).
+      # GTK 4/VTE 4 for the GTK helpers; cmake, libclang, Vulkan and glslc for whisper.cpp.
       - name: Install build dependencies
         run: |
           # man-db's index rebuild can stall apt for many minutes on the runners; nothing here needs it.
@@ -27,7 +27,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libvte-2.91-gtk4-dev tmux libdbus-1-dev libudev-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -54,7 +54,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libvte-2.91-gtk4-dev tmux libdbus-1-dev libudev-dev pkg-config cmake g++ clang libclang-dev libvulkan-dev glslc
       - name: Read rust-version
         id: msrv
         run: |
@@ -71,7 +71,7 @@ jobs:
         env:
           TOOLCHAIN: ${{ steps.msrv.outputs.core }}
         run: cargo "+$TOOLCHAIN" check --locked
-      - name: The whole workspace on notchfolk-shelf's rust-version
+      - name: The whole workspace on the GTK helpers' rust-version
         env:
           TOOLCHAIN: ${{ steps.msrv.outputs.shelf }}
         run: cargo "+$TOOLCHAIN" check --locked --workspace
@@ -151,7 +151,7 @@ jobs:
           printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' |
             sudo tee /etc/apt/apt.conf.d/99retries >/dev/null
           sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libdbus-1-dev libudev-dev pkg-config rpm file cmake g++ clang libclang-dev libvulkan-dev glslc
+          sudo apt-get install -y libgtk-4-dev libvte-2.91-gtk4-dev tmux libdbus-1-dev libudev-dev pkg-config rpm file cmake g++ clang libclang-dev libvulkan-dev glslc
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Package
