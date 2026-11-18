@@ -49,12 +49,14 @@ install_service() {
 }
 
 SHELF=0
+TERMINAL=0
 WHISPER=0
 # -f, not -x: unpacked where files cannot run (a /tmp mounted noexec), they still install.
 if [ -f bin/notchfolkd ]; then
     # A release package: the programs come built.
     BUILT=bin
     [ -f bin/notchfolk-shelf ] && SHELF=1
+    [ -f bin/notchfolk-terminal ] && TERMINAL=1
     [ -f bin/notchfolk-whisper ] && WHISPER=1
 else
     BUILT=target/release
@@ -71,6 +73,18 @@ else
     else
         echo "GTK 4 development files not found: skipping notchfolk-shelf (drag and drop on the shelf)."
         echo "Install them with 'sudo apt install libgtk-4-dev' and run this script again."
+    fi
+    if pkg-config --exists 'gtk4 >= 4.12' 'vte-2.91-gtk4 >= 0.65'; then
+        step "Building notchfolk-terminal"
+        if cargo build --release -p notchfolk-terminal; then
+            TERMINAL=1
+        else
+            echo "notchfolk-terminal did not build (it needs Rust 1.92 or newer: 'rustup update'); skipping the notch terminal."
+        fi
+    else
+        echo "GTK 4 or VTE 4 development files not found or too old: skipping notchfolk-terminal."
+        echo "Install them with 'sudo apt install libgtk-4-dev libvte-2.91-gtk4-dev' and run this script again."
+        echo "On Fedora: 'sudo dnf install gtk4-devel vte291-gtk4-devel'; on Arch: 'sudo pacman -S gtk4 vte4'."
     fi
     # The voice assistant's speech recognition: whisper.cpp, built with cmake; Vulkan for the GPU.
     if command -v cmake >/dev/null && command -v c++ >/dev/null; then
@@ -99,6 +113,16 @@ if [ "$SHELF" = 1 ]; then
     put "$BUILT/notchfolk-shelf" "$BINDIR/notchfolk-shelf"
     # A running helper is the old version; it starts again, updated, when needed.
     pkill -x notchfolk-shelf 2>/dev/null || true
+fi
+if [ "$TERMINAL" = 1 ]; then
+    put "$BUILT/notchfolk-terminal" "$BINDIR/notchfolk-terminal"
+    # Do not stop an open terminal: its private tmux server may still have live jobs.
+    # --version needs no display or shell and detects missing runtime libraries.
+    if ! "$BINDIR/notchfolk-terminal" --version >/dev/null || ! command -v tmux >/dev/null; then
+        echo "The notch terminal needs GTK 4, VTE 4 and tmux; the rest of Notchfolk is still installed."
+        echo "Ubuntu/Debian: 'sudo apt install libgtk-4-1 libvte-2.91-gtk4-0 tmux'."
+        echo "Fedora: 'sudo dnf install gtk4 vte291-gtk4 tmux'; Arch: 'sudo pacman -S gtk4 vte4 tmux'."
+    fi
 fi
 if [ "$WHISPER" = 1 ]; then
     put "$BUILT/notchfolk-whisper" "$BINDIR/notchfolk-whisper"

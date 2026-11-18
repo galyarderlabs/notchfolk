@@ -51,7 +51,10 @@ if [ "$SYSTEM" = 0 ]; then
 fi
 # The AI alerts' hooks in Claude Code's and Codex's own settings would run an notchfolkd that is gone.
 [ -x "$HOME/.local/bin/notchfolkd" ] && "$HOME/.local/bin/notchfolkd" --unhook-all 2>/dev/null
-rm -f "$HOME/.local/bin/notchfolkd" "$HOME/.local/bin/notchfolk-shelf" "$HOME/.local/bin/notchfolk-whisper" "$HOME/.local/bin/notchfolk-charge-limit" \
+# Removing the terminal executable does not terminate open shells or handed-off jobs.
+# Extension disable preserves the helper and reveals it if hidden.
+rm -f "$HOME/.local/bin/notchfolkd" "$HOME/.local/bin/notchfolk-shelf" "$HOME/.local/bin/notchfolk-terminal" \
+      "$HOME/.local/bin/notchfolk-whisper" "$HOME/.local/bin/notchfolk-charge-limit" \
       "$HOME/.local/bin/notchfolk-setup-voice" "$HOME/.local/bin/notchfolk-uninstall" \
       "$DATA/dbus-1/services/io.galyarderlabs.notchfolk.Daemon.service" \
       "$DATA/dbus-1/services/io.galyarderlabs.notchfolk.ShelfWindow.service" \

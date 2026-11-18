@@ -9,7 +9,7 @@ pkgdesc='Notchfolk (formerly Isle): a living dynamic island and AI companion for
 arch=('x86_64')
 url='https://github.com/galyarderlabs/notchfolk'
 license=('GPL-3.0-or-later' 'OFL-1.1')
-depends=('gnome-shell>=1:46' 'dconf' 'gtk4' 'glib2' 'pango' 'gdk-pixbuf2' 'gcc-libs' 'glibc' 'bash')
+depends=('gnome-shell>=1:46' 'dconf' 'gtk4' 'vte4' 'tmux' 'glib2' 'pango' 'gdk-pixbuf2' 'gcc-libs' 'glibc' 'bash')
 optdepends=('vulkan-icd-loader: speech recognition on the graphics card, else on the processor'
             'python>=3.11: the optional MCP server for AI agents')
 provides=('notchfolk')
@@ -24,6 +24,10 @@ package() {
   local uuid=io.galyarderlabs.notchfolk
 
   install -Dm755 -t "$pkgdir/usr/bin" bin/notchfolkd bin/notchfolk-shelf bin/notchfolk-whisper scripts/notchfolk-charge-limit
+  # The checked-in historical release predates the terminal. New releases must include it.
+  if [[ "$pkgver" != 1.0.0 || -f bin/notchfolk-terminal ]]; then
+    install -Dm755 bin/notchfolk-terminal "$pkgdir/usr/bin/notchfolk-terminal"
+  fi
   install -Dm755 scripts/setup-voice.sh "$pkgdir/usr/bin/notchfolk-setup-voice"
   install -Dm755 scripts/setup-mcp.sh "$pkgdir/usr/bin/notchfolk-setup-mcp"
   install -Dm755 scripts/notchfolk-mcp "$pkgdir/usr/bin/notchfolk-mcp"
