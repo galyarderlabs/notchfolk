@@ -22,7 +22,7 @@ mod warp;
 
 #[path = "terminals.rs"]
 mod terminals;
-pub use terminals::{available_terminals, preferred_terminal};
+pub use terminals::{TerminalTarget, available_terminals, preferred_terminal};
 
 use warp::WarpTabConfig;
 
@@ -111,12 +111,10 @@ impl Session {
     /// Cancellation and timeout revoke its one-use token before returning.
     pub fn handoff(
         &self,
-        target: &str,
+        target: &TerminalTarget,
         cancelled: &AtomicBool,
         manual: impl FnOnce(String) -> io::Result<()>,
     ) -> io::Result<()> {
-        let target = available_terminals().into_iter().find(|candidate| candidate.id == target)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "The terminal is no longer available; choose another terminal"))?;
         let _lock = self.handoff_lock.try_lock().map_err(|_| {
             io::Error::new(
                 io::ErrorKind::WouldBlock,
@@ -149,11 +147,13 @@ impl Session {
             if target.is_manual() {
                 manual(manual_attach_command(&self.handoff_argv(&token))?)?;
                 if cancelled.load(Ordering::Acquire) {
-                    return Err(io::Error::new(io::ErrorKind::Interrupted, "Handoff cancelled"));
+                    return Err(io::Error::new(
+                        io::ErrorKind::Interrupted,
+                        "Handoff cancelled",
+                    ));
                 }
                 target.open_wave()?;
-                let (_sender, launcher) = mpsc::channel();
-                return self.wait_for_client(&previous, &launcher, cancelled, MANUAL_HANDOFF_TIMEOUT);
+                return self.wait_for_client(&previous, None, cancelled, MANUAL_HANDOFF_TIMEOUT);
             }
             let command = if target.is_warp() {
                 let opener = find_program("xdg-open").ok_or_else(|| {
@@ -170,7 +170,7 @@ impl Session {
                 target.command(&self.cwd()?, &argv)?
             };
             let launcher = launch_desktop(command)?;
-            self.wait_for_client(&previous, &launcher, cancelled, HANDOFF_TIMEOUT)
+            self.wait_for_client(&previous, Some(&launcher), cancelled, HANDOFF_TIMEOUT)
         })();
 
         // Revoke the one-use request before deciding failure. An application
@@ -262,7 +262,7 @@ impl Session {
     fn wait_for_client(
         &self,
         previous: &[u32],
-        launcher: &mpsc::Receiver<io::Result<ExitStatus>>,
+        launcher: Option<&mpsc::Receiver<io::Result<ExitStatus>>>,
         cancelled: &AtomicBool,
         timeout: Duration,
     ) -> io::Result<()> {
@@ -272,18 +272,24 @@ impl Session {
                 return Ok(());
             }
             if cancelled.load(Ordering::Acquire) {
-                return Err(io::Error::new(io::ErrorKind::Interrupted, "Handoff cancelled"));
+                return Err(io::Error::new(
+                    io::ErrorKind::Interrupted,
+                    "Handoff cancelled",
+                ));
             }
-            match launcher.try_recv() {
-                Ok(Ok(status)) if !status.success() => {
-                    return Err(io::Error::other(format!(
-                        "The external terminal exited with {status}; the shell remains here"
-                    )));
+            if let Some(launcher) = launcher {
+                match launcher.try_recv() {
+                    Ok(Ok(status)) if !status.success() => {
+                        return Err(io::Error::other(format!(
+                            "The external terminal exited with {status}; the shell remains here"
+                        )));
+                    }
+                    Ok(Err(error)) => return Err(error),
+                    // Successful launchers may exit immediately after D-Bus
+                    // activation. Their exit alone is not proof of attachment.
+                    Ok(Ok(_))
+                    | Err(mpsc::TryRecvError::Empty | mpsc::TryRecvError::Disconnected) => {}
                 }
-                Ok(Err(error)) => return Err(error),
-                // Successful launchers may exit immediately after D-Bus
-                // activation. Their exit alone is not proof of attachment.
-                Ok(Ok(_)) | Err(mpsc::TryRecvError::Empty | mpsc::TryRecvError::Disconnected) => {}
             }
             if Instant::now() >= deadline {
                 return Err(io::Error::new(
@@ -316,7 +322,6 @@ impl Drop for Session {
         }
     }
 }
-
 
 fn configure_new_session(command: &mut Command, cwd: &Path) {
     command.current_dir(cwd).args([
@@ -470,7 +475,6 @@ fn find_in_path(program: &str, path: &OsStr) -> Option<PathBuf> {
         .find(|candidate| is_executable(candidate))
 }
 
-
 fn terminal_command(
     target: &str,
     executable: &Path,
@@ -529,9 +533,15 @@ fn terminal_command(
 fn manual_attach_command(argv: &[OsString]) -> io::Result<String> {
     let mut command = String::new();
     for arg in argv {
-        let arg = arg.to_str().filter(|value| !value.contains('\0')).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidInput, "Wave clipboard handoff requires UTF-8 paths")
-        })?;
+        let arg = arg
+            .to_str()
+            .filter(|value| !value.contains('\0'))
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "Wave clipboard handoff requires UTF-8 paths",
+                )
+            })?;
         if !command.is_empty() {
             command.push(' ');
         }
@@ -592,9 +602,8 @@ mod tests {
 
     #[test]
     fn manual_wave_command_quotes_each_argument_without_interpolation() {
-        let command = manual_attach_command(&[
-            "/usr/bin/env".into(), "a'b $HOME; $(bad)\n".into(),
-        ]).unwrap();
+        let command =
+            manual_attach_command(&["/usr/bin/env".into(), "a'b $HOME; $(bad)\n".into()]).unwrap();
         assert_eq!(command, "'/usr/bin/env' 'a'\\''b $HOME; $(bad)\n'");
         assert!(manual_attach_command(&[OsString::from_vec(vec![0xff])]).is_err());
         assert!(manual_attach_command(&["bad\0argument".into()]).is_err());
@@ -604,12 +613,15 @@ mod tests {
     fn manual_cancellation_and_timeout_leave_session_owned() {
         let session = Session::new(None).unwrap();
         // Model the polling contract without any GUI or desktop process.
-        let (_sender, receiver) = mpsc::channel();
         let cancelled = AtomicBool::new(true);
-        let error = session.wait_for_client(&[], &receiver, &cancelled, MANUAL_HANDOFF_TIMEOUT).unwrap_err();
+        let error = session
+            .wait_for_client(&[], None, &cancelled, MANUAL_HANDOFF_TIMEOUT)
+            .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::Interrupted);
         cancelled.store(false, Ordering::Release);
-        let error = session.wait_for_client(&[], &receiver, &cancelled, Duration::ZERO).unwrap_err();
+        let error = session
+            .wait_for_client(&[], None, &cancelled, Duration::ZERO)
+            .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::TimedOut);
         assert!(session.cwd().is_ok());
         assert!(!session.transferred.load(Ordering::Acquire));
@@ -620,15 +632,52 @@ mod tests {
         let session = Session::new(None).unwrap();
         let token = random_name().unwrap();
         let condition = format!("#{{==:#{{{HANDOFF_OPTION}}},{token}}}");
-        let probe = ["if-shell", "-F", "-t", SESSION, &condition,
-            "display-message -p authorized", "display-message -p expired"];
-        session.run(&["set-option", "-t", SESSION, HANDOFF_OPTION, &token], "authorize").unwrap();
-        assert_eq!(session.run(&probe, "check authorization").unwrap().stdout, b"authorized\n");
-        session.run(&["set-option", "-u", "-t", SESSION, HANDOFF_OPTION], "revoke").unwrap();
-        assert_eq!(session.run(&probe, "check revoked ticket").unwrap().stdout, b"expired\n");
+        let probe = [
+            "if-shell",
+            "-F",
+            "-t",
+            SESSION,
+            &condition,
+            "display-message -p authorized",
+            "display-message -p expired",
+        ];
+        session
+            .run(
+                &["set-option", "-t", SESSION, HANDOFF_OPTION, &token],
+                "authorize",
+            )
+            .unwrap();
+        assert_eq!(
+            session.run(&probe, "check authorization").unwrap().stdout,
+            b"authorized\n"
+        );
+        session
+            .run(
+                &["set-option", "-u", "-t", SESSION, HANDOFF_OPTION],
+                "revoke",
+            )
+            .unwrap();
+        assert_eq!(
+            session.run(&probe, "check revoked ticket").unwrap().stdout,
+            b"expired\n"
+        );
         // A retry uses a fresh token; an old clipboard command remains invalid.
-        session.run(&["set-option", "-t", SESSION, HANDOFF_OPTION, &random_name().unwrap()], "retry").unwrap();
-        assert_eq!(session.run(&probe, "check old ticket").unwrap().stdout, b"expired\n");
+        session
+            .run(
+                &[
+                    "set-option",
+                    "-t",
+                    SESSION,
+                    HANDOFF_OPTION,
+                    &random_name().unwrap(),
+                ],
+                "retry",
+            )
+            .unwrap();
+        assert_eq!(
+            session.run(&probe, "check old ticket").unwrap().stdout,
+            b"expired\n"
+        );
     }
 
     #[test]

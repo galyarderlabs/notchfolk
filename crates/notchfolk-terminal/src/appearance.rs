@@ -57,9 +57,9 @@ impl Appearance {
 }
 
 pub fn supports_key(settings: &gio::Settings, key: &str, kind: &glib::VariantTy) -> bool {
-    settings.settings_schema().is_some_and(|schema| {
-        schema.has_key(key) && schema.key(key).value_type() == kind
-    })
+    settings
+        .settings_schema()
+        .is_some_and(|schema| schema.has_key(key) && schema.key(key).value_type() == kind)
 }
 
 #[cfg(test)]

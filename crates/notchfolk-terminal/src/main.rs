@@ -12,15 +12,15 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::{Arc, mpsc};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, mpsc};
 
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use gtk::{gdk, gio, glib, pango};
 use gtk4 as gtk;
 use vte4::prelude::*;
 
-use session::{Session, available_terminals, preferred_terminal};
+use session::{Session, TerminalTarget, available_terminals, preferred_terminal};
 
 const APP_ID: &str = "io.galyarderlabs.notchfolk.Terminal";
 const APP_PATH: &str = "/io/galyarderlabs/notchfolk/Terminal";
@@ -107,8 +107,11 @@ fn main() -> glib::ExitCode {
             // URI-escaped UTF-8 ID and label, tab-separated, one target per line.
             // This is the sole discovery backend used by extension preferences.
             for target in available_terminals() {
-                println!("{}\t{}", glib::uri_escape_string(&target.id, None, false),
-                    glib::uri_escape_string(&target.label, None, false));
+                println!(
+                    "{}\t{}",
+                    glib::uri_escape_string(target.id, None::<&str>, false),
+                    glib::uri_escape_string(target.label, None::<&str>, false)
+                );
             }
             return glib::ExitCode::SUCCESS;
         }
@@ -598,7 +601,12 @@ impl TerminalWindow {
             }
         });
         on_click(&dismiss, &ui, |ui| {
-            if ui.handoff_cancellations.borrow().iter().any(|cancel| cancel.strong_count() > 0) {
+            if ui
+                .handoff_cancellations
+                .borrow()
+                .iter()
+                .any(|cancel| cancel.strong_count() > 0)
+            {
                 return;
             }
             ui.message_box.set_visible(false);
@@ -1057,15 +1065,17 @@ impl TerminalWindow {
     }
 
     fn show_handoff(self: &Rc<Self>) {
-        let targets = available_terminals();
-        let saved = self.settings.as_ref().filter(|settings| {
-            settings.settings_schema().is_some_and(|schema| {
-                schema.has_key(EXTERNAL_TERMINAL_KEY)
-                    && schema.key(EXTERNAL_TERMINAL_KEY).value_type() == glib::VariantTy::STRING
+        let mut targets = available_terminals();
+        let saved = self
+            .settings
+            .as_ref()
+            .filter(|settings| {
+                appearance::supports_key(settings, EXTERNAL_TERMINAL_KEY, glib::VariantTy::STRING)
             })
-        }).map(|settings| settings.string(EXTERNAL_TERMINAL_KEY)).unwrap_or_default();
-        if let Some(target) = preferred_terminal(&targets, &saved) {
-            self.choose_handoff(&target.id, target.is_manual());
+            .map(|settings| settings.string(EXTERNAL_TERMINAL_KEY))
+            .unwrap_or_default();
+        if let Some(target) = preferred_terminal(&mut targets, &saved) {
+            self.choose_handoff(Arc::new(target));
             return;
         }
         if !saved.is_empty() {
@@ -1073,12 +1083,14 @@ impl TerminalWindow {
         }
         self.clear_handoff_choices();
         if targets.is_empty() {
-            self.choices.append(&gtk::Label::new(Some("No capable external terminal was found.")));
+            self.choices.append(&gtk::Label::new(Some(
+                "No capable external terminal was found.",
+            )));
         }
         for target in targets {
             let button = gtk::Button::with_label(&target.label);
-            let manual = target.is_manual();
-            on_click(&button, self, move |ui| ui.choose_handoff(&target.id, manual));
+            let target = Arc::new(target);
+            on_click(&button, self, move |ui| ui.choose_handoff(target.clone()));
             self.choices.append(&button);
         }
         self.popover.popup();
@@ -1091,9 +1103,9 @@ impl TerminalWindow {
         self.choices.append(&self.handoff_cwd);
     }
 
-    fn choose_handoff(self: &Rc<Self>, target: &str, manual: bool) {
-        if !manual {
-            self.handoff_current(target.to_owned(), false);
+    fn choose_handoff(self: &Rc<Self>, target: Arc<TerminalTarget>) {
+        if !target.is_manual() {
+            self.handoff_current(target);
             return;
         }
         self.clear_handoff_choices();
@@ -1101,8 +1113,7 @@ impl TerminalWindow {
             .label("Wave requires a manual attach. Copy the one-use command, then paste it into a local Wave terminal and press Enter within 2 minutes. Your shell stays here until Wave connects.")
             .wrap(true).max_width_chars(48).xalign(0.0).build());
         let copy = gtk::Button::with_label("Copy command & open Wave");
-        let target = target.to_owned();
-        on_click(&copy, self, move |ui| ui.handoff_current(target.clone(), true));
+        on_click(&copy, self, move |ui| ui.handoff_current(target.clone()));
         self.choices.append(&copy);
         let cancel = gtk::Button::with_label("Cancel");
         on_click(&cancel, self, |ui| ui.popover.popdown());
@@ -1110,7 +1121,7 @@ impl TerminalWindow {
         self.popover.popup();
     }
 
-    fn handoff_current(self: &Rc<Self>, target: String, manual: bool) {
+    fn handoff_current(self: &Rc<Self>, target: Arc<TerminalTarget>) {
         self.popover.popdown();
         let Some(tab) = self.current_tab() else {
             return;
@@ -1124,14 +1135,18 @@ impl TerminalWindow {
         tab.handing_off.set(true);
         tab.close.set_sensitive(false);
         self.update_header(&tab);
-        self.report(if manual {
+        self.report(if target.is_manual() {
             "Copying the one-use command and opening Wave. Paste into a local Wave terminal and press Enter within 2 minutes."
         } else {
             "Opening the external terminal. This tab stays open until the handoff is confirmed."
         });
         let cancelled = Arc::new(AtomicBool::new(false));
-        self.handoff_cancellations.borrow_mut().retain(|cancel| cancel.strong_count() > 0);
-        self.handoff_cancellations.borrow_mut().push(Arc::downgrade(&cancelled));
+        self.handoff_cancellations
+            .borrow_mut()
+            .retain(|cancel| cancel.strong_count() > 0);
+        self.handoff_cancellations
+            .borrow_mut()
+            .push(Arc::downgrade(&cancelled));
         let cancel_button = gtk::Button::with_label("Cancel handoff");
         let cancel = cancelled.clone();
         cancel_button.connect_clicked(move |button| {
@@ -1139,36 +1154,40 @@ impl TerminalWindow {
             button.set_sensitive(false);
         });
         self.message_box.append(&cancel_button);
-        let (sender, receiver) = mpsc::channel::<(String, mpsc::Sender<()>)>();
-        let weak = Rc::downgrade(self);
-        let copy_cancelled = cancelled.clone();
-        // Only the explicitly labelled copy action reaches this path. No shell
-        // text is logged, sent over D-Bus, or typed into another application's UI.
-        glib::timeout_add_local(std::time::Duration::from_millis(25), move || {
-            if !manual || copy_cancelled.load(Ordering::Acquire) {
-                return glib::ControlFlow::Break;
-            }
-            match receiver.try_recv() {
-                Ok((command, acknowledged)) => {
-                    if manual && let Some(ui) = weak.upgrade() && !ui.quitting.get() {
-                        ui.window.clipboard().set_text(&command);
-                        let _ = acknowledged.send(());
-                    }
-                    glib::ControlFlow::Break
-                }
-                Err(mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
-                Err(mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
-            }
-        });
+        let copy_window = target
+            .is_manual()
+            .then(|| glib::SendWeakRef::from(self.window.downgrade()));
         self.pending.set(self.pending.get() + 1);
         let ui = self.clone();
         glib::MainContext::default().spawn_local(async move {
-            let result = gio::spawn_blocking(move || session.handoff(&target, &cancelled, |command| {
-                let (acknowledged, copied) = mpsc::channel();
-                sender.send((command, acknowledged)).map_err(|_| io::Error::other("The handoff UI closed"))?;
-                copied.recv_timeout(std::time::Duration::from_secs(5))
-                    .map_err(|_| io::Error::other("The copy action was cancelled or its UI closed"))
-            })).await;
+            let result = gio::spawn_blocking(move || {
+                session.handoff(&target, &cancelled, |command| {
+                    let window =
+                        copy_window.ok_or_else(|| io::Error::other("The handoff UI closed"))?;
+                    let (acknowledged, copied) = mpsc::sync_channel(1);
+                    let copy_cancelled = cancelled.clone();
+                    let timeout = std::time::Duration::from_secs(5);
+                    let deadline = std::time::Instant::now() + timeout;
+                    // Only the explicit copy action reaches this one-shot callback.
+                    // A delayed callback must not overwrite the clipboard after expiry.
+                    glib::idle_add_once(move || {
+                        if copy_cancelled.load(Ordering::Acquire)
+                            || std::time::Instant::now() >= deadline
+                        {
+                            return;
+                        }
+                        if let Some(window) = window.upgrade() {
+                            window.clipboard().set_text(&command);
+                            let _ = acknowledged.send(());
+                        }
+                    });
+                    copied.recv_timeout(timeout).map_err(|_| {
+                        cancelled.store(true, Ordering::Release);
+                        io::Error::other("The copy action was cancelled or its UI closed")
+                    })
+                })
+            })
+            .await;
             ui.message_box.remove(&cancel_button);
             tab.handing_off.set(false);
             tab.close.set_sensitive(true);
@@ -1268,7 +1287,12 @@ impl TerminalWindow {
     }
 
     fn cancel_handoffs(&self) {
-        for cancelled in self.handoff_cancellations.borrow().iter().filter_map(std::sync::Weak::upgrade) {
+        for cancelled in self
+            .handoff_cancellations
+            .borrow()
+            .iter()
+            .filter_map(std::sync::Weak::upgrade)
+        {
             cancelled.store(true, Ordering::Release);
         }
     }
@@ -1333,9 +1357,7 @@ fn terminal_settings() -> Option<gio::Settings> {
     let schema = source.lookup(SETTINGS_SCHEMA, true)?;
     // Validate keys independently at their use sites: an older schema without a
     // terminal font can still supply the island theme and glass tint.
-    if schema.path().is_none() {
-        return None;
-    }
+    schema.path()?;
     Some(gio::Settings::new_full(
         &schema,
         None::<&gio::SettingsBackend>,
@@ -1564,7 +1586,10 @@ mod tests {
         assert_eq!(parse_request(["--quit".into()]), Ok(Request::Quit));
         assert_eq!(parse_request(["--help".into()]), Ok(Request::Help));
         assert_eq!(parse_request(["--version".into()]), Ok(Request::Version));
-        assert_eq!(parse_request(["--list-terminals".into()]), Ok(Request::ListTerminals));
+        assert_eq!(
+            parse_request(["--list-terminals".into()]),
+            Ok(Request::ListTerminals)
+        );
         assert!(parse_request(["--toggle".into(), "--quit".into()]).is_err());
         assert!(parse_request(["-e".into(), "echo unsafe".into()]).is_err());
         assert!(parse_request([OsString::from_vec(vec![0xff])]).is_err());

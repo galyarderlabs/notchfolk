@@ -1716,7 +1716,7 @@ function externalTerminalRow(settings, window) {
     const discover = () => {
         const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', 'notchfolk-terminal']);
         const binary = GLib.file_test(local, GLib.FileTest.IS_REGULAR) &&
-            GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE) ? local : findProgram('notchfolk-terminal');
+            GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE) ? local : GLib.find_program_in_path('notchfolk-terminal');
         discoveryError = '';
         if (!binary) {
             discoveryError = 'Install the Terminal helper to detect external terminals';
