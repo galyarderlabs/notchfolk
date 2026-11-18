@@ -11,6 +11,7 @@ mod assistant;
 mod calendar;
 mod caller;
 mod calories;
+mod camera;
 mod clipboard;
 mod clock;
 mod devices;
@@ -47,6 +48,7 @@ use crate::app_usage::AppUsageService;
 use crate::assistant::AssistantService;
 use crate::calendar::CalendarService;
 use crate::calories::CaloriesService;
+use crate::camera::CameraService;
 use crate::clipboard::ClipboardService;
 use crate::devices::DevicesService;
 use crate::media::MediaService;
@@ -174,6 +176,7 @@ async fn run() -> anyhow::Result<()> {
     server.at(OBJECT_PATH, ClipboardService::load()).await?;
     server.at(OBJECT_PATH, CalendarService::load()).await?;
     server.at(OBJECT_PATH, CaloriesService::load()).await?;
+    server.at(OBJECT_PATH, CameraService::default()).await?;
     server.at(OBJECT_PATH, WaterService::load()).await?;
     server.at(OBJECT_PATH, PrayerService::load()).await?;
     server.at(OBJECT_PATH, RemindersService::load()).await?;
@@ -195,6 +198,8 @@ async fn run() -> anyhow::Result<()> {
         .interface::<_, vitals::VitalsService>(OBJECT_PATH)
         .await?;
     tokio::spawn(vitals::run(vitals));
+    let camera = server.interface::<_, CameraService>(OBJECT_PATH).await?;
+    tokio::spawn(camera::run(camera));
     server
         .at(
             OBJECT_PATH,
