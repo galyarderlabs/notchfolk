@@ -17,6 +17,7 @@ export function terminalCanOpen({active, available, explicit}) {
 
 /** A newly mapped page can still have its empty state's natural size. Never fit a client to that size. */
 export function terminalViewportSettled({rect, position, size, morphing, opacity}) {
+    // Transformed allocations can round differently; a subpixel gap is fine, a whole stage pixel isn't.
     return Boolean(!morphing && opacity === 255 && rect && size && position &&
         [rect.x, rect.y, rect.width, rect.height, position[0], position[1], size.width, size.height].every(Number.isFinite) &&
         size.width > 0 && size.height > 0 &&

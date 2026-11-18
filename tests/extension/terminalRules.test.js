@@ -36,6 +36,9 @@ test('the helper is never resized to an empty-state or in-flight page allocation
     const ready = {rect: {x: 238, y: 49, width: 804, height: 240}, position: [238, 49],
         size: {width: 804, height: 240}, morphing: false, opacity: 255};
     assert.equal(terminalViewportSettled(ready), true);
+    assert.equal(terminalViewportSettled({...ready, rect: {...ready.rect, width: 803.5}, position: [238.5, 49]}), true);
+    assert.equal(terminalViewportSettled({...ready, rect: {...ready.rect, width: 803}}), false);
+    assert.equal(terminalViewportSettled({...ready, position: [239, 49]}), false);
     assert.equal(terminalViewportSettled({...ready, rect: {...ready.rect, width: 239, height: 123}}), false);
     assert.equal(terminalViewportSettled({...ready, morphing: true}), false);
     assert.equal(terminalViewportSettled({...ready, opacity: 254}), false);
