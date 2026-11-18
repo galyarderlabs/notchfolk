@@ -8,7 +8,7 @@ and the exact API to call; a task that does not is not ready.
 
 - [x] **Select or create the eight sounds**, mastered to the plan's caps and
   quietness: `open` (250 ms), `close` (200 ms), `tab` (60 ms), `click` (50 ms),
-  `send` (120 ms), `answer` (300 ms), `drink` (130 ms), and `bite` (100 ms).
+  `send` (120 ms), `answer` (300 ms), `drink` (240 ms), and `bite` (180 ms).
   The table is the law; all are synthesized by Notchfolk, mastered low, CC0.
 - [x] **Place them at `gnome-extension/sounds/`** with a
   `gnome-extension/sounds/NOTICE-sounds.txt` naming each file's source and its

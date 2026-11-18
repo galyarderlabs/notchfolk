@@ -44,8 +44,8 @@ constraints, not features.
 | A control is clicked | `click` | a small rounded click | 50 ms |
 | A message is sent to the assistant | `send` | a short pop, forward | 120 ms |
 | A request to the assistant is answered | `answer` | a two-note chime, gentle | 300 ms |
-| Water logged successfully | `drink` | a tiny liquid glug, satisfying but not comic | 130 ms |
-| A meal logged successfully | `bite` | one soft, rounded bite/crunch | 100 ms |
+| Water logged successfully | `drink` | a clear liquid glug, satisfying but not comic | 240 ms |
+| A meal logged successfully | `bite` | a soft, rounded bite/crunch | 180 ms |
 | The assistant starts speaking | — | none: its voice is the sound | — |
 | An alert arrives | — | the alert system keeps its own; nothing added | — |
 | A focus session ends | — | the existing `chimes` switch keeps it | — |
