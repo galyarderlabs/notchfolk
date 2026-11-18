@@ -17,10 +17,11 @@ import {onUiScale, px, uiScale} from './compat.js';
 import * as Theme from './theme.js';
 import {islandSound} from './sounds.js';
 
-/** Gives an island button its click sound and action in one place. */
-export function soundOnClick(button, onClick) {
+/** Adds a click sound and action; pass null for actions with their own success sound. */
+export function soundOnClick(button, onClick, sound = 'click') {
     button.connect('clicked', () => {
-        islandSound('click');
+        if (sound)
+            islandSound(sound);
         onClick();
     });
     return button;
@@ -203,8 +204,8 @@ export function fence(box) {
     return end;
 }
 
-/** A round icon button. */
-export function iconButton(iconName, styleClass, onClick, {size = 16, accessibleName = ''} = {}) {
+/** A round icon button; `sound` defaults to `click` and can be null for success feedback. */
+export function iconButton(iconName, styleClass, onClick, {size = 16, accessibleName = '', sound = 'click'} = {}) {
     const button = new St.Button({
         style_class: `notchfolk-button ${styleClass}`,
         child: new St.Icon({gicon: icon(iconName), icon_size: size}),
@@ -212,7 +213,7 @@ export function iconButton(iconName, styleClass, onClick, {size = 16, accessible
         accessible_name: accessibleName,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    soundOnClick(button, onClick);
+    soundOnClick(button, onClick, sound);
     return button;
 }
 

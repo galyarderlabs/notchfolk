@@ -41,9 +41,11 @@ constraints, not features.
 | The island opens | `open` | a soft airy swell, in and up | 250 ms |
 | The island closes | `close` | the same swell reversed, softer still | 200 ms |
 | A tab turns | `tab` | a tick, like a well-oiled detent | 60 ms |
-| A control is clicked (a segment, the pin, a page's own button) | `click` | a small rounded click | 50 ms |
+| A control is clicked | `click` | a small rounded click | 50 ms |
 | A message is sent to the assistant | `send` | a short pop, forward | 120 ms |
 | A request to the assistant is answered | `answer` | a two-note chime, gentle | 300 ms |
+| Water logged successfully | `drink` | a tiny liquid glug, satisfying but not comic | 130 ms |
+| A meal logged successfully | `bite` | one soft, rounded bite/crunch | 100 ms |
 | The assistant starts speaking | — | none: its voice is the sound | — |
 | An alert arrives | — | the alert system keeps its own; nothing added | — |
 | A focus session ends | — | the existing `chimes` switch keeps it | — |
@@ -68,8 +70,8 @@ missing - the island never errors on a sound.
 ## The settings
 
 One master switch: **Island sounds** (Settings → Island, beside the chimes
-switch's own Alerts section): "Soft sounds when the island opens, tabs turn and
-messages go - one switch for all of them". The schema key `island-sounds`
+switch's own Alerts section): "Soft sounds for island actions, water logs and
+meals - one switch for all of them". The schema key `island-sounds`
 (default true). No per-moment toggles: a sound design with nine switches is a
 settings page, not a design. Volume is the desktop's event volume, not ours.
 
@@ -77,4 +79,4 @@ settings page, not a design. Volume is the desktop's event volume, not ours.
 
 - Not a notification sound system - alerts keep their own.
 - Not the assistant's voice - that is speech, not feedback.
-- Not per-page: the moments are the island's own gestures, shared by every page.
+- Not a sound for every page. Only successful water and meal logging get page-specific feedback.

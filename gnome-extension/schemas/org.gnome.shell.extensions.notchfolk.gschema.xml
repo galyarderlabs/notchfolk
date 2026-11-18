@@ -677,7 +677,7 @@
     </key>
     <key name="island-sounds" type="b">
       <default>true</default>
-      <summary>Whether the island's gestures answer in soft sounds</summary>
+      <summary>Whether Notchfolk plays soft interaction and logging sounds</summary>
     </key>
     <key name="chimes" type="b">
       <default>true</default>

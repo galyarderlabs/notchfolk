@@ -6,32 +6,27 @@ and the exact API to call; a task that does not is not ready.
 
 ## Phase 1 - the sounds themselves (the assets)
 
-- [x] **Select or create the seven sounds**, mastered to the plan's caps and
+- [x] **Select or create the eight sounds**, mastered to the plan's caps and
   quietness: `open` (250 ms), `close` (200 ms), `tab` (60 ms), `click` (50 ms),
-  `send` (120 ms), `answer` (300 ms) - six, plus nothing; the table is the law.
-  Synthesised by Notchfolk's own script (sine sweeps, bursts, a two-note
-  chime), mastered low - CC0 by our own hand, no third-party material.
+  `send` (120 ms), `answer` (300 ms), `drink` (130 ms), and `bite` (100 ms).
+  The table is the law; all are synthesized by Notchfolk, mastered low, CC0.
 - [x] **Place them at `gnome-extension/sounds/`** with a
   `gnome-extension/sounds/NOTICE-sounds.txt` naming each file's source and its
   CC0 licence, the pattern of `NOTICE-dancing-script.txt`.
 
 ## Phase 2 - the player and the gate (the extension's one small module)
 
-- [x] **`gnome-extension/src/sounds.js`** - a new module, the only place that
-  plays anything:
-  - `export function islandSound(name)` - plays
-    `Extension.lookupByURL(...)`'s `sounds/<name>.ogg` via
-    `global.display.get_sound_player().play(fileUri, 'Notchfolk', null)`.
-  - The gate inside it, in order: the `island-sounds` setting off → return;
-    `Main.sessionMode.isLocked` → return; the island's Do Not Disturb
-    (`notchfolk`'s own DND state as the alerts read it) → return; a sound within
-    80 ms of the last → return (the never-stacked rule).
-  - A missing file is a no-op with no error (the player's callback swallows it).
+- [x] **`gnome-extension/src/sounds.js`** - the only place that plays sounds:
+  - `islandSound(name)` plays `sounds/<name>.wav` through
+    `global.display.get_sound_player().play_from_file(file, 'Notchfolk', null)`.
+  - Gates: the `island-sounds` setting off, locked session, DND, or a sound within
+    80 ms of the last; missing files and player failures are silence.
+  - `initSounds({dir, isEnabled, isDnd})` wires the extension directory and gates.
 - [x] **The schema key** in `gnome-extension/schemas/...gschema.xml`:
   `island-sounds`, type `b`, default `true`, beside `chimes`.
 - [x] **The Settings row** in `gnome-extension/prefs.js`: the Island section
   (or Alerts, beside `chimes` - Galih's call when he sees it):
-  `switchRow(settings, 'island-sounds', 'Island sounds', 'Soft sounds when the island opens, tabs turn and messages go')`.
+  `switchRow(settings, 'island-sounds', 'Island sounds', 'Soft sounds for island actions, water logs and meals - one switch for all of them')`.
 
 ## Phase 3 - the moments (the hookups, each one line)
 
@@ -40,12 +35,13 @@ and the exact API to call; a task that does not is not ready.
   → `islandSound('close')`. Only when the master switch is on (the gate checks).
 - [x] **Tab turns**: `gnome-extension/src/expanded.js`, the page-switch signal
   the header already emits → `islandSound('tab')`.
-- [x] **Click**: `gnome-extension/src/widgets.js`'s `pillButton` (and the
-  segmented `St.Button`s the pages make) → `islandSound('click')` on `clicked`.
-  One central helper, not a hunt through every page.
+- [x] **Click**: `soundOnClick` in `gnome-extension/src/widgets.js` plays `click`
+  for controls; Water and Calories Add suppress it and play their semantic sound
+  only after a successful log.
 - [x] **Send**: `gnome-extension/src/voice.js`'s `_send()` → `islandSound('send')`.
 - [x] **Answer**: `gnome-extension/src/controller.js`, where a typed or spoken
   request's answer arrives (the `settled`/reply path) → `islandSound('answer')`.
+- [x] **Water and meal success**: `pages/water.js`, only after `water.Drink` returns an entry ID → `islandSound('drink')`; `pages/calories.js`, only after `calories.Add` returns an entry ID → `islandSound('bite')`. These replace the generic click sound on their Add controls.
 
 ## Phase 4 - the proof
 

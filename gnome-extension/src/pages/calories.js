@@ -7,6 +7,7 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 
 import {VERTICAL} from '../compat.js';
+import {islandSound} from '../sounds.js';
 import {Ring, icon, iconButton, label} from '../widgets.js';
 import {Page} from './page.js';
 
@@ -124,6 +125,7 @@ class CaloriesPage extends Page {
         const addBtn = iconButton('notchfolk-plus-symbolic', 'notchfolk-calorie-add-btn', () => this._add(), {
             size: 11,
             accessibleName: 'Add meal',
+            sound: null,
         });
         form.add_child(addBtn);
         rightCol.add_child(form);
@@ -186,6 +188,7 @@ class CaloriesPage extends Page {
             return;
         this._food.text = '';
         this._kcal.text = '';
-        await this.daemon.call('calories', 'Add', food, calories);
+        if (await this.daemon.call('calories', 'Add', food, calories) !== null)
+            islandSound('bite');
     }
 });
