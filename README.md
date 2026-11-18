@@ -352,6 +352,10 @@ An optional MCP server for agents outside Notchfolk.
 **More AIs.**
 More AIs for the assistant.
 
+**[Terminal](docs/usage.md#terminal).**
+Run a command in the island, switch pages, and return to the same shell. Use
+**Open in external terminal** to give a running job its own window.
+
 The full how-to for every page is in the [usage guide](docs/usage.md).
 
 Also: privacy dots while the camera, microphone or screen sharing is in use,
@@ -365,6 +369,8 @@ your windows uncovered.
   `gnome-shell --version`.
 - `curl`, which most systems have (if not: `sudo apt install curl`). Install
   Notchfolk as yourself, not with `sudo`.
+- For the Terminal page: `tmux` and GTK 4's VTE runtime
+  (`sudo apt install tmux libvte-2.91-gtk4-0` on Ubuntu).
 - For the voice assistant (optional): a microphone and
   one of Claude Code, Codex, Grok, opencode or Antigravity signed in (Codex and the npm
   install of Claude Code need Node.js 18 or newer); see

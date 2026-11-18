@@ -418,6 +418,18 @@ off until that session ends, past pauses and the lock screen. It stays on
 across the lock screen, and is turned off on the next start if the shell
 stopped mid-session. (Settings → Timer → While Focusing → Do Not Disturb.)
 
+**Terminal** is an interactive shell inside the open island. Its card uses the
+shared header and stays within the pill or notch outline, even when expanded.
+In Glass the terminal background is translucent and the text stays opaque;
+the native client does not need to reproduce the Shell's blur.
+
+Leaving the page hides the shell without ending it. Returning restores the
+same tab, working directory and running job without another Open. Warming a
+page must never start a shell. The global shortcut starts unset, like other
+page shortcuts. **Open in external terminal** uses the user's chosen terminal,
+or offers an installed one. It transfers the running shell, not just its
+directory; if the destination doesn't attach, the original tab remains usable.
+
 **Shelf** (title "Shelf"): things to keep close, in two tabs on a
 segmented control (switching crossfades), and a third, Phone, while sharing
 with a phone.

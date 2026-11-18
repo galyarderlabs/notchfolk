@@ -257,6 +257,28 @@ More AIs for the assistant.
 | Pick a provider in Settings | The assistant runs Hermes and Oh My Pi with the providers they are configured for |
 | Choose OpenAI-compatible API | Any OpenAI-compatible API answers |
 
+### Terminal
+
+Select **Terminal** in the island's tab row. Switching to another page hides
+the shell; switching back restores it, including any command waiting for input.
+
+| Do this | To |
+|---|---|
+| Press **+** | Open another shell in the active tab's directory |
+| Press **Expand** | Give an editor or pager more room |
+| Choose **Open in external terminal** | Continue the same running job in an installed desktop terminal |
+| Type `exit` | End the active shell instead of hiding it |
+
+Set **Island → Appearance → Default external terminal** to skip the picker.
+If that app is removed, you can pick another. For Wave, choose **Copy command
+& open Wave**, paste into a local Wave shell, and press Enter within two
+minutes. The original tab stays open until the other terminal attaches.
+
+**Terminal font** in the same group changes the font and size for open and new
+shell tabs. To open the page from the keyboard, assign a shortcut under
+**Island → Shortcuts**; it starts unset. For shortcuts inside a shell tab,
+run `notchfolk-terminal --help`.
+
 ## Settings
 
 Click the gear right of the clock in the open island (or Notchfolk's gear in the
