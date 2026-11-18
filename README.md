@@ -33,31 +33,31 @@ tabs for each page; pin it open to keep it there while you work elsewhere.
 
 <table>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/music.png" alt="Music page: Merry Christmas, Please Don't Call by Bleachers at 0:15, with Karaoke" width="100%"><br>
 <b>Music.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/lyrics.png" alt="Synced lyrics: the line being sung large and bright, Little Dark Age by MGMT" width="100%"><br>
 <b>Synced lyrics.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/call.png" alt="A Telegram voice call in the island: 0:08, with Mute and Open" width="100%"><br>
 <b>Calls.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/timer.png" alt="Timer page: the ring at 40:42, Work 60 and Break 15, with Pause" width="100%"><br>
 <b>Timer.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/reminders.png" alt="Reminders page: 1/1 tasks completed, with a checked task" width="100%"><br>
 <b>Reminders.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/clipboard.png" alt="Shelf: clipboard history of images, with their sizes" width="100%"><br>
 Clipboard history<br>
 <img src="docs/images/files.png" alt="The files tray: 13 of 14 files, click to copy or drag into any app" width="100%"><br>
@@ -70,31 +70,31 @@ Devices<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/weather.png" alt="Weather page: Bogor conditions, hourly temperature chart, five-day forecast and a recent earthquake" width="100%"><br>
 <b>Weather.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/calendar.png" alt="Calendar: November 2026 beside today's events, R&D OAA and Design GBots" width="100%"><br>
 <b>Calendar.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/notifications.png" alt="Notifications: a Telegram notification, with Clear" width="100%"><br>
 <b>Notifications.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/voice.png" alt="Voice assistant: the island asking “How can I help?”, with History" width="100%"><br>
 <b>Voice assistant.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/command.png" alt="The install command running: sudo pacman -S --needed vlc, asking to proceed" width="100%"><br>
 <b>Installs and fixes things.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/conversation.png" alt="Chatting with the AI: it remembers the unfinished filmcraft build after four hours" width="100%"><br>
 Conversation<br>
 <img src="docs/images/chat-history.png" alt="Chat history: past conversations with their message counts, New chat and Conversation" width="100%"><br>
@@ -103,54 +103,54 @@ Chat history<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/bot-looks.png" alt="The bot in eight shapes and several colours, with matching glows" width="100%"><br>
 <b>A bot of your own.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/usage.png" alt="AI usage: Claude Max, 5 hours 42% (resets in 2h 18m), Week 18% (resets in 4d)" width="100%"><br>
 <b>AI usage.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/prayer-alert.png" alt="Prayer alert: Dzuhur, it's time to pray in Bogor, 11:36" width="100%"><br>
 <b>Alerts.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/approvals.png" alt="Notchfolk wants to run sudo pacman -S --needed vlc, with Deny and Run" width="100%"><br>
 <b>AI agents.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/apps.png" alt="App usage: Firefox 1h 36m today, then ChatGPT, Muse and Files" width="100%"><br>
 <b>App usage.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/glass.png" alt="App usage in the glass island: Ghostty 2h 54m today, the desktop behind it showing through, blurred" width="100%"><br>
 <b>Glass.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/vitals.png" alt="Vitals page: CPU load with its sparkline, temperature, cores, memory and disk bars, network and uptime" width="100%"><br>
 <b>Vitals.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/karaoke.png" alt="Karaoke in the closed island: the line being sung centred between the cover and the wave" width="100%"><br>
 <b>Karaoke.</b>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/router.png" alt="Router: 7,349 requests, 643.8M / 4.8M tokens, $54.53 estimated cost, connected" width="100%"><br>
 Router<br>
 <img src="docs/images/router-settings.png" alt="Router settings: Remote connection to router.niyatna.com, Compatible proxy API key saved in GNOME Keyring, Last 7 days period, Show on the notch on, connected" width="100%"><br>
 Router settings<br>
 <b>Router.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/calories.png" alt="Calories: today's intake 650 of 2,000 kcal, with a meal logged" width="100%"><br>
 Calories<br>
 <img src="docs/images/water.png" alt="Water: 0.8 of 2.0 L today, with the intake chart" width="100%"><br>
@@ -161,7 +161,7 @@ Prayer<br>
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/mcp-settings.png" alt="MCP settings: External AI agents, service running on 127.0.0.1:8765/mcp, client key folky with write scopes" width="100%"><br>
 MCP settings<br>
 <img src="docs/images/mcp-access-remote.png" alt="MCP settings: Access scopes with Read access and Write actions off, Remote access via Cloudflare Tunnel with public hostname" width="100%"><br>
@@ -170,7 +170,7 @@ MCP access<br>
 The world<br>
 <b>MCP server.</b>
 </td>
-<td width="50%" valign="top">
+<td width="50%" valign="top" align="center">
 <img src="docs/images/more-ais.png" alt="The AI picker: OpenAI-compatible API selected, with the provider list open — Automatic, Claude Code, Codex, Hermes Agent, Oh My Pi, opencode, Antigravity" width="100%"><br>
 The AI picker<br>
 <img src="docs/images/more-ais-compatible.png" alt="OpenAI-compatible API selected, with model claude-mythos-5" width="100%"><br>
@@ -181,6 +181,8 @@ Hermes Agent<br>
 </td>
 </tr>
 </table>
+
+## Usage
 
 **Music.**
 Your music in the island — cover, scrubber and controls.
