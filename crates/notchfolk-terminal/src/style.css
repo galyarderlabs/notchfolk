@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* Shell supplies the page header; GSK clips the native terminal card. */
+/* Shell supplies the shared header/outline; GSK clips one native backdrop layer. */
 window.termi-notch,
 .termi-notch .terminal-body {
     background: transparent;
@@ -72,8 +72,10 @@ window.termi-notch,
     background: #151515;
 }
 
+.termi-notch vte-terminal,
 .termi-notch notebook,
-.termi-notch notebook > stack {
+.termi-notch notebook > stack,
+.termi-notch notebook > stack > box {
     background: transparent;
     border: none;
     box-shadow: none;
@@ -145,7 +147,7 @@ window.termi-notch,
     background: transparent;
 }
 
-.termi-notch .terminal-handoff > button {
+.termi-notch button.terminal-handoff {
     min-height: 24px;
     padding: 4px 14px;
     background: #242424;
@@ -160,16 +162,16 @@ window.termi-notch,
     color: #dedede;
 }
 
-.termi-notch .terminal-handoff > button:hover {
+.termi-notch button.terminal-handoff:hover {
     background: #303030;
     border-color: #454545;
 }
 
-.termi-notch .terminal-handoff > button:active {
+.termi-notch button.terminal-handoff:active {
     background: #3a3a3a;
 }
 
-.termi-notch .terminal-handoff > button:disabled {
+.termi-notch button.terminal-handoff:disabled {
     background: #171717;
     border-color: #262626;
     color: #626262;
@@ -177,4 +179,53 @@ window.termi-notch,
 
 .termi-notch .terminal-handoff:disabled label {
     color: #626262;
+}
+
+/* Glass is genuine surface alpha, not window/widget opacity. The body snapshot
+ * supplies a single smoked tint; children must not repaint an opaque card.
+ * This is a translucent fallback, not a reproduction of Shell's blur shader. */
+.termi-notch.terminal-glass .terminal-header,
+.termi-notch.terminal-glass .terminal-message,
+.termi-notch.terminal-glass notebook > header tab:checked {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.termi-notch.terminal-glass label {
+    color: #eeeeee;
+}
+
+.termi-notch.terminal-glass .terminal-cwd,
+.termi-notch.terminal-glass .terminal-tab label {
+    color: #c4c4c4;
+}
+
+.termi-notch.terminal-glass notebook > header tab:checked label {
+    color: #ffffff;
+}
+
+.termi-notch.terminal-glass button.terminal-handoff {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.termi-notch.terminal-glass button:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.termi-notch.terminal-glass button:active {
+    background: rgba(255, 255, 255, 0.20);
+}
+
+.termi-notch.terminal-glass button:disabled {
+    background: transparent;
+    color: #888888;
+}
+
+.termi-notch.terminal-glass button.terminal-handoff:disabled {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.termi-notch.terminal-glass .terminal-handoff:disabled label {
+    color: #888888;
 }

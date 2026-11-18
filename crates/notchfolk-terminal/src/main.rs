@@ -3,6 +3,7 @@
 //! A single GTK application owns the terminal widgets; hiding never closes their PTYs.
 //! Only the standard GApplication activation and quit action are exported, not shell input.
 
+mod appearance;
 mod session;
 
 use std::cell::{Cell, RefCell};
@@ -13,6 +14,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
 
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 use gtk::{gdk, gio, glib, pango};
 use gtk4 as gtk;
 use vte4::prelude::*;
@@ -330,9 +332,19 @@ fn fit_existing_window(
 mod terminal_body {
     use super::gtk;
     use gtk::{glib, graphene, gsk, prelude::*, subclass::prelude::*};
+    use std::cell::Cell;
 
-    #[derive(Default)]
-    pub struct TerminalBody;
+    pub struct TerminalBody {
+        pub background: Cell<gtk::gdk::RGBA>,
+    }
+
+    impl Default for TerminalBody {
+        fn default() -> Self {
+            Self {
+                background: Cell::new(gtk::gdk::RGBA::BLACK),
+            }
+        }
+    }
 
     #[glib::object_subclass]
     impl ObjectSubclass for TerminalBody {
@@ -349,9 +361,9 @@ mod terminal_body {
             let widget = self.obj();
             let bounds =
                 graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32);
-            // CSS corners alone do not clip VTE's opaque child surface.
+            // Clip the backdrop and all child drawing, including VTE, together.
             snapshot.push_rounded_clip(&gsk::RoundedRect::from_rect(bounds, 12.0));
-            snapshot.append_color(&gtk::gdk::RGBA::BLACK, &bounds);
+            snapshot.append_color(&self.background.get(), &bounds);
             self.parent_snapshot(snapshot);
             snapshot.pop();
         }
@@ -385,6 +397,8 @@ struct Tab {
 
 struct TerminalWindow {
     window: gtk::ApplicationWindow,
+    root: TerminalBody,
+    appearance: Cell<appearance::Appearance>,
     notebook: gtk::Notebook,
     empty: gtk::Label,
     cwd: gtk::Label,
@@ -514,6 +528,8 @@ impl TerminalWindow {
         handoff.set_popover(Some(&popover));
         let ui = Rc::new(Self {
             window,
+            root,
+            appearance: Cell::new(appearance::Appearance::read(None)),
             notebook,
             empty,
             cwd,
@@ -596,8 +612,43 @@ impl TerminalWindow {
                 }
             }
         });
+        if let Some(settings) = &ui.settings {
+            for (key, kind) in [
+                (appearance::THEME_KEY, glib::VariantTy::STRING),
+                (appearance::TINT_KEY, glib::VariantTy::INT32),
+            ] {
+                if !appearance::supports_key(settings, key, kind) {
+                    continue;
+                }
+                let weak = Rc::downgrade(&ui);
+                settings.connect_changed(Some(key), move |_, _| {
+                    if let Some(ui) = weak.upgrade() {
+                        ui.refresh_appearance();
+                    }
+                });
+            }
+        }
+        ui.refresh_appearance();
         install_shortcuts(&ui);
         ui
+    }
+
+    fn refresh_appearance(&self) {
+        let appearance = appearance::Appearance::read(self.settings.as_ref());
+        if self.appearance.replace(appearance) == appearance {
+            return;
+        }
+        if appearance.glass {
+            self.window.add_css_class("terminal-glass");
+        } else {
+            self.window.remove_css_class("terminal-glass");
+        }
+        self.root.imp().background.set(appearance.background);
+        self.root.queue_draw();
+        // Update hidden tabs too; switching tabs must never expose an old theme.
+        for tab in self.tabs.borrow().iter() {
+            appearance.apply_terminal(&tab.terminal);
+        }
     }
 
     fn current_tab(&self) -> Option<Rc<Tab>> {
@@ -639,7 +690,9 @@ impl TerminalWindow {
         terminal.set_scroll_on_output(false);
         terminal.set_audible_bell(false);
         terminal.set_mouse_autohide(true);
-        if let Some(settings) = &self.settings {
+        if let Some(settings) = self.settings.as_ref().filter(|settings| {
+            appearance::supports_key(settings, TERMINAL_FONT_KEY, glib::VariantTy::STRING)
+        }) {
             // GSettings owns each binding until its VTE is destroyed. Read-only
             // bindings also update hidden tabs without retaining the window.
             settings
@@ -658,7 +711,7 @@ impl TerminalWindow {
             )));
         }
         terminal.set_color_foreground(&gdk::RGBA::new(0.88, 0.88, 0.88, 1.0));
-        terminal.set_color_background(&gdk::RGBA::BLACK);
+        self.appearance.get().apply_terminal(&terminal);
         terminal.set_margin_start(14);
         terminal.set_margin_end(14);
         terminal.set_margin_top(6);
@@ -1139,12 +1192,9 @@ fn terminal_settings() -> Option<gio::Settings> {
             .ok()
             .or(default_source)?;
     let schema = source.lookup(SETTINGS_SCHEMA, true)?;
-    // Older extensions have no font key. Avoid GSettings' fatal missing-key
-    // errors, and keep the original font when the schema is incompatible.
-    if !schema.has_key(TERMINAL_FONT_KEY)
-        || schema.path().is_none()
-        || schema.key(TERMINAL_FONT_KEY).value_type() != glib::VariantTy::STRING
-    {
+    // Validate keys independently at their use sites: an older schema without a
+    // terminal font can still supply the island theme and glass tint.
+    if schema.path().is_none() {
         return None;
     }
     Some(gio::Settings::new_full(
