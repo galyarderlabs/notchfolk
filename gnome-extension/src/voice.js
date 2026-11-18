@@ -271,6 +271,7 @@ export const VoiceView = GObject.registerClass({
         heardRow.add_child(this._heard);
         this._heardButton = new St.Button({child: heardRow, style_class: 'notchfolk-voice-heard-button', reactive: false,
             x_align: Clutter.ActorAlign.START, accessible_name: 'Show the conversation'});
+        soundOnClick(this._heardButton, () => this.openChat());
         // A labelled History pill is easier to recognize than an icon tucked beside Close.
         const chatButtonContent = new St.BoxLayout({style_class: 'notchfolk-voice-chat-content'});
         chatButtonContent.add_child(new St.Icon({gicon: icon('notchfolk-history'), icon_size: 13,

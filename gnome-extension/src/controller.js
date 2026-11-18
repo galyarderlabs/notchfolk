@@ -531,11 +531,11 @@ export class Controller {
         }
         const expanded = new ExpandedView(this._daemon, this._privacy, this._call, this._settings, pages);
         expanded.connect('page-changed', () => {
-            islandSound('tab');
-            // Picked by hand (a tab) while open; not when opening, nor when a page
-            // (the call's) goes away by itself.
-            if (this._expandWanted && expanded.pickedByHand)
+            // A hand-picked page while open is a tab turn; opening and automatic switches are silent.
+            if (this._expandWanted && expanded.pickedByHand) {
+                islandSound('tab');
                 this._pagePickedAt = Date.now();
+            }
             if (expanded.page === this._shelf)
                 this._shelfHelper?.prepare();
             this._shelfHelper?.sync();

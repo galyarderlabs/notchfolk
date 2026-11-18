@@ -38,8 +38,10 @@ export function islandSound(name) {
     const file = fileFor(name);
     if (!file || !file.query_exists(null))
         return;
-    // Meta.SoundPlayer: play_from_file(file, app, callback) - as the timer's chime
-    // uses play_from_theme on the same player. Neither throws (no GError in the
-    // typelib); a file libcanberra cannot play is silence, not an error.
-    global.display.get_sound_player().play_from_file(file, 'Notchfolk', null);
+    // Playback is best-effort; a player failure must never interrupt the island action.
+    try {
+        global.display.get_sound_player().play_from_file(file, 'Notchfolk', null);
+    } catch {
+        // Silence is safer than failing the interaction that requested it.
+    }
 }
