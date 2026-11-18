@@ -131,24 +131,10 @@ TERMINAL_ID="io.galyarderlabs.notchfolk.Terminal"
 TERMINAL_DESKTOP="$DATA/applications/$TERMINAL_ID.desktop"
 TERMINAL_ICON="$DATA/icons/hicolor/scalable/apps/$TERMINAL_ID.svg"
 if [ -x "$BINDIR/notchfolk-terminal" ]; then
-    # Desktop Exec is not a shell command: quote its absolute path, then escape
-    # the key-file value. This also works when ~/.local/bin is not on PATH.
-    terminal_exec="$BINDIR/notchfolk-terminal"
-    terminal_exec="${terminal_exec//\\/\\\\}"
-    terminal_exec="${terminal_exec//\"/\\\"}"
-    terminal_exec="${terminal_exec//\$/\\\$}"
-    terminal_exec="${terminal_exec//\`/\\\`}"
-    terminal_exec="${terminal_exec//%/%%}"
-    terminal_exec="${terminal_exec//\\/\\\\}"
-    terminal_exec="${terminal_exec//$'\n'/\\n}"
-    terminal_exec="${terminal_exec//$'\r'/\\r}"
-    terminal_exec="${terminal_exec//$'\t'/\\t}"
-    while IFS= read -r line; do
-        case "$line" in
-            Exec=*) printf 'Exec="%s"\n' "$terminal_exec" ;;
-            *) printf '%s\n' "$line" ;;
-        esac
-    done < "data/$TERMINAL_ID.desktop" > "$WORK/$TERMINAL_ID.desktop"
+    # Resolve HOME at launch. A fixed command needs no installer-time escaping
+    # and works even if the path contains spaces or desktop-entry field codes.
+    sed 's|^Exec=.*|Exec=/bin/sh -c "exec ~/.local/bin/notchfolk-terminal"|' \
+        "data/$TERMINAL_ID.desktop" > "$WORK/$TERMINAL_ID.desktop"
     install -Dm644 "$WORK/$TERMINAL_ID.desktop" "$TERMINAL_DESKTOP"
     install -Dm644 gnome-extension/icons/notchfolk-terminal-symbolic.svg "$TERMINAL_ICON"
 else

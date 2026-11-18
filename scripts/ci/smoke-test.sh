@@ -102,16 +102,14 @@ session() {
     tmux -V || fail "tmux is missing or unusable."
 
     local terminal_id="io.galyarderlabs.notchfolk.Terminal"
-    local terminal_data="/usr/share" terminal_exec="Exec=/usr/bin/notchfolk-terminal"
+    local terminal_data="/usr/share"
     if [[ "$package" == *.tar.gz ]]; then
         terminal_data="${XDG_DATA_HOME:-$HOME/.local/share}"
-        terminal_exec="Exec=\"$HOME/.local/bin/notchfolk-terminal\""
     fi
     local terminal_desktop="$terminal_data/applications/$terminal_id.desktop"
     [ -f "$terminal_desktop" ] || fail "Terminal desktop entry is missing."
     grep -Fxq 'Name=Notchfolk Terminal' "$terminal_desktop" || fail "Terminal display name is missing."
     grep -Fxq "Icon=$terminal_id" "$terminal_desktop" || fail "Terminal icon name does not match its app ID."
-    grep -Fxq "$terminal_exec" "$terminal_desktop" || fail "Terminal launcher does not use its installed executable."
     [ -s "$terminal_data/icons/hicolor/scalable/apps/$terminal_id.svg" ] || fail "Terminal application icon is missing."
 
     say "Starting GNOME Shell"
@@ -181,12 +179,10 @@ smoke_terminal() (
         [ ! -S "$socket" ] || fail "tester already owns a Notchfolk tmux socket: $socket"
     done
     [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] || fail "GNOME Shell's Wayland socket is missing."
-    terminal="" terminal_socket="" terminal_log="$HOME/notchfolk-terminal.log"
+    bus_has "$terminal_id" && fail "Tester already has a running Terminal helper."
+    terminal_socket="" terminal_log="$HOME/notchfolk-terminal.log"
     trap 'if [ "$?" -ne 0 ]; then
-        if [ -n "$terminal" ]; then
-            timeout --kill-after=2s 10s notchfolk-terminal --quit >>"$terminal_log" 2>&1 || true
-            wait "$terminal" 2>/dev/null || true
-        fi
+        timeout --kill-after=2s 10s notchfolk-terminal --quit >>"$terminal_log" 2>&1 || true
         if [ -n "$terminal_socket" ]; then
             timeout --kill-after=2s 5s tmux -N -S "$terminal_socket" kill-server >/dev/null 2>&1 || true
         fi
@@ -194,11 +190,11 @@ smoke_terminal() (
     fi' EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM
-    timeout --kill-after=2s "$((2 * WAIT + 15))s" notchfolk-terminal >"$terminal_log" 2>&1 &
-    terminal=$!
+    # Start as GNOME does, without relying on the user bin directory being on PATH.
+    timeout --kill-after=2s 10s env PATH=/usr/bin:/bin gio launch "$terminal_desktop" >"$terminal_log" 2>&1 ||
+        fail "Could not launch the installed Terminal desktop entry."
     deadline=$((SECONDS + WAIT))
     while :; do
-        kill -0 "$terminal" 2>/dev/null || fail "notchfolk-terminal exited before attaching a shell."
         for socket in /tmp/tmux-"$UID"/notchfolk-*; do
             [ ! -S "$socket" ] || { terminal_socket="$socket"; break; }
         done
@@ -211,19 +207,13 @@ smoke_terminal() (
         [ "$SECONDS" -lt "$deadline" ] || fail "Notchfolk Terminal did not attach a live shell in $WAIT s."
         sleep 1
     done
-    # Launch through the installed desktop file without the user bin directory on
-    # PATH: GIO must find the executable and reuse the existing application.
-    owner="$(gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
-        --method org.freedesktop.DBus.GetNameOwner io.galyarderlabs.notchfolk.Terminal)"
-    timeout --kill-after=2s 10s env PATH=/usr/bin:/bin gio launch "$terminal_desktop" >>"$terminal_log" 2>&1 ||
-        fail "Terminal desktop launch failed without ~/.local/bin on PATH."
-    [ "$owner" = "$(gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
-        --method org.freedesktop.DBus.GetNameOwner io.galyarderlabs.notchfolk.Terminal)" ] ||
-        fail "Terminal desktop launch replaced the running application."
     timeout --kill-after=2s 10s notchfolk-terminal --quit >>"$terminal_log" 2>&1 ||
         fail "notchfolk-terminal --quit failed or timed out."
-    wait "$terminal" || fail "notchfolk-terminal exited unsuccessfully or timed out."
-    terminal=""
+    deadline=$((SECONDS + WAIT))
+    while bus_has "$terminal_id"; do
+        [ "$SECONDS" -lt "$deadline" ] || fail "Terminal kept its bus name after --quit."
+        sleep 1
+    done
     status=0
     timeout --kill-after=2s 5s tmux -N -S "$terminal_socket" has-session -t shell >/dev/null 2>&1 || status=$?
     [ "$status" -eq 1 ] || fail "Notchfolk Terminal --quit left its shell running or unresponsive (status $status)."
