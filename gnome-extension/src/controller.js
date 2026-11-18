@@ -39,6 +39,7 @@ import {PeekView} from './peek.js';
 import * as Playback from './playback.js';
 import {KeyboardWatcher, OsdHook, REACH_PX, TopBar, windowAtTop} from './shell.js';
 import {ShelfHelper} from './shelfHelper.js';
+import {TerminalHelper} from './terminal.js';
 import {PrayerWatcher, ReminderWatcher, WellbeingWatcher} from './reminders.js';
 import {isShelfCopy, saveToDownloads, showInFiles} from './downloads.js';
 import * as Theme from './theme.js';
@@ -132,7 +133,7 @@ const PILL_HEADER_TOP = 8;
 
 /** The pages a shortcut of their own may open from anywhere (Settings → Shortcuts; `shortcut-<page>`, none set at
  * first: the usual ones are GNOME's). As prefs.js lists them. */
-const SHORTCUT_PAGES = ['music', 'notifications', 'focus', 'reminders', 'shelf', 'calendar', 'calories', 'water',
+const SHORTCUT_PAGES = ['music', 'notifications', 'focus', 'reminders', 'shelf', 'terminal', 'calendar', 'calories', 'water',
     'prayer', 'phone', 'apps', 'devices', 'usage', 'weather', 'vitals'];
 
 /** A question back is shown this long before the island listens for the reply. */
@@ -381,6 +382,17 @@ export class Controller {
     _buildIsland() {
         this._shelf = this._expanded.pageNamed('shelf');
         this._shelfHelper = new ShelfHelper(this._island, this._shelf);
+        this._terminalPage = this._expanded.pageNamed('terminal');
+        this._terminal = new TerminalHelper(this._island, this._terminalPage, () => this._monitor);
+        this._terminal.connect('opening', () => this._prepareTerminal());
+        this._terminal.connect('closed', () => {
+            if (this._expanded.page === this._terminalPage)
+                this.collapse();
+        });
+        this._terminal.connect('held-changed', () => {
+            if (this._expandWanted && this._expanded.page === this._terminalPage && !this._island.hovered)
+                this._later('collapse', COLLAPSE_DELAY_MS, () => this._collapseUnlessHeld());
+        });
         for (const view of [...this._peeks, this._expanded, this._voice])
             this._island.addView(view);
         // GNOME Shell shutting down takes the island with the stage, Notchfolk still on, and GNOME 51 runs on a
@@ -504,6 +516,7 @@ export class Controller {
             () => page('./pages/timer.js', 'TimerPage', [this._daemon, size]),
             () => page('./pages/tasks.js', 'TasksPage', [this._daemon, size]),
             () => page('./pages/shelf.js', 'ShelfPage', [this._daemon, this._clipboard, this._settings, size]),
+            () => page('./pages/terminal.js', 'TerminalPage', [this._daemon, size]),
             () => page('./pages/calendar.js', 'CalendarPage', [this._daemon, this._settings, size]),
             () => page('./pages/calories.js', 'CaloriesPage', [this._daemon, this._settings, size]),
             () => page('./pages/water.js', 'WaterPage', [this._daemon, this._settings, size]),
@@ -539,8 +552,17 @@ export class Controller {
             if (expanded.page === this._shelf)
                 this._shelfHelper?.prepare();
             this._shelfHelper?.sync();
+            this._terminal?.sync();
         });
-        expanded.connect('page-settled', () => this._shelfHelper?.sync());
+        expanded.connect('page-settled', () => {
+            this._shelfHelper?.sync();
+            this._terminal?.sync();
+        });
+        expanded.pageNamed('terminal').connect('height-changed', () => expanded.syncHeight());
+        expanded.connect('page-activated', (_view, name) => {
+            if (name === 'terminal' && this._expandWanted)
+                this._terminal?.open();
+        });
         expanded.pageNamed('shelf').connect('helper-area-changed', () => this._shelfHelper?.sync());
         // Lyrics widen the island and wash it with the cover's colour; a page that lists things may be taller.
         for (const signal of ['width-changed', 'height-changed']) {
@@ -1557,6 +1579,8 @@ export class Controller {
         // CSS ones (padding) are divided by `scale` again, as St multiplies them.
         const scale = uiScale();
         const top = this._onBar ? this._topBar.height : 0;
+        this._island.topInset = this._blendsIn ? top : 0;
+        this._island.monitor = this._monitor;
         // Before measuring it: inside the bar it is smaller.
         this._compact.inBar = this._compactInBar(this._onBar);
 
@@ -1607,8 +1631,9 @@ export class Controller {
             size = this._compactShape(this._compact, this._onBar);
             view = this._compact;
         }
-        // An even width: centred on the display to the pixel, as much room on either side.
         size.width = 2 * Math.round(size.width / 2);
+        if (presentation === 'expanded' && this._expanded.page === this._terminalPage)
+            this._terminalPage.setViewportWidth(size.width);
         view.set_size(size.width, size.height);
         if (this._onBar)
             this._topBar.reserveWidth(this._compact.preferredWidth);
@@ -1633,6 +1658,7 @@ export class Controller {
         if (presentation === 'expanded' && this._expanded.page === this._shelf)
             this._shelfHelper.prepare();
         this._shelfHelper.sync();
+        this._terminal?.sync();
     }
 
     /** The closed island's size on a display with the top bar (`onBar`) or without, `compact` styled for it. */
@@ -2017,10 +2043,10 @@ export class Controller {
         });
     }
 
-    /** Closes, unless the pointer is on the shelf helper's window over the island. */
+    /** Closes unless pinned or a native page still owns the pointer or keyboard. */
     _collapseUnlessHeld() {
         // Pinned open: the pointer leaving does not close it (the pin button, one opening).
-        if (this._pinned)
+        if (this._pinned || this._terminal?.holdsOpen)
             return;
         // The shelf helper window covers the island; the pointer may be on it.
         if (this._shelfHelper.containsPointer()) {
@@ -2052,6 +2078,8 @@ export class Controller {
         }
         if (!this._expandWanted) {
             this.expand();
+            if (this._expanded.page === this._terminalPage)
+                this._terminal?.open();
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
@@ -2243,6 +2271,14 @@ export class Controller {
 
     // Keyboard
 
+    /** VTE owns keyboard input while the normal expanded page and its real header stay open. */
+    _prepareTerminal() {
+        this._cancel('expand');
+        this._cancel('hover');
+        this._cancel('collapse');
+        this._setKeyboard(false);
+    }
+
     // Super+V (GNOME's calendar shortcut, taken over) opens the clipboard history, search ready, or the Calendar
     // page (Settings), and holds the island open without the pointer; Super+V again, Esc or a click elsewhere
     // closes it.
@@ -2254,6 +2290,15 @@ export class Controller {
         // A page's own shortcut while it has no tab (Devices with none connected, a page left out): nothing to open.
         if (pageName && !this._expanded.pageNamed(pageName)?.available)
             return;
+        if (pageName === 'terminal') {
+            if (this._expandWanted && this._expanded.page === this._terminalPage && this._terminal.visible) {
+                this.collapse();
+            } else {
+                this.expand('terminal');
+                this._terminal.open();
+            }
+            return;
+        }
         if (this._expandWanted && this._keyboardGrab) {
             // Open on that page (or on any, with no page asked for), it closes; on another, it turns to that one.
             if (!pageName || this._expanded.page === this._expanded.pageNamed(pageName)) {
@@ -2322,6 +2367,8 @@ export class Controller {
 
     /** Grabs the keyboard for typing into the island (e.g. a new task). */
     _setKeyboard(wanted) {
+        if (wanted && this._terminal?.ownsKeyboard)
+            return;
         if (wanted && !this._keyboardGrab) {
             const grab = Main.pushModal(this._island, {actionMode: Shell.ActionMode.POPUP});
             // Another grab (a menu, a dialog) may hold the keyboard already.
@@ -3508,6 +3555,7 @@ export class Controller {
         this._releaseScanout();
         this._osd.destroy();
         this._keyboard.destroy();
+        this._terminal.destroy();
         this._shelfHelper.destroy();
         this._reminders.destroy();
         this._prayer.destroy();
@@ -3590,6 +3638,7 @@ export class Controller {
         for (const part of [this._osd, this._keyboard, this._reminders, this._installedApps])
             part?.destroy();
         this._shelfHelper?.destroy();
+        this._terminal?.destroy();
         // No island to answer agents' asks: they ask in their terminals.
         this._sayPresent(false);
         // The views are the island's once it is on screen (see `_buildIsland`); before, each goes by itself.

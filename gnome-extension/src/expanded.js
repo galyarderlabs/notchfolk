@@ -38,6 +38,7 @@ const TABS = {
     focus: {icon: 'notchfolk-timer', label: 'Timer'},
     reminders: {icon: 'notchfolk-tasks', label: 'Reminders'},
     shelf: {icon: 'notchfolk-shelf', label: 'Shelf'},
+    terminal: {icon: 'notchfolk-terminal', label: 'Terminal'},
     calendar: {icon: 'notchfolk-calendar', label: 'Calendar'},
     calories: {icon: 'notchfolk-flame', label: 'Calories'},
     water: {icon: 'notchfolk-water-tab', label: 'Water'},
@@ -91,6 +92,8 @@ export const ExpandedView = GObject.registerClass({
         'voice-requested': {},
         // The settings button beside the assistant.
         'settings-requested': {},
+        // An explicit tab or page-key selection, including the already selected tab.
+        'page-activated': {param_types: [GObject.TYPE_STRING]},
         // The pin button: keep the island open when the pointer leaves (true), or not (false).
         'pin-toggled': {param_types: [GObject.TYPE_BOOLEAN]},
     },
@@ -309,7 +312,10 @@ export const ExpandedView = GObject.registerClass({
                 accessible_name: text,
                 y_align: Clutter.ActorAlign.CENTER,
             });
-            tab.connect('clicked', () => this.showPage(index));
+            tab.connect('clicked', () => {
+                this.showPage(index);
+                this.emit('page-activated', page.name);
+            });
             // Hovering fades its icon only: nothing else of the tabs changes.
             tab.connect('notify::hover', () => this._syncTabIcon(this._tabs[index]));
             tabs.add_child(tab);
@@ -658,15 +664,19 @@ export const ExpandedView = GObject.registerClass({
     stepPage(direction) {
         const index = this._nearestAvailable(this._index, direction) ??
             this._nearestAvailable(direction > 0 ? -1 : this._pages.length, direction);
-        if (index !== null)
+        if (index !== null) {
             this.showPage(index);
+            this.emit('page-activated', this._pages[index].name);
+        }
     }
 
     /** The `n`th tab shown (from 1; Ctrl+1…9): the tabs that come and go (a call's) are counted as they show. */
     showTab(n) {
         const index = this._pages.map((page, i) => page.available ? i : -1).filter(i => i >= 0)[n - 1];
-        if (index !== undefined)
+        if (index !== undefined) {
             this.showPage(index);
+            this.emit('page-activated', this._pages[index].name);
+        }
     }
 
     /** The first page from `index` on in `direction` (±1) that has a tab, or null. */

@@ -103,6 +103,19 @@ float coverage(vec3 edge, float pixel) {
 }
 `;
 
+// Cut native content from each shader's final output. A separate effect can run before ShapeFill/RimLight
+// replace cogl_color_out, which would paint opaque pixels back over an otherwise correctly placed GTK card.
+const NATIVE_UNIFORMS = {nativeHole: 4, nativeRadius: 1, nativePixel: 1};
+const NATIVE_FUNCTIONS = `
+float nativeCoverage(vec2 p) {
+    if (nativeHole.z <= 0.0 || nativeHole.w <= 0.0)
+        return 1.0;
+    vec2 q = abs(p - nativeHole.xy - nativeHole.zw * 0.5) - nativeHole.zw * 0.5 + nativeRadius;
+    float distance = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - nativeRadius;
+    return clamp(distance * nativePixel + 0.5, 0.0, 1.0);
+}
+`;
+
 // The shape in the theme's colour (`fill`), a 'wash' (`style` 1) or 'glow' (2) of `tint` (rgb, strength) over it,
 // and the theme's `edge` (rgb, on; `edgeAlpha` at the top and the bottom), each edge softened over a pixel.
 const SHAPE_CODE = `
@@ -135,24 +148,30 @@ if (edge.a > 0.0) {
     float a = mix(edgeAlpha.x, edgeAlpha.y, clamp(p.y / max(bottom, 0.001), 0.0, 1.0)) * band;
     color = vec4(edge.rgb, 1.0) * a + color * (1.0 - a);
 }
-cogl_color_out = color * cogl_color_in.a;
+cogl_color_out = color * cogl_color_in.a * nativeCoverage(p);
 `;
 
 /** The island's shape, drawn by the GPU as it changes (see `_syncShape`). */
-const ShapeFill = shaderEffect('ShapeFill', {frame: 4, body: 4, corner: 4, pill: 2, fill: 4, tint: 4, style: 1, edge: 4, edgeAlpha: 2},
-    SHAPE_CODE, OUTLINE);
+const ShapeFill = shaderEffect('ShapeFill', {frame: 4, body: 4, corner: 4, pill: 2, fill: 4, tint: 4,
+    style: 1, edge: 4, edgeAlpha: 2, ...NATIVE_UNIFORMS}, SHAPE_CODE, OUTLINE + NATIVE_FUNCTIONS);
 
 // What the views draw, cut to the outline as the shape is (see SHAPE_CODE).
 const VIEWS_CODE = `
 vec2 p = ${effectPoint('frame.xy')};
-cogl_color_out *= coverage(edgeMin(edgeMax(outlineBody(p), outlineBeside(p)), vec3(p.y, 0.0, 1.0)), frame.z);
+cogl_color_out *= coverage(edgeMin(edgeMax(outlineBody(p), outlineBeside(p)), vec3(p.y, 0.0, 1.0)), frame.z) * nativeCoverage(p);
 `;
 
 /** Keeps the views inside the island's rounded outline while it changes shape (see `_syncViews`). */
-const ViewsMask = shaderEffect('ViewsMask', {frame: 4, body: 4, corner: 4, pill: 2}, VIEWS_CODE, OUTLINE);
+const ViewsMask = shaderEffect('ViewsMask', {frame: 4, body: 4, corner: 4, pill: 2, ...NATIVE_UNIFORMS},
+    VIEWS_CODE, OUTLINE + NATIVE_FUNCTIONS);
 
 /** The 'aura' light, drawn by the GPU each frame (see glow.js). */
-const RimLight = shaderEffect('RimLight', RIM_UNIFORMS, rimCode(effectPoint('frame.xy')), OUTLINE + RIM_FUNCTIONS);
+const RimLight = shaderEffect('RimLight', {...RIM_UNIFORMS, ...NATIVE_UNIFORMS},
+    rimCode(effectPoint('frame.xy')) + '\ncogl_color_out *= nativeCoverage(p);', OUTLINE + RIM_FUNCTIONS + NATIVE_FUNCTIONS);
+
+/** Glass draws a sampled backdrop rather than generating opaque pixels, so its cutout is a final mask. */
+const NativeBackdropMask = shaderEffect('NativeBackdropMask', {frame: 2, ...NATIVE_UNIFORMS},
+    `cogl_color_out *= nativeCoverage(${effectPoint('frame')});`, NATIVE_FUNCTIONS);
 
 /** Cross-fade timings in milliseconds. */
 const FADE_OUT = 160;
@@ -196,6 +215,9 @@ export const Island = GObject.registerClass({
         this._topInset = 0;
         /** A pill's room above it, in stage pixels; null for the notch (see `pillGap`). */
         this._pillGap = null;
+        /** A native window inside a page: Shell keeps the shared header, outer shape and margins. */
+        this._nativeViewport = null;
+        this._nativeBackdropMask = null;
         this._hovered = false;
         this._autoHidden = false;
         this._band = 0;
@@ -312,6 +334,49 @@ export const Island = GObject.registerClass({
 
     get pillGap() {
         return this._pillGap;
+    }
+
+    /** The ready native card, in stage coordinates; null restores ordinary page drawing and input. */
+    set nativeViewport(rect) {
+        const previous = this._nativeViewport;
+        if (rect === previous || rect && previous &&
+            ['x', 'y', 'width', 'height'].every(key => rect[key] === previous[key]))
+            return;
+        this._nativeViewport = rect;
+        this._sync();
+    }
+
+    _syncNativeViewport() {
+        const rect = this._nativeViewport;
+        for (const [layer, effect] of [[this._shape, this._fill], [this._glow, this._rim], [this._viewsLayer, this._viewsMask]])
+            effect.setUniforms(rect ? this._nativeUniforms(layer, rect) : {nativeHole: [0, 0, 0, 0]});
+        if (!rect || !Theme.blur()) {
+            if (this._nativeBackdropMask)
+                this._nativeBackdropMask.enabled = false;
+            return;
+        }
+        if (!this._nativeBackdropMask) {
+            this._nativeBackdropMask = new NativeBackdropMask();
+            this._backdrop.add_effect(this._nativeBackdropMask);
+        }
+        this._nativeBackdropMask.setUniforms({
+            frame: [this._backdrop.width, this._backdrop.height],
+            ...this._nativeUniforms(this._backdrop, rect),
+        });
+        this._nativeBackdropMask.enabled = true;
+    }
+
+    _nativeUniforms(layer, rect) {
+        const [left, top] = layer.get_transformed_position();
+        const [width, height] = layer.get_transformed_size();
+        if (width <= 0 || height <= 0 || layer.width <= 0 || layer.height <= 0)
+            return {nativeHole: [0, 0, 0, 0]};
+        const sx = layer.width / width, sy = layer.height / height;
+        return {
+            nativeHole: [(rect.x - left) * sx, (rect.y - top) * sy, rect.width * sx, rect.height * sy],
+            nativeRadius: Math.min(px(12) * Math.min(sx, sy), rect.width * sx / 2, rect.height * sy / 2),
+            nativePixel: (layer.get_resource_scale() || 1) / sx,
+        };
     }
 
     /** The height of the bar the island grows out of; its body starts below. */
@@ -763,7 +828,9 @@ export const Island = GObject.registerClass({
         const margin = Math.max(0, this._shoulder.value);
         const outerWidth = width + 2 * margin;
 
-        this.set_size(Math.ceil(outerWidth), Math.ceil(height));
+        const inputHeight = this._nativeViewport
+            ? Math.max(0, Math.min(height, this._nativeViewport.y - (this._monitor?.y ?? this.y))) : height;
+        this.set_size(Math.ceil(outerWidth), Math.ceil(inputHeight));
         const room = this._roomFor(outerWidth, height);
         // A pixel wider on each side, for the fraction the island is drawn off its whole-pixel place.
         this._shape.set_size(room.width + 2 * SHAPE_PAD, room.height);
@@ -772,7 +839,8 @@ export const Island = GObject.registerClass({
         // Whole pixels keep text sharp while the island resizes.
         this._stageX = Math.round(margin);
         this._stage.set_position(this._stageX, 0);
-        this._stage.set_size(Math.ceil(width), Math.ceil(height));
+        // Keep the real header's children pickable, but never let its page intercept VTE's pointer input.
+        this._stage.set_size(Math.ceil(width), Math.ceil(inputHeight));
         if (this._monitor) {
             const {x, y, width: monitorWidth} = this._monitor;
             const exact = x + (monitorWidth - outerWidth) / 2;
@@ -790,6 +858,7 @@ export const Island = GObject.registerClass({
         this._syncShape();
         this._syncViews(room);
         this._queueGlow();
+        this._syncNativeViewport();
         this.emit('geometry-changed');
     }
 
@@ -810,11 +879,11 @@ export const Island = GObject.registerClass({
         return this._room;
     }
 
-    /** Cuts the views to the outline while the island moves; at rest they fit, drawn straight. */
+    /** Cut views while moving and around a native card; otherwise draw them straight. */
     _syncViews(room) {
-        const moving = !this._springs.every(spring => spring.settled);
-        this._viewsMask.enabled = moving;
-        if (!moving)
+        const masking = !this._springs.every(spring => spring.settled) || Boolean(this._nativeViewport);
+        this._viewsMask.enabled = masking;
+        if (!masking)
             return;
         const height = Math.max(0, this._height.value);
         const {left, right, top, radius, shoulder, crown, gap} = this._box(height);

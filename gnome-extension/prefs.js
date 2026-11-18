@@ -1251,6 +1251,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             ['standard', 'Standard'],
             ['large', 'Large'],
         ]));
+        look.add(terminalFontRow(settings, window));
         look.add(switchRow(settings, 'privacy-indicators', 'Privacy indicators', 'Dots when the camera, microphone or screen sharing is in use'));
         look.add(choiceRow(settings, 'island-monitor', 'Display', 'With more than one display, where the island is', [
             ['primary', 'Main display'],
@@ -1674,6 +1675,49 @@ function switchRow(settings, key, title, subtitle) {
     return row;
 }
 
+/** An installed font and point size for the terminal, without changing the rest of the island. */
+function terminalFontRow(settings, window) {
+    const row = new Adw.ActionRow({title: 'Terminal font',
+        subtitle: 'Font and size for Termi-notch shell text only'});
+    // No monospace filter: some Nerd Font families do not advertise themselves as monospace.
+    const font = new Gtk.FontDialogButton({
+        dialog: new Gtk.FontDialog({title: 'Terminal font'}),
+        level: Gtk.FontLevel.FONT,
+        valign: Gtk.Align.CENTER,
+        tooltip_text: 'Choose an installed font and point size',
+    });
+    const reset = new Gtk.Button({label: 'Reset', valign: Gtk.Align.CENTER,
+        tooltip_text: `Reset to ${settings.get_default_value('terminal-font').unpack()}`});
+    row.add_suffix(font);
+    row.add_suffix(reset);
+    row.activatable_widget = font;
+    let syncing = false;
+    const sync = () => {
+        const description = Pango.FontDescription.from_string(settings.get_string('terminal-font'));
+        if (!font.font_desc?.equal(description)) {
+            syncing = true;
+            font.font_desc = description;
+            syncing = false;
+        }
+        reset.sensitive = settings.get_user_value('terminal-font') !== null;
+    };
+    sync();
+    font.connect('notify::font-desc', () => {
+        if (syncing || !font.font_desc)
+            return;
+        const value = font.font_desc.to_string();
+        if (value !== settings.get_string('terminal-font'))
+            settings.set_string('terminal-font', value);
+    });
+    reset.connect('clicked', () => settings.reset('terminal-font'));
+    const changed = settings.connect('changed::terminal-font', sync);
+    window.connect('close-request', () => {
+        settings.disconnect(changed);
+        return false;
+    });
+    return row;
+}
+
 /** How dark the Glass look is, Clear to Dark; shown only while the island is glass. */
 function glassRow(settings, window) {
     const row = new Adw.ActionRow({title: 'Glass'});
@@ -1798,6 +1842,7 @@ const PAGES = [
     ['focus', 'Timer', 'alarm-symbolic', 'Pomodoro focus sessions and breaks'],
     ['reminders', 'Reminders', 'object-select-symbolic', 'Your to-do list'],
     ['shelf', 'Shelf', 'edit-paste-symbolic', 'Clipboard history (Super+V), the files tray and sharing with a phone'],
+    ['terminal', 'Terminal', 'utilities-terminal-symbolic', 'A real shell with tabs and live handoff to an external terminal'],
     ['calendar', 'Calendar', 'x-office-calendar-symbolic', 'The month, its events and world clocks'],
     ['calories', 'Calories', 'accessories-calculator-symbolic', 'Your food log and daily calorie goal'],
     ['water', 'Water', 'weather-showers-symbolic', 'Your water log and daily hydration goal'],
@@ -1811,7 +1856,7 @@ const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, 
     ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic'],
     ['weather', 'Weather', 'weather-clear-symbolic'], ['vitals', 'Vitals', 'utilities-system-monitor-symbolic']];
 
-/** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
+/** Per-page shortcuts; all can be cleared or changed with the same recorder. */
 function shortcutsGroup(settings) {
     const group = new Adw.PreferencesGroup({
         title: 'Shortcuts',
@@ -2680,7 +2725,8 @@ function shortcutTakenBy(accelerator, settings, ownKey) {
                 return `your shortcut “${own.get_string('name')}”`;
         }
     }
-    const rows = [['voice-shortcut', 'Assistant'], ...SHORTCUT_PAGES.map(([name, title]) => [`shortcut-${name}`, title])];
+    const rows = [['voice-shortcut', 'Assistant'],
+        ...SHORTCUT_PAGES.map(([name, title]) => [`shortcut-${name}`, title])];
     for (const [other, title] of rows) {
         if (other !== ownKey && same(settings.get_strv(other)))
             return `Isle’s ${title} shortcut`;
