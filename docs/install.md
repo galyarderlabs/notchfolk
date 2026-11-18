@@ -228,6 +228,19 @@ gh attestation verify notchfolk-*-x86_64-linux.tar.gz --repo galyarderlabs/notch
 
 `get.sh` checks each download against its `.sha256` already.
 
+### From source
+
+For development or other architectures. You need Rust 1.92 or newer (1.88 without the shelf helper) ([rustup](https://rustup.rs); Ubuntu 24.04's own `cargo` is too old), for the shelf's drag and drop the GTK 4 development files, and for the voice assistant's speech recognition (whisper.cpp) cmake, libclang, and for the GPU the Vulkan headers and glslc:
+
+```sh
+sudo apt install git build-essential pkg-config libgtk-4-dev cmake libclang-dev libvulkan-dev glslc
+# Fedora: git gcc-c++ pkgconf gtk4-devel cmake clang-devel vulkan-loader-devel glslc
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+git clone https://github.com/galyarderlabs/notchfolk.git
+cd notchfolk
+./install.sh
+```
+
 ## What the installer changes
 
 Everything goes in your home folder:
@@ -284,72 +297,3 @@ sign-in) and what to run.
 `journalctl -b -o cat /usr/bin/gnome-shell | grep -i notchfolk`. Please
 [open an issue](https://github.com/galyarderlabs/notchfolk/issues) with what it says
 and the output of `gnome-shell --version`.
-
-# Other ways to install
-
-
-**Ubuntu and Debian (.deb), Fedora (.rpm).** Each
-[release](../../releases) also has a system-wide package, for every user of
-the computer. Install it, log out and back in (GNOME Shell only finds a new
-extension at login), then turn Notchfolk on once as each user, in the Extensions
-app or with `gnome-extensions enable`:
-
-```sh
-sudo apt install ./notchfolk_*_amd64.deb        # Ubuntu 24.04 and newer, Debian 13
-sudo dnf install ./notchfolk-*.x86_64.rpm       # Fedora 40 and newer
-# Log out and back in, then:
-gnome-extensions enable io.galyarderlabs.notchfolk
-```
-
-**Arch Linux.** Notchfolk is not in the AUR yet (`yay -S notchfolk-bin` finds
-nothing). Build its package from the `PKGBUILD` in
-[`packaging/aur`](../packaging/aur), made from the release tarball, or use the
-one-line install above:
-
-```sh
-sudo pacman -S --needed base-devel git
-git clone --depth 1 https://github.com/galyarderlabs/notchfolk.git
-cd notchfolk/packaging/aur
-makepkg -si
-# Log out and back in, then:
-gnome-extensions enable io.galyarderlabs.notchfolk
-```
-
-To update a package, install the new release's package the same way (or run
-`makepkg -si` again with the updated `PKGBUILD`); don't also run the command
-above, which would add a second copy in your home folder.
-
-A copy installed with the command above, in your home folder, takes
-precedence over a system-wide package; `notchfolk-uninstall` removes it and the
-package's takes over. Releases can be checked with
-`gh attestation verify <file> --repo galyarderlabs/notchfolk` (see
-[SECURITY.md](../SECURITY.md#verifying-a-release)).
-
-<details>
-<summary><b>From the release tarball, or from source</b></summary>
-
-**From a release package.** Download `notchfolk-<version>-x86_64-linux.tar.gz`
-from [Releases](../../releases), then:
-
-```sh
-tar -xzf notchfolk-*-x86_64-linux.tar.gz
-cd notchfolk-*-x86_64-linux
-./install.sh
-```
-
-**From source**, for development or other architectures. You need Rust 1.92
-or newer (1.88 without the shelf helper) ([rustup](https://rustup.rs); Ubuntu 24.04's own `cargo` is too
-old), for the shelf's drag and drop the GTK 4 development files, and for the
-voice assistant's speech recognition (whisper.cpp) cmake, libclang, and for
-the GPU the Vulkan headers and glslc:
-
-```sh
-sudo apt install git build-essential pkg-config libgtk-4-dev cmake libclang-dev libvulkan-dev glslc
-# Fedora: git gcc-c++ pkgconf gtk4-devel cmake clang-devel vulkan-loader-devel glslc
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-git clone https://github.com/galyarderlabs/notchfolk.git
-cd notchfolk
-./install.sh
-```
-
-</details>
