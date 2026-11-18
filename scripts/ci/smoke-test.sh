@@ -162,6 +162,8 @@ bus_has() {
 # sockets. This gives the new helper's socket a known owner without inspecting argv.
 smoke_terminal() (
     say "Opening and closing the packaged Termi-notch"
+    # The helper must ignore the caller's tmux directory so an external terminal can attach to the same socket.
+    export TMUX_TMPDIR="$XDG_RUNTIME_DIR"
     for socket in /tmp/tmux-"$UID"/notchfolk-*; do
         [ ! -S "$socket" ] || fail "tester already owns a Notchfolk tmux socket: $socket"
     done
