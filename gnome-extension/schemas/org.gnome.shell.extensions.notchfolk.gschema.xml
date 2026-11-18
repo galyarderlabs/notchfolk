@@ -33,6 +33,11 @@
       <summary>Terminal font</summary>
       <description>A Pango font description for the Terminal page. Applies to open and new shell tabs without changing the island or desktop fonts.</description>
     </key>
+    <key name="terminal-external-app" type="s">
+      <default>''</default>
+      <summary>Default external terminal</summary>
+      <description>An opaque ID from the Terminal helper's detected handoff targets, never a command or Exec line. Empty means Ask every time. If the saved app is unavailable, show the picker without changing the saved preference. Wave requires an explicit copy-and-paste attach step.</description>
+    </key>
     <key name="clock-format" type="s">
       <choices>
         <choice value="system"/>

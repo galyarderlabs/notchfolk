@@ -1252,6 +1252,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             ['large', 'Large'],
         ]));
         look.add(terminalFontRow(settings, window));
+        look.add(externalTerminalRow(settings, window));
         look.add(switchRow(settings, 'privacy-indicators', 'Privacy indicators', 'Dots when the camera, microphone or screen sharing is in use'));
         look.add(choiceRow(settings, 'island-monitor', 'Display', 'With more than one display, where the island is', [
             ['primary', 'Main display'],
@@ -1672,6 +1673,102 @@ function agentsFound() {
 function switchRow(settings, key, title, subtitle) {
     const row = new Adw.SwitchRow({title, subtitle});
     settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT);
+    return row;
+}
+
+/** The helper is authoritative: preferences never maintain a second app/argv list. */
+function externalTerminalRow(settings, window) {
+    const key = 'terminal-external-app';
+    const row = new Adw.ComboRow({title: 'Default external terminal',
+        subtitle: 'Choose where “Open in external terminal” sends the live shell',
+        model: Gtk.StringList.new(['Ask every time'])});
+    const refresh = new Gtk.Button({icon_name: 'view-refresh-symbolic',
+        tooltip_text: 'Refresh installed terminals', valign: Gtk.Align.CENTER});
+    row.add_suffix(refresh);
+    let targets = [];
+    let ids = [''];
+    let syncing = false;
+    let closed = false;
+    let process = null;
+    let discoveryError = '';
+    const cancellable = new Gio.Cancellable();
+    const sync = () => {
+        const saved = settings.get_string(key);
+        const missing = saved && !targets.some(([id]) => id === saved);
+        ids = ['', ...targets.map(([id]) => id)];
+        const labels = ['Ask every time', ...targets.map(([, label]) => label)];
+        if (missing) {
+            ids.push(saved);
+            labels.push('Unavailable — ask every time');
+        }
+        syncing = true;
+        row.model = Gtk.StringList.new(labels);
+        row.selected = ids.indexOf(saved);
+        syncing = false;
+        row.subtitle = discoveryError || (missing
+            ? 'The saved app is unavailable; handoff will show the picker'
+            : 'Detected capable apps only. Wave opens with an explicit copy-and-paste attach step.');
+    };
+    row.connect('notify::selected', () => {
+        if (!syncing && ids[row.selected] !== undefined)
+            settings.set_string(key, ids[row.selected]);
+    });
+    const discover = () => {
+        const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', 'notchfolk-terminal']);
+        const binary = GLib.file_test(local, GLib.FileTest.IS_REGULAR) &&
+            GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE) ? local : findProgram('notchfolk-terminal');
+        discoveryError = '';
+        if (!binary) {
+            discoveryError = 'Install the Terminal helper to detect external terminals';
+            sync();
+            return;
+        }
+        try {
+            refresh.sensitive = false;
+            process = Gio.Subprocess.new([binary, '--list-terminals'],
+                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
+            process.communicate_utf8_async(null, cancellable, (child, result) => {
+                try {
+                    const [, output] = child.communicate_utf8_finish(result);
+                    if (closed)
+                        return;
+                    if (!child.get_successful())
+                        throw new Error('Terminal discovery failed');
+                    targets = output.trim().split('\n').filter(Boolean).map(line => {
+                        const fields = line.split('\t');
+                        if (fields.length !== 2)
+                            throw new Error('Invalid terminal discovery response');
+                        return fields.map(decodeURIComponent);
+                    });
+                } catch (error) {
+                    if (!closed)
+                        discoveryError = 'Could not detect terminals; update the helper and try Refresh';
+                } finally {
+                    process = null;
+                    if (!closed) {
+                        refresh.sensitive = true;
+                        sync();
+                    }
+                }
+            });
+        } catch (error) {
+            process = null;
+            refresh.sensitive = true;
+            discoveryError = 'Could not start terminal discovery; try Refresh';
+            sync();
+        }
+    };
+    refresh.connect('clicked', discover);
+    const changed = settings.connect(`changed::${key}`, sync);
+    window.connect('close-request', () => {
+        closed = true;
+        settings.disconnect(changed);
+        cancellable.cancel();
+        process?.force_exit();
+        return false;
+    });
+    sync();
+    discover();
     return row;
 }
 

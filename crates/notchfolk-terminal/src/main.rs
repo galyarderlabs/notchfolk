@@ -12,27 +12,30 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, mpsc};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use gtk::{gdk, gio, glib, pango};
 use gtk4 as gtk;
 use vte4::prelude::*;
 
-use session::{Session, available_terminals};
+use session::{Session, available_terminals, preferred_terminal};
 
 const APP_ID: &str = "io.galyarderlabs.notchfolk.Terminal";
 const APP_PATH: &str = "/io/galyarderlabs/notchfolk/Terminal";
 const SETTINGS_SCHEMA: &str = "org.gnome.shell.extensions.notchfolk";
 const TERMINAL_FONT_KEY: &str = "terminal-font";
+const EXTERNAL_TERMINAL_KEY: &str = "terminal-external-app";
 const DEFAULT_TERMINAL_FONT: &str = "Monospace 10";
 const COMPACT_SIZE: (i32, i32) = (460, 240);
 const EXPANDED_SIZE: (i32, i32) = (880, 480);
 const HELP: &str = "Notchfolk Terminal — live shell tabs\n\
-Usage: notchfolk-terminal [--toggle | --quit | --help | --version]\n\
+Usage: notchfolk-terminal [--toggle | --quit | --list-terminals | --help | --version]\n\
   No option   Show the terminal, keeping existing tabs\n\
   --toggle    Hide or show without stopping shells\n\
   --quit      Close this user's running helper; never start one\n\
+  --list-terminals  List installed handoff targets without opening a display\n\
   --help      Show this help without opening a display\n\
   --version   Show the version without opening a display\n\n\
 Default keys: Ctrl+Shift+T new tab; Ctrl+Shift+W close tab; Ctrl+Shift+E expand;\n\
@@ -62,6 +65,7 @@ enum Request {
     Quit,
     Help,
     Version,
+    ListTerminals,
 }
 
 fn parse_request(args: impl IntoIterator<Item = OsString>) -> Result<Request, &'static str> {
@@ -72,6 +76,7 @@ fn parse_request(args: impl IntoIterator<Item = OsString>) -> Result<Request, &'
         Some(arg) if arg == OsStr::new("--quit") => Request::Quit,
         Some(arg) if arg == OsStr::new("--help") || arg == OsStr::new("-h") => Request::Help,
         Some(arg) if arg == OsStr::new("--version") || arg == OsStr::new("-V") => Request::Version,
+        Some(arg) if arg == OsStr::new("--list-terminals") => Request::ListTerminals,
         Some(_) => return Err("Unknown option. Run notchfolk-terminal --help for usage."),
     };
     if args.next().is_some() {
@@ -96,6 +101,15 @@ fn main() -> glib::ExitCode {
         }
         Request::Version => {
             println!("notchfolk-terminal {}", env!("CARGO_PKG_VERSION"));
+            return glib::ExitCode::SUCCESS;
+        }
+        Request::ListTerminals => {
+            // URI-escaped UTF-8 ID and label, tab-separated, one target per line.
+            // This is the sole discovery backend used by extension preferences.
+            for target in available_terminals() {
+                println!("{}\t{}", glib::uri_escape_string(&target.id, None, false),
+                    glib::uri_escape_string(&target.label, None, false));
+            }
             return glib::ExitCode::SUCCESS;
         }
         Request::Quit => {
@@ -403,7 +417,9 @@ struct TerminalWindow {
     empty: gtk::Label,
     cwd: gtk::Label,
     handoff_cwd: gtk::Label,
-    handoff: gtk::MenuButton,
+    choices: gtk::Box,
+    handoff_cancellations: RefCell<Vec<std::sync::Weak<AtomicBool>>>,
+    handoff: gtk::Button,
     popover: gtk::Popover,
     message: gtk::Label,
     message_box: gtk::Box,
@@ -496,8 +512,7 @@ impl TerminalWindow {
         let chevron = gtk::Image::from_icon_name("pan-up-symbolic");
         chevron.set_pixel_size(10);
         handoff_content.append(&chevron);
-        let handoff = gtk::MenuButton::builder()
-            .direction(gtk::ArrowType::Up)
+        let handoff = gtk::Button::builder()
             .child(&handoff_content)
             .tooltip_text("Open in external terminal")
             .hexpand(true)
@@ -524,8 +539,9 @@ impl TerminalWindow {
             .xalign(0.0)
             .build();
         choices.append(&handoff_cwd);
+        popover.set_position(gtk::PositionType::Top);
         popover.set_child(Some(&choices));
-        handoff.set_popover(Some(&popover));
+        popover.set_parent(&handoff);
         let ui = Rc::new(Self {
             window,
             root,
@@ -534,6 +550,8 @@ impl TerminalWindow {
             empty,
             cwd,
             handoff_cwd,
+            choices,
+            handoff_cancellations: RefCell::new(Vec::new()),
             handoff,
             popover,
             message,
@@ -565,18 +583,13 @@ impl TerminalWindow {
             }
         });
         on_click(&dismiss, &ui, |ui| {
+            if ui.handoff_cancellations.borrow().iter().any(|cancel| cancel.strong_count() > 0) {
+                return;
+            }
             ui.message_box.set_visible(false);
             ui.focus_current();
         });
-        let targets = available_terminals();
-        if targets.is_empty() {
-            choices.append(&gtk::Label::new(Some("Install GNOME Terminal, Console, or another supported terminal to hand off a shell.")));
-        }
-        for (target, label) in targets {
-            let button = gtk::Button::with_label(label);
-            on_click(&button, &ui, move |ui| ui.handoff_current(target));
-            choices.append(&button);
-        }
+        on_click(&ui.handoff, &ui, |ui| ui.show_handoff());
         let weak = Rc::downgrade(&ui);
         ui.popover.connect_show(move |_| {
             if let Some(ui) = weak.upgrade() {
@@ -1028,7 +1041,61 @@ impl TerminalWindow {
         self.close_current.set_sensitive(!tab.handing_off.get());
     }
 
-    fn handoff_current(self: &Rc<Self>, target: &'static str) {
+    fn show_handoff(self: &Rc<Self>) {
+        let targets = available_terminals();
+        let saved = self.settings.as_ref().filter(|settings| {
+            settings.settings_schema().is_some_and(|schema| {
+                schema.has_key(EXTERNAL_TERMINAL_KEY)
+                    && schema.key(EXTERNAL_TERMINAL_KEY).value_type() == glib::VariantTy::STRING
+            })
+        }).map(|settings| settings.string(EXTERNAL_TERMINAL_KEY)).unwrap_or_default();
+        if let Some(target) = preferred_terminal(&targets, &saved) {
+            self.choose_handoff(&target.id, target.is_manual());
+            return;
+        }
+        if !saved.is_empty() {
+            self.report("Your default external terminal is unavailable. Choose another terminal.");
+        }
+        self.clear_handoff_choices();
+        if targets.is_empty() {
+            self.choices.append(&gtk::Label::new(Some("No capable external terminal was found.")));
+        }
+        for target in targets {
+            let button = gtk::Button::with_label(&target.label);
+            let manual = target.is_manual();
+            on_click(&button, self, move |ui| ui.choose_handoff(&target.id, manual));
+            self.choices.append(&button);
+        }
+        self.popover.popup();
+    }
+
+    fn clear_handoff_choices(&self) {
+        while let Some(child) = self.choices.first_child() {
+            self.choices.remove(&child);
+        }
+        self.choices.append(&self.handoff_cwd);
+    }
+
+    fn choose_handoff(self: &Rc<Self>, target: &str, manual: bool) {
+        if !manual {
+            self.handoff_current(target.to_owned(), false);
+            return;
+        }
+        self.clear_handoff_choices();
+        self.choices.append(&gtk::Label::builder()
+            .label("Wave requires a manual attach. Copy the one-use command, then paste it into a local Wave terminal and press Enter within 2 minutes. Your shell stays here until Wave connects.")
+            .wrap(true).max_width_chars(48).xalign(0.0).build());
+        let copy = gtk::Button::with_label("Copy command & open Wave");
+        let target = target.to_owned();
+        on_click(&copy, self, move |ui| ui.handoff_current(target.clone(), true));
+        self.choices.append(&copy);
+        let cancel = gtk::Button::with_label("Cancel");
+        on_click(&cancel, self, |ui| ui.popover.popdown());
+        self.choices.append(&cancel);
+        self.popover.popup();
+    }
+
+    fn handoff_current(self: &Rc<Self>, target: String, manual: bool) {
         self.popover.popdown();
         let Some(tab) = self.current_tab() else {
             return;
@@ -1042,13 +1109,52 @@ impl TerminalWindow {
         tab.handing_off.set(true);
         tab.close.set_sensitive(false);
         self.update_header(&tab);
-        self.report(
-            "Opening the external terminal. This tab stays open until the handoff is confirmed.",
-        );
+        self.report(if manual {
+            "Copying the one-use command and opening Wave. Paste into a local Wave terminal and press Enter within 2 minutes."
+        } else {
+            "Opening the external terminal. This tab stays open until the handoff is confirmed."
+        });
+        let cancelled = Arc::new(AtomicBool::new(false));
+        self.handoff_cancellations.borrow_mut().retain(|cancel| cancel.strong_count() > 0);
+        self.handoff_cancellations.borrow_mut().push(Arc::downgrade(&cancelled));
+        let cancel_button = gtk::Button::with_label("Cancel handoff");
+        let cancel = cancelled.clone();
+        cancel_button.connect_clicked(move |button| {
+            cancel.store(true, Ordering::Release);
+            button.set_sensitive(false);
+        });
+        self.message_box.append(&cancel_button);
+        let (sender, receiver) = mpsc::channel::<(String, mpsc::Sender<()>)>();
+        let weak = Rc::downgrade(self);
+        let copy_cancelled = cancelled.clone();
+        // Only the explicitly labelled copy action reaches this path. No shell
+        // text is logged, sent over D-Bus, or typed into another application's UI.
+        glib::timeout_add_local(std::time::Duration::from_millis(25), move || {
+            if !manual || copy_cancelled.load(Ordering::Acquire) {
+                return glib::ControlFlow::Break;
+            }
+            match receiver.try_recv() {
+                Ok((command, acknowledged)) => {
+                    if manual && let Some(ui) = weak.upgrade() && !ui.quitting.get() {
+                        ui.window.clipboard().set_text(&command);
+                        let _ = acknowledged.send(());
+                    }
+                    glib::ControlFlow::Break
+                }
+                Err(mpsc::TryRecvError::Empty) => glib::ControlFlow::Continue,
+                Err(mpsc::TryRecvError::Disconnected) => glib::ControlFlow::Break,
+            }
+        });
         self.pending.set(self.pending.get() + 1);
         let ui = self.clone();
         glib::MainContext::default().spawn_local(async move {
-            let result = gio::spawn_blocking(move || session.handoff(target)).await;
+            let result = gio::spawn_blocking(move || session.handoff(&target, &cancelled, |command| {
+                let (acknowledged, copied) = mpsc::channel();
+                sender.send((command, acknowledged)).map_err(|_| io::Error::other("The handoff UI closed"))?;
+                copied.recv_timeout(std::time::Duration::from_secs(5))
+                    .map_err(|_| io::Error::other("The copy action was cancelled or its UI closed"))
+            })).await;
+            ui.message_box.remove(&cancel_button);
             tab.handing_off.set(false);
             tab.close.set_sensitive(true);
             match result {
@@ -1061,11 +1167,11 @@ impl TerminalWindow {
                     ui.report(&format!(
                         "Could not hand off this shell: {error}. The tab has been kept open."
                     ));
-                    ui.update_header(&tab);
+                    ui.update_tab(&tab);
                 }
                 Err(_) => {
                     ui.report("The handoff worker failed. The tab has been kept open.");
-                    ui.update_header(&tab);
+                    ui.update_tab(&tab);
                 }
             }
             if let Some(status) = tab.exit_status.take() {
@@ -1134,7 +1240,7 @@ impl TerminalWindow {
             TerminalAction::NextTab => self.notebook.next_page(),
             TerminalAction::Handoff => {
                 if self.handoff.is_sensitive() {
-                    self.handoff.popup();
+                    self.show_handoff();
                 }
             }
         }
@@ -1146,10 +1252,17 @@ impl TerminalWindow {
         self.message_box.set_visible(true);
     }
 
+    fn cancel_handoffs(&self) {
+        for cancelled in self.handoff_cancellations.borrow().iter().filter_map(std::sync::Weak::upgrade) {
+            cancelled.store(true, Ordering::Release);
+        }
+    }
+
     fn request_quit(&self) {
         self.quitting.set(true);
+        self.cancel_handoffs();
         self.hide();
-        // In particular, let an in-flight handoff establish ownership before Drop.
+        // Let workers revoke one-use requests and settle any confirmed attach.
         if self.pending.get() == 0 {
             self.quit_now();
         }
@@ -1170,6 +1283,7 @@ impl TerminalWindow {
     }
 
     fn clear_tabs(&self) {
+        self.cancel_handoffs();
         // Do not hold a RefCell borrow across GTK callbacks triggered by removing pages.
         loop {
             let id = self.tabs.borrow().first().map(|tab| tab.id);
@@ -1177,6 +1291,16 @@ impl TerminalWindow {
                 Some(id) => self.remove_tab(id),
                 None => break,
             }
+        }
+    }
+}
+
+impl Drop for TerminalWindow {
+    fn drop(&mut self) {
+        self.cancel_handoffs();
+        // A manually parented popover must be released before its button.
+        if self.popover.parent().is_some() {
+            self.popover.unparent();
         }
     }
 }
@@ -1425,6 +1549,7 @@ mod tests {
         assert_eq!(parse_request(["--quit".into()]), Ok(Request::Quit));
         assert_eq!(parse_request(["--help".into()]), Ok(Request::Help));
         assert_eq!(parse_request(["--version".into()]), Ok(Request::Version));
+        assert_eq!(parse_request(["--list-terminals".into()]), Ok(Request::ListTerminals));
         assert!(parse_request(["--toggle".into(), "--quit".into()]).is_err());
         assert!(parse_request(["-e".into(), "echo unsafe".into()]).is_err());
         assert!(parse_request([OsString::from_vec(vec![0xff])]).is_err());

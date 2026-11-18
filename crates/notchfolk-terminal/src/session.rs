@@ -20,12 +20,17 @@ use std::time::{Duration, Instant};
 #[path = "warp.rs"]
 mod warp;
 
+#[path = "terminals.rs"]
+mod terminals;
+pub use terminals::{available_terminals, preferred_terminal};
+
 use warp::WarpTabConfig;
 
 // Each private server has one session; use its literal name for every command.
 const SESSION: &str = "shell";
 const HANDOFF_OPTION: &str = "@notchfolk-handoff";
 const HANDOFF_TIMEOUT: Duration = Duration::from_secs(15);
+const MANUAL_HANDOFF_TIMEOUT: Duration = Duration::from_secs(120);
 const CLIENT_CHECK_INTERVAL: Duration = Duration::from_millis(100);
 const ENV_PROGRAM: &str = "/usr/bin/env";
 const TERMINALS: &[(&str, &str)] = &[
@@ -101,13 +106,17 @@ impl Session {
         parse_directory(output.stdout)
     }
 
-    /// Transfers the live shell to a supported terminal, including Warp.
-    ///
-    /// Allows fifteen seconds for a new tmux client, without waiting for the
-    /// desktop app to exit. Run it off the GTK thread with an `Arc<Session>`.
-    /// Failure leaves VTE attached; success releases Drop's ownership.
-    pub fn handoff(&self, target: &str) -> io::Result<()> {
-        validate_target(target)?;
+    /// Transfers only after a new tmux client confirms attachment. Wave uses an
+    /// explicit user-mediated copy/paste step, never a guessed command-line API.
+    /// Cancellation and timeout revoke its one-use token before returning.
+    pub fn handoff(
+        &self,
+        target: &str,
+        cancelled: &AtomicBool,
+        manual: impl FnOnce(String) -> io::Result<()>,
+    ) -> io::Result<()> {
+        let target = available_terminals().into_iter().find(|candidate| candidate.id == target)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "The terminal is no longer available; choose another terminal"))?;
         let _lock = self.handoff_lock.try_lock().map_err(|_| {
             io::Error::new(
                 io::ErrorKind::WouldBlock,
@@ -120,12 +129,6 @@ impl Session {
                 "This shell has already been transferred",
             ));
         }
-        let executable = find_program(target).ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                format!("{target} is not available"),
-            )
-        })?;
         let previous = self.clients()?;
         if previous.is_empty() {
             return Err(io::Error::new(
@@ -143,7 +146,16 @@ impl Session {
         // request revocation. Every return path then removes it via its guard.
         let mut warp_config = None;
         let result = (|| {
-            let command = if target == "warp-terminal" {
+            if target.is_manual() {
+                manual(manual_attach_command(&self.handoff_argv(&token))?)?;
+                if cancelled.load(Ordering::Acquire) {
+                    return Err(io::Error::new(io::ErrorKind::Interrupted, "Handoff cancelled"));
+                }
+                target.open_wave()?;
+                let (_sender, launcher) = mpsc::channel();
+                return self.wait_for_client(&previous, &launcher, cancelled, MANUAL_HANDOFF_TIMEOUT);
+            }
+            let command = if target.is_warp() {
                 let opener = find_program("xdg-open").ok_or_else(|| {
                     io::Error::new(io::ErrorKind::NotFound, "xdg-open is required to open Warp")
                 })?;
@@ -155,10 +167,10 @@ impl Session {
                 command
             } else {
                 let argv = self.handoff_argv(&token);
-                terminal_command(target, &executable, &self.cwd()?, &argv)?
+                target.command(&self.cwd()?, &argv)?
             };
             let launcher = launch_desktop(command)?;
-            self.wait_for_client(&previous, &launcher)
+            self.wait_for_client(&previous, &launcher, cancelled, HANDOFF_TIMEOUT)
         })();
 
         // Revoke the one-use request before deciding failure. An application
@@ -251,11 +263,16 @@ impl Session {
         &self,
         previous: &[u32],
         launcher: &mpsc::Receiver<io::Result<ExitStatus>>,
+        cancelled: &AtomicBool,
+        timeout: Duration,
     ) -> io::Result<()> {
-        let deadline = Instant::now() + HANDOFF_TIMEOUT;
+        let deadline = Instant::now() + timeout;
         loop {
             if has_new_client(previous, &self.clients()?) {
                 return Ok(());
+            }
+            if cancelled.load(Ordering::Acquire) {
+                return Err(io::Error::new(io::ErrorKind::Interrupted, "Handoff cancelled"));
             }
             match launcher.try_recv() {
                 Ok(Ok(status)) if !status.success() => {
@@ -300,17 +317,6 @@ impl Drop for Session {
     }
 }
 
-/// Lists installed live-transfer targets; Warp additionally needs `xdg-open`.
-pub fn available_terminals() -> Vec<(&'static str, &'static str)> {
-    TERMINALS
-        .iter()
-        .copied()
-        .filter(|(program, _)| {
-            find_program(program).is_some()
-                && (*program != "warp-terminal" || find_program("xdg-open").is_some())
-        })
-        .collect()
-}
 
 fn configure_new_session(command: &mut Command, cwd: &Path) {
     command.current_dir(cwd).args([
@@ -464,16 +470,6 @@ fn find_in_path(program: &str, path: &OsStr) -> Option<PathBuf> {
         .find(|candidate| is_executable(candidate))
 }
 
-fn validate_target(target: &str) -> io::Result<()> {
-    if TERMINALS.iter().any(|(program, _)| *program == target) {
-        Ok(())
-    } else {
-        Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Unsupported Linux terminal",
-        ))
-    }
-}
 
 fn terminal_command(
     target: &str,
@@ -528,6 +524,24 @@ fn terminal_command(
     Ok(command)
 }
 
+/// The user explicitly pastes this into a local Wave shell. Quote every argv
+/// element rather than joining a command string supplied by settings or a file.
+fn manual_attach_command(argv: &[OsString]) -> io::Result<String> {
+    let mut command = String::new();
+    for arg in argv {
+        let arg = arg.to_str().filter(|value| !value.contains('\0')).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidInput, "Wave clipboard handoff requires UTF-8 paths")
+        })?;
+        if !command.is_empty() {
+            command.push(' ');
+        }
+        command.push('\'');
+        command.push_str(&arg.replace('\'', "'\\''"));
+        command.push('\'');
+    }
+    Ok(command)
+}
+
 // Launch and reap in the same thread: if creating a thread fails, no app has
 // been spawned; if callers disappear or time out, the child is still reaped.
 // We never wait for the lifetime of a desktop application on the GTK thread.
@@ -575,6 +589,47 @@ fn launch_desktop(mut command: Command) -> io::Result<mpsc::Receiver<io::Result<
 mod tests {
     use super::*;
     use std::os::unix::ffi::OsStrExt;
+
+    #[test]
+    fn manual_wave_command_quotes_each_argument_without_interpolation() {
+        let command = manual_attach_command(&[
+            "/usr/bin/env".into(), "a'b $HOME; $(bad)\n".into(),
+        ]).unwrap();
+        assert_eq!(command, "'/usr/bin/env' 'a'\\''b $HOME; $(bad)\n'");
+        assert!(manual_attach_command(&[OsString::from_vec(vec![0xff])]).is_err());
+        assert!(manual_attach_command(&["bad\0argument".into()]).is_err());
+    }
+
+    #[test]
+    fn manual_cancellation_and_timeout_leave_session_owned() {
+        let session = Session::new(None).unwrap();
+        // Model the polling contract without any GUI or desktop process.
+        let (_sender, receiver) = mpsc::channel();
+        let cancelled = AtomicBool::new(true);
+        let error = session.wait_for_client(&[], &receiver, &cancelled, MANUAL_HANDOFF_TIMEOUT).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::Interrupted);
+        cancelled.store(false, Ordering::Release);
+        let error = session.wait_for_client(&[], &receiver, &cancelled, Duration::ZERO).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
+        assert!(session.cwd().is_ok());
+        assert!(!session.transferred.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn revoked_manual_ticket_cannot_authorize_a_late_attach() {
+        let session = Session::new(None).unwrap();
+        let token = random_name().unwrap();
+        let condition = format!("#{{==:#{{{HANDOFF_OPTION}}},{token}}}");
+        let probe = ["if-shell", "-F", "-t", SESSION, &condition,
+            "display-message -p authorized", "display-message -p expired"];
+        session.run(&["set-option", "-t", SESSION, HANDOFF_OPTION, &token], "authorize").unwrap();
+        assert_eq!(session.run(&probe, "check authorization").unwrap().stdout, b"authorized\n");
+        session.run(&["set-option", "-u", "-t", SESSION, HANDOFF_OPTION], "revoke").unwrap();
+        assert_eq!(session.run(&probe, "check revoked ticket").unwrap().stdout, b"expired\n");
+        // A retry uses a fresh token; an old clipboard command remains invalid.
+        session.run(&["set-option", "-t", SESSION, HANDOFF_OPTION, &random_name().unwrap()], "retry").unwrap();
+        assert_eq!(session.run(&probe, "check old ticket").unwrap().stdout, b"expired\n");
+    }
 
     #[test]
     fn cwd_keeps_filename_bytes_and_only_removes_one_newline() {
@@ -655,8 +710,6 @@ mod tests {
         assert!(
             terminal_command("warp-terminal", Path::new("/bin/warp-terminal"), cwd, &argv).is_err()
         );
-        assert!(validate_target("kitty; rm -rf /tmp").is_err());
-        assert!(validate_target("/tmp/kitty").is_err());
     }
 
     #[test]
