@@ -38,6 +38,10 @@ stage() {
     local root="$1" fonts="$1$2"
     install -Dm755 -t "$root/usr/bin" "$SRC/bin/notchfolkd" "$SRC/bin/notchfolk-shelf" \
         "$SRC/bin/notchfolk-terminal" "$SRC/bin/notchfolk-whisper" "$SRC/scripts/notchfolk-charge-limit"
+    install -Dm644 "$SRC/data/io.galyarderlabs.notchfolk.Terminal.desktop" \
+        "$root/usr/share/applications/io.galyarderlabs.notchfolk.Terminal.desktop"
+    install -Dm644 "$SRC/gnome-extension/icons/notchfolk-terminal-symbolic.svg" \
+        "$root/usr/share/icons/hicolor/scalable/apps/io.galyarderlabs.notchfolk.Terminal.svg"
     install -Dm755 "$SRC/scripts/setup-voice.sh" "$root/usr/bin/notchfolk-setup-voice"
     install -Dm755 "$SRC/scripts/setup-mcp.sh" "$root/usr/bin/notchfolk-setup-mcp"
     install -Dm755 "$SRC/scripts/notchfolk-mcp" "$root/usr/bin/notchfolk-mcp"
@@ -150,6 +154,8 @@ cp -a "$stage/." "%{buildroot}/"
 /usr/bin/notchfolkd
 /usr/bin/notchfolk-shelf
 /usr/bin/notchfolk-terminal
+/usr/share/applications/io.galyarderlabs.notchfolk.Terminal.desktop
+/usr/share/icons/hicolor/scalable/apps/io.galyarderlabs.notchfolk.Terminal.svg
 /usr/bin/notchfolk-whisper
 /usr/bin/notchfolk-setup-voice
 /usr/bin/notchfolk-setup-mcp

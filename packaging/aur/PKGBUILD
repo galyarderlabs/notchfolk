@@ -27,6 +27,10 @@ package() {
   # The checked-in historical release predates the terminal. New releases must include it.
   if [[ "$pkgver" != 1.0.0 || -f bin/notchfolk-terminal ]]; then
     install -Dm755 bin/notchfolk-terminal "$pkgdir/usr/bin/notchfolk-terminal"
+    install -Dm644 data/io.galyarderlabs.notchfolk.Terminal.desktop \
+      "$pkgdir/usr/share/applications/io.galyarderlabs.notchfolk.Terminal.desktop"
+    install -Dm644 gnome-extension/icons/notchfolk-terminal-symbolic.svg \
+      "$pkgdir/usr/share/icons/hicolor/scalable/apps/io.galyarderlabs.notchfolk.Terminal.svg"
   fi
   install -Dm755 scripts/setup-voice.sh "$pkgdir/usr/bin/notchfolk-setup-voice"
   install -Dm755 scripts/setup-mcp.sh "$pkgdir/usr/bin/notchfolk-setup-mcp"

@@ -101,6 +101,19 @@ session() {
     notchfolk-terminal --help >/dev/null || fail "notchfolk-terminal --help failed."
     tmux -V || fail "tmux is missing or unusable."
 
+    local terminal_id="io.galyarderlabs.notchfolk.Terminal"
+    local terminal_data="/usr/share" terminal_exec="Exec=/usr/bin/notchfolk-terminal"
+    if [[ "$package" == *.tar.gz ]]; then
+        terminal_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+        terminal_exec="Exec=\"$HOME/.local/bin/notchfolk-terminal\""
+    fi
+    local terminal_desktop="$terminal_data/applications/$terminal_id.desktop"
+    [ -f "$terminal_desktop" ] || fail "Terminal desktop entry is missing."
+    grep -Fxq 'Name=Notchfolk Terminal' "$terminal_desktop" || fail "Terminal display name is missing."
+    grep -Fxq "Icon=$terminal_id" "$terminal_desktop" || fail "Terminal icon name does not match its app ID."
+    grep -Fxq "$terminal_exec" "$terminal_desktop" || fail "Terminal launcher does not use its installed executable."
+    [ -s "$terminal_data/icons/hicolor/scalable/apps/$terminal_id.svg" ] || fail "Terminal application icon is missing."
+
     say "Starting GNOME Shell"
     local log="$HOME/gnome-shell.log"
     export WAYLAND_DISPLAY=wayland-notchfolk-smoke GDK_BACKEND=wayland
@@ -161,7 +174,7 @@ bus_has() {
 # The disposable container's private tester must have no pre-existing terminal
 # sockets. This gives the new helper's socket a known owner without inspecting argv.
 smoke_terminal() (
-    say "Opening and closing the packaged Termi-notch"
+    say "Opening and closing the packaged Notchfolk Terminal"
     # The helper must ignore the caller's tmux directory so an external terminal can attach to the same socket.
     export TMUX_TMPDIR="$XDG_RUNTIME_DIR"
     for socket in /tmp/tmux-"$UID"/notchfolk-*; do
@@ -195,18 +208,27 @@ smoke_terminal() (
             [ "$state" = 1:0 ]; then
             break
         fi
-        [ "$SECONDS" -lt "$deadline" ] || fail "Termi-notch did not attach a live shell in $WAIT s."
+        [ "$SECONDS" -lt "$deadline" ] || fail "Notchfolk Terminal did not attach a live shell in $WAIT s."
         sleep 1
     done
+    # Launch through the installed desktop file without the user bin directory on
+    # PATH: GIO must find the executable and reuse the existing application.
+    owner="$(gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.GetNameOwner io.galyarderlabs.notchfolk.Terminal)"
+    timeout --kill-after=2s 10s env PATH=/usr/bin:/bin gio launch "$terminal_desktop" >>"$terminal_log" 2>&1 ||
+        fail "Terminal desktop launch failed without ~/.local/bin on PATH."
+    [ "$owner" = "$(gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.GetNameOwner io.galyarderlabs.notchfolk.Terminal)" ] ||
+        fail "Terminal desktop launch replaced the running application."
     timeout --kill-after=2s 10s notchfolk-terminal --quit >>"$terminal_log" 2>&1 ||
         fail "notchfolk-terminal --quit failed or timed out."
     wait "$terminal" || fail "notchfolk-terminal exited unsuccessfully or timed out."
     terminal=""
     status=0
     timeout --kill-after=2s 5s tmux -N -S "$terminal_socket" has-session -t shell >/dev/null 2>&1 || status=$?
-    [ "$status" -eq 1 ] || fail "Termi-notch --quit left its shell running or unresponsive (status $status)."
+    [ "$status" -eq 1 ] || fail "Notchfolk Terminal --quit left its shell running or unresponsive (status $status)."
     terminal_socket=""
-    say "Termi-notch opened a live shell and --quit closed it"
+    say "Notchfolk Terminal opened a live shell and --quit closed it"
 )
 
 if [ "${1:-}" = --session ]; then

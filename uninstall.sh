@@ -61,6 +61,9 @@ rm -f "$HOME/.local/bin/notchfolkd" "$HOME/.local/bin/notchfolk-shelf" "$HOME/.l
       "$DATA/dbus-1/services/io.github.notchfolk.Daemon.service" \
       "$DATA/dbus-1/services/io.github.notchfolk.ShelfWindow.service" \
       "$CONFIG/systemd/user/notchfolkd.service"
+rm -f "$DATA/applications/io.galyarderlabs.notchfolk.Terminal.desktop" \
+      "$DATA/icons/hicolor/scalable/apps/io.galyarderlabs.notchfolk.Terminal.svg"
+gtk-update-icon-cache -q -t -f "$DATA/icons/hicolor" >/dev/null 2>&1 || true
 systemctl --user daemon-reload 2>/dev/null
 if [ "$SYSTEM" = 1 ]; then
     echo "Notchfolk in your home folder has been removed; the system-wide package now runs instead (remove it with apt, dnf or pacman)."

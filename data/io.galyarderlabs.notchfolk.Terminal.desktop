@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Notchfolk Terminal
+Comment=Open Terminal with persistent shell tabs in Notchfolk
+Exec=/usr/bin/notchfolk-terminal
+Icon=io.galyarderlabs.notchfolk.Terminal
+Terminal=false
+Categories=System;TerminalEmulator;
+Keywords=terminal;shell;command;notchfolk;
+StartupNotify=true
