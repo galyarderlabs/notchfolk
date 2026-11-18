@@ -15,7 +15,7 @@ import {VERTICAL, onUiScale, px} from '../compat.js';
 import {EXPANDED_WIDTH, LARGE_WIDTH, PAGE_HEIGHT} from '../expanded.js';
 import * as Format from '../format.js';
 import * as Playback from '../playback.js';
-import {Art, Bars, Slider, fence, icon, iconButton, label, ownIcon, pillButton, restsAt, setButtonIcon, setEnabled, smallCover, coverKey} from '../widgets.js';
+import {Art, Bars, Slider, fence, icon, iconButton, label, ownIcon, pillButton, restsAt, setButtonIcon, setEnabled, smallCover, coverKey, soundOnClick} from '../widgets.js';
 import {LyricsPane} from './lyrics.js';
 import {Page} from './page.js';
 
@@ -265,7 +265,7 @@ class MediaPage extends Page {
         this._playerIcon = new St.Icon({icon_size: 16});
         this._playerSwitch = new St.Button({style_class: 'notchfolk-button notchfolk-button-flat notchfolk-player-switch', child: this._playerIcon,
             can_focus: true, visible: false});
-        this._playerSwitch.connect('clicked', () => {
+        soundOnClick(this._playerSwitch, () => {
             if (this._nextPlayer)
                 this.daemon.call('media', 'Choose', this._nextPlayer.name);
         });
@@ -511,7 +511,7 @@ class MediaPage extends Page {
                 x_align: Clutter.ActorAlign.FILL,
                 can_focus: true,
             });
-            button.connect('clicked', () => audio.activate(output.id));
+            soundOnClick(button, () => audio.activate(output.id));
             this._outputList.add_child(button);
         }
         if (!this._outputList.mapped)

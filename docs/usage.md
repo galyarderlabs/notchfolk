@@ -270,7 +270,8 @@ Click the gear right of the clock in the open island (or Notchfolk's gear in the
   the closed island inside the bar or hanging below it; with more than one
   display, on the main one or the one you are using; opening when the
   pointer rests on it (and for how long) or only on a click; how long auto-hide waits.
-- **Alerts:** apps' notifications in the island (or GNOME's own banners
+- **Alerts:** island sounds (soft sounds for island actions, water logs and
+  meals - one switch for all of them); apps' notifications in the island (or GNOME's own banners
   instead); over full-screen apps too (off by default); volume and brightness; charging, network, Bluetooth and Caps
   Lock, each on its own; new songs, sounds; lyrics online;
   a reminder before calendar events, and how many minutes before.

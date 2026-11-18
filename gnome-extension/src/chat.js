@@ -16,7 +16,7 @@ import St from 'gi://St';
 import {BotIcon} from './botIcon.js';
 import {VERTICAL, onUiScale, px} from './compat.js';
 import * as Format from './format.js';
-import {icon, playMotion, slideBy, wrapLines} from './widgets.js';
+import {icon, playMotion, slideBy, soundOnClick, wrapLines} from './widgets.js';
 
 /** The little face beside its answers, in CSS pixels (see `px`). */
 const FACE_SIZE = 18;
@@ -99,7 +99,7 @@ function copyable(actor, copied, settled) {
 function copyButton(child, command, copied) {
     const button = new St.Button({child, style_class: 'notchfolk-copy-button', x_expand: true, can_focus: true,
         accessible_name: 'Copy the command'});
-    button.connect('clicked', () => {
+    soundOnClick(button, () => {
         copy(command());
         copied();
     });
@@ -246,7 +246,7 @@ function keyButton(text, key, styleClass, onClick) {
     box.add_child(cap);
     const button = new St.Button({child: box, style_class: `notchfolk-pill notchfolk-pill-small notchfolk-card-button ${styleClass}${key ? '' : ' notchfolk-card-button-plain'}`,
         can_focus: true, y_align: Clutter.ActorAlign.CENTER});
-    button.connect('clicked', () => onClick());
+    soundOnClick(button, onClick);
     button.cap = cap;
     button.label_actor = name;
     return button;
@@ -491,7 +491,7 @@ export const ChatView = GObject.registerClass({
         newContent.add_child(label('New chat', 'notchfolk-chat-control-label'));
         this._newButton = new St.Button({child: newContent, style_class: 'notchfolk-button notchfolk-chat-control notchfolk-chat-new',
             can_focus: true, accessible_name: 'New chat'});
-        this._newButton.connect('clicked', () => this.emit('new-chat'));
+        soundOnClick(this._newButton, () => this.emit('new-chat'));
         header.add_child(this._newButton);
         const historyContent = new St.BoxLayout({style_class: 'notchfolk-chat-control-content'});
         historyContent.add_child(new St.Icon({gicon: icon('notchfolk-history'), icon_size: 12,
@@ -501,7 +501,7 @@ export const ChatView = GObject.registerClass({
         this._historyButton = new St.Button({child: historyContent,
             style_class: 'notchfolk-button notchfolk-chat-control notchfolk-chat-history', can_focus: true,
             accessible_name: 'Chat history'});
-        this._historyButton.connect('clicked', () => this.showArchive(!this._showingArchive));
+        soundOnClick(this._historyButton, () => this.showArchive(!this._showingArchive));
         header.add_child(this._historyButton);
         // The header's own Close: the voice view hides its close button while the
         // conversation is open (its row becomes the field), so this is the one close
@@ -512,7 +512,7 @@ export const ChatView = GObject.registerClass({
         this._closeButton = new St.Button({child: closeContent,
             style_class: 'notchfolk-button notchfolk-chat-control notchfolk-chat-close', can_focus: true,
             accessible_name: 'Close conversation'});
-        this._closeButton.connect('clicked', () => this.emit('close'));
+        soundOnClick(this._closeButton, () => this.emit('close'));
         header.add_child(this._closeButton);
         this.add_child(header);
         this._archive = new St.BoxLayout({...VERTICAL, style_class: 'notchfolk-chat-archive-view', x_expand: true});
@@ -594,7 +594,7 @@ export const ChatView = GObject.registerClass({
             column.add_child(label(now ? 'Now' : when, 'notchfolk-chat-archive-when'));
             column.add_child(label(`${chat.items} messages`, 'notchfolk-chat-archive-count'));
             row.set_child(column);
-            row.connect('clicked', () => (now ? this.showArchive(false) : this.emit('resume', chat.timestamp)));
+            soundOnClick(row, () => (now ? this.showArchive(false) : this.emit('resume', chat.timestamp)));
             this._archiveList.add_child(row);
         }
         this._syncHistoryButton();

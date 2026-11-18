@@ -11,7 +11,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {VERTICAL} from '../compat.js';
-import {Ring, icon, label} from '../widgets.js';
+import {Ring, icon, label, soundOnClick} from '../widgets.js';
 import {Page} from './page.js';
 
 /** The battery ring's size (CSS px). */
@@ -149,7 +149,7 @@ class PhonePage extends Page {
         content.add_child(label(text, 'notchfolk-phone-page-action-label'));
         const button = new St.Button({style_class: 'notchfolk-button notchfolk-phone-page-action', child: content,
             can_focus: true, accessible_name: accessibleName, y_align: Clutter.ActorAlign.CENTER});
-        button.connect('clicked', onClick);
+        soundOnClick(button, onClick);
         return button;
     }
 

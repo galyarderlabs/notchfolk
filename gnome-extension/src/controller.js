@@ -32,6 +32,7 @@ import {CallMonitor} from './call.js';
 import {FocusMode} from './focusMode.js';
 import * as Format from './format.js';
 import {refreshClocks} from './wallClock.js';
+import {initSounds, islandSound} from './sounds.js';
 import {NotificationCenter} from './notifications.js';
 import {PrivacyMonitor} from './privacy.js';
 import {PeekView} from './peek.js';
@@ -316,6 +317,11 @@ export class Controller {
             this._settings.set_boolean('system-alerts', true);
         }
         this._notifications = new NotificationCenter(this._settings);
+        initSounds({
+            dir: Gio.File.new_for_path(`${this._extension.path}/sounds`),
+            isEnabled: () => this._settings.get_boolean('island-sounds'),
+            isDnd: () => this._notifications.dnd,
+        });
         this._notifications.remindsOf = id => this._expanded?.pageNamed('calendar')?.remindsOf(id) ?? false;
         this._privacy = new PrivacyMonitor(this._daemon);
         this._call = new CallMonitor(this._privacy, this._settings);
@@ -525,10 +531,11 @@ export class Controller {
         }
         const expanded = new ExpandedView(this._daemon, this._privacy, this._call, this._settings, pages);
         expanded.connect('page-changed', () => {
-            // Picked by hand (a tab) while open; not when opening, nor when a page
-            // (the call's) goes away by itself.
-            if (this._expandWanted && expanded.pickedByHand)
+            // A hand-picked page while open is a tab turn; opening and automatic switches are silent.
+            if (this._expandWanted && expanded.pickedByHand) {
+                islandSound('tab');
                 this._pagePickedAt = Date.now();
+            }
             if (expanded.page === this._shelf)
                 this._shelfHelper?.prepare();
             this._shelfHelper?.sync();
@@ -2179,6 +2186,7 @@ export class Controller {
         // An action finishing after Notchfolk was turned off.
         if (this._destroying)
             return;
+        islandSound('open');
         this._hasOpened = true;
         // A close still pending (the pointer just left) would shut it again.
         this._cancel('expand');
@@ -2200,6 +2208,7 @@ export class Controller {
 
     /** Closes the open island or the assistant, then shows what waited. */
     collapse() {
+        islandSound('close');
         if (this._destroying)
             return;
         this._cancel('collapse');
@@ -3069,6 +3078,7 @@ export class Controller {
         }
         if (state.phase === 'reply' && state.turn !== this._voiceTurn) {
             this._voiceTurn = state.turn;
+            islandSound('answer');
             runActions(state.actions, this._voiceActions());
             // In the conversation the answer is already in the list: the field is ready for the next word.
             if (this._voice.chatOpen && !state.listen) {
@@ -3099,6 +3109,7 @@ export class Controller {
             return;
         if (state.phase === 'reply' && state.turn !== this._voiceTurn) {
             this._voiceTurn = state.turn;
+            islandSound('answer');
             runActions(state.actions, this._voiceActions());
         } else if (state.phase !== 'error') {
             return;

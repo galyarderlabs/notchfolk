@@ -10,7 +10,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {VERTICAL} from '../compat.js';
-import {icon, iconButton, label, wrapLines} from '../widgets.js';
+import {icon, iconButton, label, soundOnClick, wrapLines} from '../widgets.js';
 import {Page} from './page.js';
 
 /** How long the checkmark takes to pop into the circle. */
@@ -182,7 +182,7 @@ class TasksPage extends Page {
             can_focus: true,
             accessible_name: 'Add a reminder',
         });
-        add.connect('clicked', () => this._focusNew());
+        soundOnClick(add, () => this._focusNew());
         actions.add_child(add);
 
         const editContents = new St.BoxLayout({style_class: 'notchfolk-reminders-action-contents'});
@@ -195,7 +195,7 @@ class TasksPage extends Page {
             can_focus: true,
             accessible_name: 'Edit reminders',
         });
-        this._editButton.connect('clicked', () => this._toggleEditing());
+        soundOnClick(this._editButton, () => this._toggleEditing());
         actions.add_child(this._editButton);
         summary.add_child(actions);
         return summary;
@@ -510,7 +510,7 @@ class TasksPage extends Page {
         column.add_child(content);
         row.add_child(column);
 
-        check.connect('clicked', () => {
+        soundOnClick(check, () => {
             if (task.done) {
                 this.daemon.call('todo', 'SetDone', task.id, false);
                 return;

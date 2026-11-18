@@ -15,7 +15,7 @@ import {VERTICAL, onUiScale, px, uiScale} from './compat.js';
 import * as Format from './format.js';
 import * as Playback from './playback.js';
 import {watchClock} from './wallClock.js';
-import {Bars, PrivacyDots, RecordingDot, Ring, easeTo, fence, icon, iconButton, label, slideBy} from './widgets.js';
+import {Bars, PrivacyDots, RecordingDot, Ring, easeTo, fence, icon, iconButton, label, slideBy, soundOnClick} from './widgets.js';
 
 /** Sizes and distances in CSS pixels (see `px`). */
 export const EXPANDED_WIDTH = 600;
@@ -225,7 +225,7 @@ export const ExpandedView = GObject.registerClass({
             visible: false,
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._recordingButton.connect('clicked', () => this._privacy.stopRecording());
+        soundOnClick(this._recordingButton, () => this._privacy.stopRecording());
         this._privacyDots = new PrivacyDots();
         this._headerBars = new Bars({height: 14});
         status.add_child(this._recordingButton);

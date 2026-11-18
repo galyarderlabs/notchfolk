@@ -15,7 +15,7 @@ import St from 'gi://St';
 
 import {VERTICAL, onUiScale, px, uiScale} from '../compat.js';
 import {isShelfCopy} from '../downloads.js';
-import {Lines, icon, iconButton, label, scrollSideways} from '../widgets.js';
+import {Lines, icon, iconButton, label, scrollSideways, soundOnClick} from '../widgets.js';
 
 /** The shelf holds this many files (as notchfolkd enforces). */
 export const SHELF_CAPACITY = 12;
@@ -434,7 +434,7 @@ export const FilesView = GObject.registerClass({
             });
         }
         tile.accessible_name = item.name;
-        tile.connect('clicked', () => this._onClicked(item, copied));
+        soundOnClick(tile, () => this._onClicked(item, copied));
 
         let destroyed = false;
         tile.connect('destroy', () => (destroyed = true));

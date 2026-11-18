@@ -15,6 +15,17 @@ import St from 'gi://St';
 
 import {onUiScale, px, uiScale} from './compat.js';
 import * as Theme from './theme.js';
+import {islandSound} from './sounds.js';
+
+/** Adds a click sound and action; pass null for actions with their own success sound. */
+export function soundOnClick(button, onClick, sound = 'click') {
+    button.connect('clicked', () => {
+        if (sound)
+            islandSound(sound);
+        onClick();
+    });
+    return button;
+}
 
 let iconDir = null;
 /** Icons by name, made once: a GIcon never changes, and looking for the file is a disk access. */
@@ -193,8 +204,8 @@ export function fence(box) {
     return end;
 }
 
-/** A round icon button. */
-export function iconButton(iconName, styleClass, onClick, {size = 16, accessibleName = ''} = {}) {
+/** A round icon button; `sound` defaults to `click` and can be null for success feedback. */
+export function iconButton(iconName, styleClass, onClick, {size = 16, accessibleName = '', sound = 'click'} = {}) {
     const button = new St.Button({
         style_class: `notchfolk-button ${styleClass}`,
         child: new St.Icon({gicon: icon(iconName), icon_size: size}),
@@ -202,7 +213,7 @@ export function iconButton(iconName, styleClass, onClick, {size = 16, accessible
         accessible_name: accessibleName,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    button.connect('clicked', () => onClick());
+    soundOnClick(button, onClick, sound);
     return button;
 }
 
@@ -244,7 +255,7 @@ export function pillButton(text, styleClass, onClick) {
         can_focus: true,
         y_align: Clutter.ActorAlign.CENTER,
     });
-    button.connect('clicked', () => onClick());
+    soundOnClick(button, onClick);
     return button;
 }
 

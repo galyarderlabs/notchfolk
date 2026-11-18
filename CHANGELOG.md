@@ -8,6 +8,16 @@ Isle's changelog from before the fork, kept for reference.
 
 ## [Unreleased]
 
+### Added
+
+- **Island sounds.** Island gestures answer in audio: a swell as it opens, the reverse
+  as it closes, a tick as a tab turns, a click as a control is pressed, a pop as a
+  message goes, and a two-note chime as the assistant answers. Successful water
+  and meal logs also get a clear glug and a rounded bite/crunch. Never stacked (nothing within
+  80 ms of the last), silent under Do Not Disturb and on the lock screen, with one
+  switch for all of them (Settings → Alerts), on by default but mastered quiet.
+  The sounds are Notchfolk's own synthesis, CC0.
+
 ## [1.5.0] - 2026-11-13
 
 ### Added

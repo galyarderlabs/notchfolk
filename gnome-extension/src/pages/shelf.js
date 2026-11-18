@@ -14,7 +14,7 @@ import {VERTICAL, onUiScale} from '../compat.js';
 import {isShelfCopy} from '../downloads.js';
 import {DropLight} from '../dropLight.js';
 import {Thumbnails} from '../thumbnails.js';
-import {icon, iconButton, label, pillButton, setEnabled} from '../widgets.js';
+import {icon, iconButton, label, pillButton, setEnabled, soundOnClick} from '../widgets.js';
 import {ClipsView} from './clips.js';
 import {FilesView} from './files.js';
 import {Page} from './page.js';
@@ -174,7 +174,7 @@ export const ShelfPage = GObject.registerClass({
         this._tabButtons = new Map();
         for (const {name, label: text} of TABS) {
             const button = new St.Button({style_class: 'notchfolk-segment', label: text, can_focus: true});
-            button.connect('clicked', () => this.showTab(name));
+            soundOnClick(button, () => this.showTab(name));
             this._tabButtons.set(name, button);
             tabs.add_child(button);
         }
@@ -192,7 +192,7 @@ export const ShelfPage = GObject.registerClass({
                 accessible_name: `Only ${filter.name.toLowerCase()}`,
                 can_focus: true,
             });
-            button.connect('clicked', () => this._setFilter(this._filter === filter.kind ? null : filter.kind));
+            soundOnClick(button, () => this._setFilter(this._filter === filter.kind ? null : filter.kind));
             this._filterButtons.set(filter.kind, button);
             filters.add_child(button);
         }
@@ -254,7 +254,7 @@ export const ShelfPage = GObject.registerClass({
             accessible_name: 'Share the Shelf with your phone',
             y_align: Clutter.ActorAlign.CENTER,
         });
-        this._phoneStart.connect('clicked', () => this._startSharing());
+        soundOnClick(this._phoneStart, () => this._startSharing());
         bar.add_child(this._phoneStart);
 
         // Phone: Stop, at the end.

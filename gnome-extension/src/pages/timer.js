@@ -11,7 +11,7 @@ import St from 'gi://St';
 import {VERTICAL, onUiScale} from '../compat.js';
 import * as Format from '../format.js';
 import * as Palette from '../palette.js';
-import {Ring, icon, iconButton, label} from '../widgets.js';
+import {Ring, icon, iconButton, label, soundOnClick} from '../widgets.js';
 import {PAGE_HEIGHT} from '../expanded.js';
 import {Page} from './page.js';
 
@@ -78,7 +78,7 @@ class TimerPage extends Page {
         pill.add_child(this._playLabel);
         this._play = new St.Button({style_class: 'notchfolk-start-pill', child: pill, can_focus: true, accessible_name: 'Start or pause'});
         this._phaseStyle = null;
-        this._play.connect('clicked', () => this._toggle());
+        soundOnClick(this._play, () => this._toggle());
         controls.add_child(this._play);
         const slot = new St.Widget({layout_manager: new Clutter.BinLayout()});
         onUiScale(slot, scale => (slot.width = CONTROLS_WIDTH * scale));

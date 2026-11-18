@@ -14,7 +14,7 @@ import St from 'gi://St';
 import {VERTICAL, px} from '../compat.js';
 import * as Format from '../format.js';
 import * as Palette from '../palette.js';
-import {icon, label, slideBy} from '../widgets.js';
+import {icon, label, slideBy, soundOnClick} from '../widgets.js';
 import {Page} from './page.js';
 
 /** A limit warns (an alert) and then turns red at these shares; Settings may move them (see `setMarks`). */
@@ -196,7 +196,7 @@ class UsagePage extends Page {
         for (let i = 0; i < count; i++) {
             const dot = new St.Button({style_class: `notchfolk-usage-dot${i === index ? ' shown' : ''}`, can_focus: true,
                 accessible_name: this._providers()[i].name});
-            dot.connect('clicked', () => this._show(i));
+            soundOnClick(dot, () => this._show(i));
             this._dots.add_child(dot);
         }
     }

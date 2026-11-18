@@ -675,6 +675,10 @@
       <summary>Show the Router chip in the closed island</summary>
       <description>Show the Router status or cost chip beside the clock in the closed island.</description>
     </key>
+    <key name="island-sounds" type="b">
+      <default>true</default>
+      <summary>Whether Notchfolk plays soft interaction and logging sounds</summary>
+    </key>
     <key name="chimes" type="b">
       <default>true</default>
       <summary>Play a sound when a focus session or break ends, and for reminders</summary>

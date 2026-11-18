@@ -8,7 +8,8 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {VERTICAL} from '../compat.js';
-import {icon, label} from '../widgets.js';
+import {islandSound} from '../sounds.js';
+import {icon, label, soundOnClick} from '../widgets.js';
 import {Page} from './page.js';
 
 const DEFAULT_GOAL_ML = 2000;
@@ -74,7 +75,7 @@ class WaterPage extends Page {
             can_focus: true,
             accessible_name: 'Log a drink of water',
         });
-        this._drinkButton.connect('clicked', () => this._drink());
+        soundOnClick(this._drinkButton, () => this._drink(), null);
         actions.add_child(this._drinkButton);
 
         const settingsContents = new St.BoxLayout({style_class: 'notchfolk-water-button-contents'});
@@ -86,7 +87,7 @@ class WaterPage extends Page {
             can_focus: true,
             accessible_name: 'Water tracker settings',
         });
-        settingsButton.connect('clicked', () => this.emit('settings-requested'));
+        soundOnClick(settingsButton, () => this.emit('settings-requested'));
         actions.add_child(settingsButton);
         summary.add_child(actions);
         layout.add_child(summary);
@@ -145,9 +146,10 @@ class WaterPage extends Page {
         this._progressFill.width = Math.max(0, this._progressTrack.width * Math.min(1, fraction));
     }
 
-    _drink() {
+    async _drink() {
         const amount = this._settings.get_int('water-serving-ml') || DEFAULT_SERVING_ML;
-        this.daemon.call('water', 'Drink', amount);
+        if (await this.daemon.call('water', 'Drink', amount) !== null)
+            islandSound('drink');
     }
 
     _paintChart(area) {
