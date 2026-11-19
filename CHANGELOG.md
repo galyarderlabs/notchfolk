@@ -17,8 +17,9 @@ Isle's changelog from before the fork, kept for reference.
   80 ms of the last), silent under Do Not Disturb and on the lock screen, with one
   switch for all of them (Settings → Alerts), on by default but mastered quiet.
   The sounds are Notchfolk's own synthesis, CC0.
-- **Terminal.** Run a shell inside the island. Pin it to keep the shell in view
-  across workspaces, switch pages without ending the job, or move it to a desktop terminal.
+- **Terminal.** Run a shell inside the island. Pin it above other windows while
+  you work, switch pages without ending the job, or move the shell to a desktop
+  terminal from its header.
 
 ## [1.5.0] - 2026-11-13
 

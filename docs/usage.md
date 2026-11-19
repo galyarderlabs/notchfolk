@@ -268,7 +268,7 @@ or switch workspaces. Unpin it to let the island close when the pointer leaves.
 |---|---|
 | Press **+** | Open another shell in the active tab's directory |
 | Press **Expand** | Give an editor or pager more room |
-| Choose **Open in external terminal** | Continue the same running job in an installed desktop terminal |
+| Press **Open in external terminal** at the right of the terminal header | Continue the same running job in an installed desktop terminal |
 | Type `exit` | End the active shell instead of hiding it |
 
 Set **Island → Appearance → Default external terminal** to skip the picker.
