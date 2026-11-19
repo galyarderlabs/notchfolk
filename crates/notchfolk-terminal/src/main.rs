@@ -466,28 +466,34 @@ impl TerminalWindow {
             .property("orientation", gtk::Orientation::Vertical)
             .build();
         root.add_css_class("terminal-body");
-        let header = gtk::Box::new(gtk::Orientation::Horizontal, 2);
+        let header = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         header.add_css_class("terminal-header");
         let cwd = gtk::Label::builder()
-            .hexpand(true)
+            .valign(gtk::Align::Center)
+            .single_line_mode(true)
             .xalign(0.0)
             .ellipsize(pango::EllipsizeMode::Middle)
             .max_width_chars(32)
+            .visible(false)
             .build();
         cwd.add_css_class("terminal-cwd");
         header.append(&cwd);
+        let actions = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+        actions.set_hexpand(true);
+        actions.set_halign(gtk::Align::End);
+        header.append(&actions);
         let expand = icon_button("view-fullscreen-symbolic", "Expand terminal");
-        header.append(&expand);
+        actions.append(&expand);
         let new = icon_button("list-add-symbolic", "New shell tab");
-        header.append(&new);
+        actions.append(&new);
         let close_current = icon_button(
             "window-close-symbolic",
             "Close this shell and its running jobs",
         );
-        close_current.set_visible(false);
-        header.append(&close_current);
+        close_current.set_sensitive(false);
+        actions.append(&close_current);
         let hide = icon_button("window-minimize-symbolic", "Hide; keep shells running");
-        header.append(&hide);
+        actions.append(&hide);
         root.append(&header);
         let message_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         message_box.add_css_class("terminal-message");
@@ -695,7 +701,6 @@ impl TerminalWindow {
     fn update_tab_chrome(&self) {
         let count = self.tabs.borrow().len();
         self.notebook.set_show_tabs(count > 1);
-        self.close_current.set_visible(count == 1);
     }
 
     fn focus_current(&self) {
@@ -964,7 +969,8 @@ impl TerminalWindow {
             self.update_header(&tab);
             self.focus_current();
         } else {
-            self.cwd.set_text("");
+            self.cwd.set_visible(false);
+            self.close_current.set_sensitive(false);
             self.handoff.set_sensitive(false);
         }
     }
@@ -1049,6 +1055,7 @@ impl TerminalWindow {
     }
 
     fn update_header(&self, tab: &Tab) {
+        self.cwd.set_visible(true);
         if let Some(cwd) = tab.cwd.borrow().as_ref() {
             let path = cwd.to_string_lossy();
             self.cwd.set_text(&abbreviated_cwd(cwd, &glib::home_dir()));
@@ -1058,6 +1065,7 @@ impl TerminalWindow {
             ));
         } else {
             self.cwd.set_text("Starting shell…");
+            self.cwd.set_tooltip_text(None);
         }
         self.handoff
             .set_sensitive(!tab.starting.get() && !tab.handing_off.get());
@@ -1234,11 +1242,12 @@ impl TerminalWindow {
         } else {
             "view-fullscreen-symbolic"
         });
-        self.expand.set_tooltip_text(Some(if expanded {
+        let label = if expanded {
             "Compact terminal"
         } else {
             "Expand terminal"
-        }));
+        };
+        name_button(&self.expand, label);
         // Publish only the explicit user's mode change. Compositor allocations
         // and fit-viewport requests never feed back into this state.
         self.expanded.set_state(&expanded.to_variant());
@@ -1494,11 +1503,15 @@ fn abbreviated_cwd(path: &Path, home: &Path) -> String {
     }
 }
 
-fn icon_button(icon: &str, tooltip: &str) -> gtk::Button {
-    gtk::Button::builder()
-        .icon_name(icon)
-        .tooltip_text(tooltip)
-        .build()
+fn icon_button(icon: &str, label: &str) -> gtk::Button {
+    let button = gtk::Button::from_icon_name(icon);
+    name_button(&button, label);
+    button
+}
+
+fn name_button(button: &gtk::Button, label: &str) {
+    button.set_tooltip_text(Some(label));
+    button.update_property(&[gtk::accessible::Property::Label(label)]);
 }
 
 fn on_click(
@@ -1676,6 +1689,65 @@ mod tests {
             "/home/lee-other/work"
         );
         assert_eq!(abbreviated_cwd(Path::new("/tmp"), home), "/tmp");
+    }
+
+    #[test]
+    #[ignore = "requires an isolated GTK display"]
+    fn header_allocates_the_path_without_displacing_actions() {
+        gtk::init().unwrap();
+        let provider = gtk::CssProvider::new();
+        provider.load_from_string(include_str!("style.css"));
+        gtk::style_context_add_provider_for_display(
+            &gdk::Display::default().unwrap(),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+        let app = gtk::Application::builder()
+            .flags(gio::ApplicationFlags::NON_UNIQUE)
+            .build();
+        app.register(None::<&gio::Cancellable>).unwrap();
+        app.add_action(&expanded_state_action());
+        let ui = TerminalWindow::new(&app); // Never present a window or start a shell.
+        let header = ui.cwd.parent().unwrap();
+        let actions = ui.expand.parent().unwrap();
+        let allocate = |width| {
+            let (_, height, _, _) = header.measure(gtk::Orientation::Vertical, width);
+            header.allocate(width, height, -1, None);
+        };
+
+        ui.cwd.set_visible(true);
+        let path = "/a-long-folder-name".repeat(20);
+        ui.cwd.set_text(&path);
+        let (min, natural, _, _) = header.measure(gtk::Orientation::Horizontal, -1);
+        allocate(natural + 100);
+        let wide_path = ui.cwd.width();
+        let wide_actions = actions.width();
+        ui.cwd.set_text("~");
+        allocate(natural + 100);
+        assert!(ui.cwd.width() < wide_path);
+        assert_eq!(actions.width(), wide_actions);
+
+        ui.cwd.set_text(&path);
+        allocate(min + 8);
+        assert!(ui.cwd.width() < wide_path);
+        assert!(ui.cwd.layout().is_ellipsized());
+        assert_eq!(actions.width(), wide_actions);
+        let buttons = actions.observe_children();
+        assert_eq!(buttons.n_items(), 4);
+        let cwd = ui.cwd.compute_bounds(&header).unwrap();
+        let mut right = cwd.x() + cwd.width();
+        for index in 0..buttons.n_items() {
+            let button = buttons
+                .item(index)
+                .unwrap()
+                .downcast::<gtk::Button>()
+                .unwrap();
+            assert!(button.is_focusable() && button.tooltip_text().is_some());
+            let bounds = button.compute_bounds(&header).unwrap();
+            assert!(bounds.x() > right && bounds.width() > 0.0);
+            right = bounds.x() + bounds.width();
+        }
+        assert!(right <= header.width() as f32);
     }
 
     #[test]

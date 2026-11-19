@@ -7,7 +7,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {onUiScale, px, VERTICAL} from '../compat.js';
-import {icon, label, pillButton, setEnabled} from '../widgets.js';
+import {icon, label, setEnabled, soundOnClick} from '../widgets.js';
 import {Page} from './page.js';
 
 const COMPACT_WIDTH = 460;
@@ -45,8 +45,14 @@ export const TerminalPage = GObject.registerClass({
         this._title = label('Terminal', 'notchfolk-empty-title', {x_align: Clutter.ActorAlign.CENTER});
         this._hint = label('Your shell, here or in an external terminal', 'notchfolk-empty-hint',
             {x_align: Clutter.ActorAlign.CENTER});
-        this._open = pillButton('Open terminal', '', () => this.emit('open-requested'));
-        this._open.x_align = Clutter.ActorAlign.CENTER;
+        const openContent = new St.BoxLayout({style_class: 'notchfolk-card-button-box'});
+        openContent.add_child(new St.Icon({gicon: icon('notchfolk-terminal-symbolic'), icon_size: 16,
+            y_align: Clutter.ActorAlign.CENTER}));
+        this._openLabel = label('Open terminal', '');
+        openContent.add_child(this._openLabel);
+        this._open = new St.Button({child: openContent, accessible_name: this._openLabel.text,
+            style_class: 'notchfolk-pill notchfolk-pill-small', can_focus: true, x_align: Clutter.ActorAlign.CENTER});
+        soundOnClick(this._open, () => this.emit('open-requested'));
         empty.add_child(this._title);
         empty.add_child(this._hint);
         empty.add_child(this._open);
@@ -107,7 +113,8 @@ export const TerminalPage = GObject.registerClass({
         this._empty.visible = state !== 'ready';
         this._title.text = opening ? 'Opening terminal…' : state === 'error' ? 'Terminal unavailable' : 'Terminal';
         this._hint.text = message || 'Your shell, here or in an external terminal';
-        this._open.label = state === 'error' ? 'Try again' : 'Open terminal';
+        this._openLabel.text = state === 'error' ? 'Try again' : 'Open terminal';
+        this._open.accessible_name = this._openLabel.text;
         setEnabled(this._open, !opening && state !== 'ready');
     }
 
