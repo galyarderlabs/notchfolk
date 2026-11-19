@@ -446,6 +446,9 @@ export class Controller {
         // A window that may now cover the island's display, or no longer: see `_syncScanout`. Again once its
         // animation (minimizing, say) is over, as some signals come as it starts.
         const sync = () => {
+            // The compositor can retire windows after the stage has already destroyed the island.
+            if (this._destroying)
+                return;
             this._syncScanout();
             this._syncAutoHide();
             this._later('scanout', SCANOUT_SETTLE_MS, () => {
