@@ -131,7 +131,10 @@ and stays out. Instead:
   the page must set it from each decoded frame or the actor allocates 0x0
   and nothing paints — the second black-preview cause, found 19 Nov from
   the Shell source after the daemon was proven writing frames.
-  `cameraPreviewPaint.test.js` guards it.
+  `cameraPreviewPaint.test.js` guards it. The size must be set BEFORE
+  `set_data`: that call is what invalidates the size, so setting it after
+  left the actor at 0x0 anyway (the 522fac9 device test stayed black the
+  same way); the test guards the order too.
 - Privacy, honestly: preview opens `/dev/video0`, so `camera_in_use` goes
   true and the privacy dot lights while previewing. That is correct.
 - If 8 fps proves too slow for framing, the upgrade is GStreamer in the

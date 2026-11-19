@@ -98,6 +98,9 @@ so the preview is no longer deferred.
       0x0 and nothing painted even with the daemon writing frames (19 Nov:
       preview file existed, 12 KB, journal clean). `_tickPreview` now sets
       the preferred size from each decoded frame; `cameraPreviewPaint.test.js`
-      guards it.
+      guards it. — and the size must be set BEFORE `set_data`: that call is
+      what invalidates the size, so setting it after left the actor at 0x0
+      (the 522fac9 device test stayed black the same way). The test now
+      guards the order too.
 - [ ] Device test on Galih's laptop: preview appears and moves, stops during
       photo/record, resumes after; screenshot is the evidence.

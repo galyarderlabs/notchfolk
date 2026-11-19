@@ -69,8 +69,8 @@ class CameraPage extends Page {
         // GNOME Shell 48 (Mutter 48.alpha), and St.ImageContent is its
         // replacement since Shell 45 — it covers every version we support.
         // Its preferred size is explicit only (default -1) and set_data
-        // never sets it, so _tickPreview sets it from each frame; without
-        // that the actor allocates 0x0 and nothing paints.
+        // never sets it, so _tickPreview sets it from each frame before
+        // set_data; without that the actor allocates 0x0 and nothing paints.
         this._liveBin = new St.Bin({style_class: 'notchfolk-camera-preview',
             x_expand: true, y_expand: true});
         this._liveImage = new St.ImageContent();
@@ -201,6 +201,16 @@ class CameraPage extends Page {
             }
             if (pixbuf) {
                 try {
+                    // St.ImageContent reports only an explicit preferred
+                    // size (it defaults to -1, and set_data never sets it),
+                    // so without this the actor allocates 0x0 and nothing
+                    // paints — a decoded frame with no error and no image.
+                    // The size must be set BEFORE set_data: that call is
+                    // what invalidates the size, so the actor re-reads it
+                    // then; setting it after leaves the actor at 0x0, and a
+                    // later frame the same size invalidates nothing.
+                    this._liveImage.set_preferred_width(pixbuf.get_width());
+                    this._liveImage.set_preferred_height(pixbuf.get_height());
                     this._liveImage.set_data(
                         global.stage.context.get_backend().get_cogl_context(),
                         pixbuf.get_pixels(),
@@ -209,12 +219,6 @@ class CameraPage extends Page {
                             : Cogl.PixelFormat.RGB_888,
                         pixbuf.get_width(), pixbuf.get_height(),
                         pixbuf.get_rowstride());
-                    // St.ImageContent reports only an explicit preferred
-                    // size (it defaults to -1, and set_data never sets it),
-                    // so without this the actor allocates 0x0 and nothing
-                    // paints — a decoded frame with no error and no image.
-                    this._liveImage.set_preferred_width(pixbuf.get_width());
-                    this._liveImage.set_preferred_height(pixbuf.get_height());
                     this._previewKey = key;
                     this._previewStalled = 0;
                     if (this._previewStallShown) {
