@@ -3,7 +3,8 @@
 # Copyright (C) 2026 zickrian
 # Copyright (C) 2026 Galyarder Labs
 # Packs dist/notchfolk-<version>-<arch>-linux.tar.gz (+ .sha256) with ready-built programs; arg: version (default Cargo.toml).
-# Needs libgtk-4-dev for notchfolk-shelf, and cmake g++ libclang-dev libvulkan-dev glslc for notchfolk-whisper.
+# Needs libgtk-4-dev and libvte-2.91-gtk4-dev for the GTK helpers,
+# and cmake g++ libclang-dev libvulkan-dev glslc for notchfolk-whisper.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -11,12 +12,12 @@ VERSION="${1:-$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)}"
 NAME="notchfolk-$VERSION-$(uname -m)-linux"
 OUT="dist/$NAME"
 
-cargo build --release --locked -p notchfolk-daemon -p notchfolk-shelf -p notchfolk-whisper
+cargo build --release --locked -p notchfolk-daemon -p notchfolk-shelf -p notchfolk-terminal -p notchfolk-whisper
 
 rm -rf "$OUT" "dist/$NAME.tar.gz" "dist/$NAME.tar.gz.sha256"
 mkdir -p "$OUT/bin"
-install -m755 target/release/notchfolkd target/release/notchfolk-shelf target/release/notchfolk-whisper "$OUT/bin/"
-strip "$OUT/bin/notchfolkd" "$OUT/bin/notchfolk-shelf" "$OUT/bin/notchfolk-whisper"
+install -m755 target/release/notchfolkd target/release/notchfolk-shelf target/release/notchfolk-terminal target/release/notchfolk-whisper "$OUT/bin/"
+strip "$OUT/bin/notchfolkd" "$OUT/bin/notchfolk-shelf" "$OUT/bin/notchfolk-terminal" "$OUT/bin/notchfolk-whisper"
 cp -r gnome-extension data mcp install.sh uninstall.sh README.md LICENSE CHANGELOG.md "$OUT/"
 mkdir -p "$OUT/docs"
 install -m644 docs/mcp.md "$OUT/docs/mcp.md"

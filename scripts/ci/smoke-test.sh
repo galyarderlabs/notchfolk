@@ -3,7 +3,7 @@
 # Copyright (C) 2026 zickrian
 # Copyright (C) 2026 Galyarder Labs
 # Run as root in a throwaway container: installs an Notchfolk package (tarball, .deb, .rpm or Arch) and a headless
-# GNOME Shell as "tester", failing on any "JS ERROR", the extension not loading, or notchfolkd never on the bus.
+# GNOME Shell as "tester", failing on JS errors, extension/daemon startup, or the packaged terminal lifecycle.
 set -euo pipefail
 
 UUID="io.galyarderlabs.notchfolk"
@@ -23,15 +23,15 @@ install_shell() {
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq
         apt-get install -y -qq --no-install-recommends gnome-shell mutter xwayland dbus dbus-user-session \
-            libglib2.0-bin gnome-shell-common gir1.2-gtk-4.0 libgtk-4-1 adwaita-icon-theme fonts-cantarell \
-            librsvg2-common fontconfig curl ca-certificates procps util-linux >/dev/null
+            libglib2.0-bin gnome-shell-common gir1.2-gtk-4.0 libgtk-4-1 libvte-2.91-gtk4-0 tmux \
+            adwaita-icon-theme fonts-cantarell librsvg2-common fontconfig curl ca-certificates procps util-linux >/dev/null
     elif command -v dnf >/dev/null; then
         dnf -y -q install --setopt=install_weak_deps=False gnome-shell xorg-x11-server-Xwayland dbus-daemon \
             dbus-tools glib2 librsvg2 adwaita-icon-theme mesa-dri-drivers fontconfig curl tar findutils \
-            procps-ng util-linux shadow-utils
+            gtk4 vte291-gtk4 tmux procps-ng util-linux shadow-utils
     elif command -v pacman >/dev/null; then
         pacman -Syu --noconfirm --needed gnome-shell xorg-xwayland dbus glib2 librsvg adwaita-icon-theme \
-            fontconfig curl procps-ng util-linux >/dev/null
+            vte4 tmux fontconfig curl procps-ng util-linux >/dev/null
     else
         fail "no apt-get, dnf or pacman to install GNOME Shell with."
     fi
@@ -95,9 +95,28 @@ session() {
         gsettings set org.gnome.shell enabled-extensions "['$UUID']"
     fi
 
+    # Check the packaged helper without a display; missing linked VTE libraries fail here.
+    say "Checking the notch terminal runtime"
+    notchfolk-terminal --version || fail "notchfolk-terminal --version failed."
+    notchfolk-terminal --help >/dev/null || fail "notchfolk-terminal --help failed."
+    tmux -V || fail "tmux is missing or unusable."
+
+    local terminal_id="io.galyarderlabs.notchfolk.Terminal"
+    local terminal_data="/usr/share"
+    if [[ "$package" == *.tar.gz ]]; then
+        terminal_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    fi
+    local terminal_desktop="$terminal_data/applications/$terminal_id.desktop"
+    [ -f "$terminal_desktop" ] || fail "Terminal desktop entry is missing."
+    grep -Fxq 'Name=Notchfolk Terminal' "$terminal_desktop" || fail "Terminal display name is missing."
+    grep -Fxq "Icon=$terminal_id" "$terminal_desktop" || fail "Terminal icon name does not match its app ID."
+    [ -s "$terminal_data/icons/hicolor/scalable/apps/$terminal_id.svg" ] || fail "Terminal application icon is missing."
+
     say "Starting GNOME Shell"
     local log="$HOME/gnome-shell.log"
-    gnome-shell --headless --wayland --virtual-monitor 1280x720 >"$log" 2>&1 &
+    export WAYLAND_DISPLAY=wayland-notchfolk-smoke GDK_BACKEND=wayland
+    gnome-shell --headless --wayland --wayland-display "$WAYLAND_DISPLAY" \
+        --virtual-monitor 1280x720 >"$log" 2>&1 &
     local shell=$! waited=0
     until bus_has "$DAEMON"; do
         kill -0 "$shell" 2>/dev/null || { cat "$log"; fail "GNOME Shell exited."; }
@@ -110,6 +129,7 @@ session() {
     done
     say "notchfolkd is on the session bus after ${waited} s"
     sleep "$SETTLE"
+    smoke_terminal
 
     local info state
     info="$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
@@ -148,6 +168,58 @@ bus_has() {
     gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
         --method org.freedesktop.DBus.NameHasOwner "$1" 2>/dev/null | grep -q true
 }
+
+# The disposable container's private tester must have no pre-existing terminal
+# sockets. This gives the new helper's socket a known owner without inspecting argv.
+smoke_terminal() (
+    say "Opening and closing the packaged Notchfolk Terminal"
+    # The helper must ignore the caller's tmux directory so an external terminal can attach to the same socket.
+    export TMUX_TMPDIR="$XDG_RUNTIME_DIR"
+    for socket in /tmp/tmux-"$UID"/notchfolk-*; do
+        [ ! -S "$socket" ] || fail "tester already owns a Notchfolk tmux socket: $socket"
+    done
+    [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] || fail "GNOME Shell's Wayland socket is missing."
+    bus_has "$terminal_id" && fail "Tester already has a running Terminal helper."
+    terminal_socket="" terminal_log="$HOME/notchfolk-terminal.log"
+    trap 'if [ "$?" -ne 0 ]; then
+        timeout --kill-after=2s 10s notchfolk-terminal --quit >>"$terminal_log" 2>&1 || true
+        if [ -n "$terminal_socket" ]; then
+            timeout --kill-after=2s 5s tmux -N -S "$terminal_socket" kill-server >/dev/null 2>&1 || true
+        fi
+        cat "$terminal_log"
+    fi' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    # Start as GNOME does, without relying on the user bin directory being on PATH.
+    timeout --kill-after=2s 10s env PATH=/usr/bin:/bin gio launch "$terminal_desktop" >"$terminal_log" 2>&1 ||
+        fail "Could not launch the installed Terminal desktop entry."
+    deadline=$((SECONDS + WAIT))
+    while :; do
+        for socket in /tmp/tmux-"$UID"/notchfolk-*; do
+            [ ! -S "$socket" ] || { terminal_socket="$socket"; break; }
+        done
+        if [ -n "$terminal_socket" ] &&
+            state="$(timeout --kill-after=2s 5s tmux -N -S "$terminal_socket" \
+                display-message -p -t shell:0.0 '#{session_attached}:#{pane_dead}' 2>/dev/null)" &&
+            [ "$state" = 1:0 ]; then
+            break
+        fi
+        [ "$SECONDS" -lt "$deadline" ] || fail "Notchfolk Terminal did not attach a live shell in $WAIT s."
+        sleep 1
+    done
+    timeout --kill-after=2s 10s notchfolk-terminal --quit >>"$terminal_log" 2>&1 ||
+        fail "notchfolk-terminal --quit failed or timed out."
+    deadline=$((SECONDS + WAIT))
+    while bus_has "$terminal_id"; do
+        [ "$SECONDS" -lt "$deadline" ] || fail "Terminal kept its bus name after --quit."
+        sleep 1
+    done
+    status=0
+    timeout --kill-after=2s 5s tmux -N -S "$terminal_socket" has-session -t shell >/dev/null 2>&1 || status=$?
+    [ "$status" -eq 1 ] || fail "Notchfolk Terminal --quit left its shell running or unresponsive (status $status)."
+    terminal_socket=""
+    say "Notchfolk Terminal opened a live shell and --quit closed it"
+)
 
 if [ "${1:-}" = --session ]; then
     session "$2" "$3"

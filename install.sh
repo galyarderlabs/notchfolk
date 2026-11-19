@@ -49,12 +49,14 @@ install_service() {
 }
 
 SHELF=0
+TERMINAL=0
 WHISPER=0
 # -f, not -x: unpacked where files cannot run (a /tmp mounted noexec), they still install.
 if [ -f bin/notchfolkd ]; then
     # A release package: the programs come built.
     BUILT=bin
     [ -f bin/notchfolk-shelf ] && SHELF=1
+    [ -f bin/notchfolk-terminal ] && TERMINAL=1
     [ -f bin/notchfolk-whisper ] && WHISPER=1
 else
     BUILT=target/release
@@ -71,6 +73,18 @@ else
     else
         echo "GTK 4 development files not found: skipping notchfolk-shelf (drag and drop on the shelf)."
         echo "Install them with 'sudo apt install libgtk-4-dev' and run this script again."
+    fi
+    if pkg-config --exists 'gtk4 >= 4.12' 'vte-2.91-gtk4 >= 0.65'; then
+        step "Building notchfolk-terminal"
+        if cargo build --release -p notchfolk-terminal; then
+            TERMINAL=1
+        else
+            echo "notchfolk-terminal did not build (it needs Rust 1.92 or newer: 'rustup update'); skipping the notch terminal."
+        fi
+    else
+        echo "GTK 4 or VTE 4 development files not found or too old: skipping notchfolk-terminal."
+        echo "Install them with 'sudo apt install libgtk-4-dev libvte-2.91-gtk4-dev' and run this script again."
+        echo "On Fedora: 'sudo dnf install gtk4-devel vte291-gtk4-devel'; on Arch: 'sudo pacman -S gtk4 vte4'."
     fi
     # The voice assistant's speech recognition: whisper.cpp, built with cmake; Vulkan for the GPU.
     if command -v cmake >/dev/null && command -v c++ >/dev/null; then
@@ -100,6 +114,34 @@ if [ "$SHELF" = 1 ]; then
     # A running helper is the old version; it starts again, updated, when needed.
     pkill -x notchfolk-shelf 2>/dev/null || true
 fi
+if [ "$TERMINAL" = 1 ]; then
+    put "$BUILT/notchfolk-terminal" "$BINDIR/notchfolk-terminal"
+    # Do not stop an open terminal: its private tmux server may still have live jobs.
+    # --version needs no display or shell and detects missing runtime libraries.
+    if ! "$BINDIR/notchfolk-terminal" --version >/dev/null || ! command -v tmux >/dev/null; then
+        echo "The notch terminal needs GTK 4, VTE 4 and tmux; the rest of Notchfolk is still installed."
+        echo "Ubuntu/Debian: 'sudo apt install libgtk-4-1 libvte-2.91-gtk4-0 tmux'."
+        echo "Fedora: 'sudo dnf install gtk4 vte291-gtk4 tmux'; Arch: 'sudo pacman -S gtk4 vte4 tmux'."
+    fi
+fi
+
+# Match the GTK application ID so GNOME can name and identify its windows.
+# Keep an earlier helper when this build skipped it, just like the shelf helper.
+TERMINAL_ID="io.galyarderlabs.notchfolk.Terminal"
+TERMINAL_DESKTOP="$DATA/applications/$TERMINAL_ID.desktop"
+TERMINAL_ICON="$DATA/icons/hicolor/scalable/apps/$TERMINAL_ID.svg"
+if [ -x "$BINDIR/notchfolk-terminal" ]; then
+    # Resolve HOME at launch. A fixed command needs no installer-time escaping
+    # and works even if the path contains spaces or desktop-entry field codes.
+    sed 's|^Exec=.*|Exec=/bin/sh -c "exec ~/.local/bin/notchfolk-terminal"|' \
+        "data/$TERMINAL_ID.desktop" > "$WORK/$TERMINAL_ID.desktop"
+    install -Dm644 "$WORK/$TERMINAL_ID.desktop" "$TERMINAL_DESKTOP"
+    install -Dm644 gnome-extension/icons/notchfolk-terminal-symbolic.svg "$TERMINAL_ICON"
+else
+    # A partial install must not leave a launcher for a helper that is absent.
+    rm -f "$TERMINAL_DESKTOP" "$TERMINAL_ICON"
+fi
+gtk-update-icon-cache -q -t -f "$DATA/icons/hicolor" >/dev/null 2>&1 || true
 if [ "$WHISPER" = 1 ]; then
     put "$BUILT/notchfolk-whisper" "$BINDIR/notchfolk-whisper"
 fi

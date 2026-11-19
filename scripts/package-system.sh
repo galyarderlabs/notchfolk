@@ -36,8 +36,12 @@ service() {
 # Everything but the license, under $1, with Inter in $2 (each system has its own fonts folder).
 stage() {
     local root="$1" fonts="$1$2"
-    install -Dm755 -t "$root/usr/bin" "$SRC/bin/notchfolkd" "$SRC/bin/notchfolk-shelf" "$SRC/bin/notchfolk-whisper" \
-        "$SRC/scripts/notchfolk-charge-limit"
+    install -Dm755 -t "$root/usr/bin" "$SRC/bin/notchfolkd" "$SRC/bin/notchfolk-shelf" \
+        "$SRC/bin/notchfolk-terminal" "$SRC/bin/notchfolk-whisper" "$SRC/scripts/notchfolk-charge-limit"
+    install -Dm644 "$SRC/data/io.galyarderlabs.notchfolk.Terminal.desktop" \
+        "$root/usr/share/applications/io.galyarderlabs.notchfolk.Terminal.desktop"
+    install -Dm644 "$SRC/gnome-extension/icons/notchfolk-terminal-symbolic.svg" \
+        "$root/usr/share/icons/hicolor/scalable/apps/io.galyarderlabs.notchfolk.Terminal.svg"
     install -Dm755 "$SRC/scripts/setup-voice.sh" "$root/usr/bin/notchfolk-setup-voice"
     install -Dm755 "$SRC/scripts/setup-mcp.sh" "$root/usr/bin/notchfolk-setup-mcp"
     install -Dm755 "$SRC/scripts/notchfolk-mcp" "$root/usr/bin/notchfolk-mcp"
@@ -85,7 +89,8 @@ EOF
     # The libraries the programs link, as package names and versions (libc6, libgtk-4-1, …).
     mkdir -p "$WORK/shlibs/debian"
     printf 'Source: notchfolk\n\nPackage: notchfolk\nArchitecture: amd64\n' > "$WORK/shlibs/debian/control"
-    depends="$(cd "$WORK/shlibs" && dpkg-shlibdeps -O --warnings=0 "$root/usr/bin/notchfolkd" "$root/usr/bin/notchfolk-shelf" "$root/usr/bin/notchfolk-whisper" |
+    depends="$(cd "$WORK/shlibs" && dpkg-shlibdeps -O --warnings=0 "$root/usr/bin/notchfolkd" \
+        "$root/usr/bin/notchfolk-shelf" "$root/usr/bin/notchfolk-terminal" "$root/usr/bin/notchfolk-whisper" |
         sed -n 's/^shlibs:Depends=//p')"
 
     mkdir -p "$root/DEBIAN"
@@ -95,7 +100,7 @@ Version: $VERSION
 Architecture: amd64
 Maintainer: $MAINTAINER
 Installed-Size: $(du -sk --exclude=DEBIAN "$root" | cut -f1)
-Depends: $depends, gnome-shell (>= 46), dbus-user-session | default-dbus-session-bus
+Depends: $depends, gnome-shell (>= 46), dbus-user-session | default-dbus-session-bus, tmux
 Recommends: libvulkan1
 Section: gnome
 Priority: optional
@@ -126,6 +131,7 @@ License: GPL-3.0-or-later AND OFL-1.1
 URL: https://github.com/galyarderlabs/notchfolk
 Packager: $MAINTAINER
 Requires: gnome-shell >= 46
+Requires: tmux
 # Speech recognition on the graphics card; without it, on the processor.
 Recommends: vulkan-loader
 # Built by package.sh already, and stripped there.
@@ -147,6 +153,9 @@ cp -a "$stage/." "%{buildroot}/"
 %doc /usr/share/doc/notchfolk
 /usr/bin/notchfolkd
 /usr/bin/notchfolk-shelf
+/usr/bin/notchfolk-terminal
+/usr/share/applications/io.galyarderlabs.notchfolk.Terminal.desktop
+/usr/share/icons/hicolor/scalable/apps/io.galyarderlabs.notchfolk.Terminal.svg
 /usr/bin/notchfolk-whisper
 /usr/bin/notchfolk-setup-voice
 /usr/bin/notchfolk-setup-mcp

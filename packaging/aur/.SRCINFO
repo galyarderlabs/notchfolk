@@ -10,6 +10,8 @@ pkgbase = notchfolk-bin
 	depends = gnome-shell>=1:46
 	depends = dconf
 	depends = gtk4
+	depends = vte4
+	depends = tmux
 	depends = glib2
 	depends = pango
 	depends = gdk-pixbuf2

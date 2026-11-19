@@ -9,12 +9,14 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {px, uiScale} from './compat.js';
+import {isWayland, px, uiScale} from './compat.js';
 import {GlassBackdrop} from './glass.js';
 import {RIM_FUNCTIONS, RIM_UNIFORMS, rimCode, rimUniforms} from './glow.js';
 import {effectPoint, shaderEffect} from './shader.js';
 import {GENTLE, Spring, SpringDriver} from './spring.js';
+import {terminalFitsShape, terminalMaterialGeometry} from './terminalRules.js';
 import * as Theme from './theme.js';
 import {fence, setEnabled, slideBy} from './widgets.js';
 
@@ -103,6 +105,18 @@ float coverage(vec3 edge, float pixel) {
 }
 `;
 
+// Mask the composed material (not one of its shaders) and the page views over a real GTK client.
+const NATIVE_UNIFORMS = {nativeHole: 4, nativeRadius: 1, nativePixel: 1};
+const NATIVE_FUNCTIONS = `
+float nativeCoverage(vec2 p) {
+    if (nativeHole.z <= 0.0 || nativeHole.w <= 0.0)
+        return 1.0;
+    vec2 q = abs(p - nativeHole.xy - nativeHole.zw * 0.5) - nativeHole.zw * 0.5 + nativeRadius;
+    float distance = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - nativeRadius;
+    return clamp(distance * nativePixel + 0.5, 0.0, 1.0);
+}
+`;
+
 // The shape in the theme's colour (`fill`), a 'wash' (`style` 1) or 'glow' (2) of `tint` (rgb, strength) over it,
 // and the theme's `edge` (rgb, on; `edgeAlpha` at the top and the bottom), each edge softened over a pixel.
 const SHAPE_CODE = `
@@ -139,20 +153,25 @@ cogl_color_out = color * cogl_color_in.a;
 `;
 
 /** The island's shape, drawn by the GPU as it changes (see `_syncShape`). */
-const ShapeFill = shaderEffect('ShapeFill', {frame: 4, body: 4, corner: 4, pill: 2, fill: 4, tint: 4, style: 1, edge: 4, edgeAlpha: 2},
-    SHAPE_CODE, OUTLINE);
+const ShapeFill = shaderEffect('ShapeFill', {frame: 4, body: 4, corner: 4, pill: 2, fill: 4, tint: 4,
+    style: 1, edge: 4, edgeAlpha: 2}, SHAPE_CODE, OUTLINE);
 
 // What the views draw, cut to the outline as the shape is (see SHAPE_CODE).
 const VIEWS_CODE = `
 vec2 p = ${effectPoint('frame.xy')};
-cogl_color_out *= coverage(edgeMin(edgeMax(outlineBody(p), outlineBeside(p)), vec3(p.y, 0.0, 1.0)), frame.z);
+cogl_color_out *= coverage(edgeMin(edgeMax(outlineBody(p), outlineBeside(p)), vec3(p.y, 0.0, 1.0)), frame.z) * nativeCoverage(p);
 `;
 
 /** Keeps the views inside the island's rounded outline while it changes shape (see `_syncViews`). */
-const ViewsMask = shaderEffect('ViewsMask', {frame: 4, body: 4, corner: 4, pill: 2}, VIEWS_CODE, OUTLINE);
+const ViewsMask = shaderEffect('ViewsMask', {frame: 4, body: 4, corner: 4, pill: 2, ...NATIVE_UNIFORMS},
+    VIEWS_CODE, OUTLINE + NATIVE_FUNCTIONS);
 
 /** The 'aura' light, drawn by the GPU each frame (see glow.js). */
 const RimLight = shaderEffect('RimLight', RIM_UNIFORMS, rimCode(effectPoint('frame.xy')), OUTLINE + RIM_FUNCTIONS);
+
+/** Cut the material only on the Shell side; the same material behind the native window is unmasked. */
+const NativeMaterialMask = shaderEffect('NativeMaterialMask', {frame: 2, ...NATIVE_UNIFORMS},
+    `cogl_color_out *= nativeCoverage(${effectPoint('frame')});`, NATIVE_FUNCTIONS);
 
 /** Cross-fade timings in milliseconds. */
 const FADE_OUT = 160;
@@ -196,6 +215,10 @@ export const Island = GObject.registerClass({
         this._topInset = 0;
         /** A pill's room above it, in stage pixels; null for the notch (see `pillGap`). */
         this._pillGap = null;
+        /** A native window inside a page: Shell keeps the shared header, outer shape and margins. */
+        this._nativeViewport = null;
+        this._nativeBacking = null;
+        this._nativeMargins = null;
         this._hovered = false;
         this._autoHidden = false;
         this._band = 0;
@@ -228,20 +251,30 @@ export const Island = GObject.registerClass({
         this._springs = [this._width, this._height, this._radius, this._shoulder];
         this._driver = new SpringDriver(this, this._springs, () => this._sync());
 
+        // Keep the actual material as a single paint source. The parent, not
+        // this source, cuts the hole through Shell chrome for the GTK window.
+        this._shellMaterial = new St.Widget({x: -SHAPE_PAD, clip_to_allocation: true,
+            layout_manager: new Clutter.FixedLayout()});
+        this._material = new St.Widget({x: SHAPE_PAD, layout_manager: new Clutter.FixedLayout()});
+        this._nativeCutout = new NativeMaterialMask();
+        this._nativeCutout.enabled = false;
+        this._shellMaterial.add_effect(this._nativeCutout);
+        this._shellMaterial.add_child(this._material);
+        this.add_child(this._shellMaterial);
         // The glass theme's blurred backdrop, under the shape (see glass.js).
         this._backdrop = new GlassBackdrop();
-        this.add_child(this._backdrop);
+        this._material.add_child(this._backdrop);
         this._shape = new St.Widget({x: -SHAPE_PAD});
         this._fill = new ShapeFill();
         this._shape.add_effect(this._fill);
-        this.add_child(this._shape);
+        this._material.add_child(this._shape);
         // The moving 'aura' light, on a layer of its own: the shape below is only drawn when it changes.
         this._glow = new St.Widget({visible: false});
         this._rim = new RimLight();
         this._glow.add_effect(this._rim);
         // A breath asked for while it was hidden starts as it shows (see `_breathe`).
         this._glow.connect('notify::mapped', () => this._breathing && this._breathe());
-        this.add_child(this._glow);
+        this._material.add_child(this._glow);
         // Its shader is built the first time it draws: once, unlit, as the island first shows (see `_warmGlow`).
         this._warmPaint = 0;
         this._warmId = this.connect('notify::mapped', () => this.mapped && this._warmGlow());
@@ -312,6 +345,98 @@ export const Island = GObject.registerClass({
 
     get pillGap() {
         return this._pillGap;
+    }
+
+    /** The ready native frame (stage coordinates) and its verified actor; null resumes ordinary drawing and input. */
+    set nativeViewport(rect) {
+        const previous = this._nativeViewport;
+        if (rect === previous || rect && previous && rect.actor === previous.actor &&
+            ['x', 'y', 'width', 'height'].every(key => rect[key] === previous[key]))
+            return;
+        this._nativeBacking?.destroy();
+        this._backdrop.excludedWindow = rect?.actor ?? null;
+        this._nativeViewport = rect;
+        this._sync();
+        this._syncNativeMargins(this._nativeViewport);
+    }
+
+    /** The header alone is tracked as chrome while GTK is embedded. Keep the other three strips
+     * around the client pickable too, without intercepting even an edge pixel of native input. */
+    _syncNativeMargins(rect) {
+        if (!rect) {
+            this._nativeMargins?.forEach(guard => guard.hide());
+            return;
+        }
+        this._nativeMargins ??= Array.from({length: 3}, () => {
+            const guard = new St.Widget({reactive: true, visible: false});
+            this.add_child(guard);
+            // On X11, picking a Shell child also requires that strip in the stage's input region.
+            if (!isWayland())
+                Main.layoutManager.trackChrome(guard, {affectsInputRegion: true, trackFullscreen: false});
+            return guard;
+        });
+        const [left, top] = this.get_transformed_position();
+        const x = rect.x - left, y = rect.y - top, bottom = y + rect.height;
+        const strips = [[0, y, x, rect.height], [x + rect.width, y, this.width - x - rect.width, rect.height],
+            [0, bottom, this.width, Math.ceil(this._height.value) - bottom]];
+        strips.forEach(([gx, gy, w, h], i) => {
+            const guard = this._nativeMargins[i];
+            guard.visible = w > 0 && h > 0;
+            if (guard.visible) {
+                guard.set_position(gx, gy);
+                guard.set_size(w, h);
+            }
+        });
+    }
+
+    _syncNativeViewport() {
+        const rect = this._nativeViewport;
+        this._viewsMask.setUniforms(rect ? this._nativeUniforms(this._viewsLayer, rect) : {nativeHole: [0, 0, 0, 0]});
+        this._nativeCutout.enabled = Boolean(rect);
+        if (!rect)
+            return;
+        this._nativeCutout.setUniforms({
+            frame: [this._shellMaterial.width, this._shellMaterial.height],
+            ...this._nativeUniforms(this._shellMaterial, rect),
+        });
+        if (Theme.translucent()) {
+            if (!this._nativeBacking)
+                this._backNativeWindow(rect);
+        } else {
+            this._nativeBacking?.destroy();
+        }
+    }
+
+    /** Paint the same glass, at the same stage pixels, BELOW the actual client surfaces. Never clone the
+     * terminal text or reparent a Mutter surface: selection, typing, popovers and stacking remain native. */
+    _backNativeWindow(rect) {
+        const actor = rect.actor;
+        // The actor clip is the acknowledged native frame in actor coordinates (excludes client shadows).
+        // A scaled-view transform, when present, already scales each of this actor's children.
+        const scale = actor.get_child_transform?.()?.get_x_scale?.() || 1;
+        const {frame, source} = terminalMaterialGeometry(rect, actor.get_clip(), scale,
+            this._material.get_transformed_position(), this._material.get_transformed_size());
+        const backing = new Clutter.Actor({reactive: false, clip_to_allocation: true,
+            ...frame,
+            layout_manager: new Clutter.FixedLayout()});
+        backing.add_child(new Clutter.Clone({source: this._material, reactive: false, ...source}));
+        this._nativeBacking = backing;
+        // The compositor may destroy its actor first. Don't keep a disposed child to destroy later.
+        backing.connect('destroy', () => { this._nativeBacking = null; });
+        actor.insert_child_at_index(backing, 0);
+    }
+
+    _nativeUniforms(layer, rect) {
+        const [left, top] = layer.get_transformed_position();
+        const [width, height] = layer.get_transformed_size();
+        if (width <= 0 || height <= 0 || layer.width <= 0 || layer.height <= 0)
+            return {nativeHole: [0, 0, 0, 0]};
+        const sx = layer.width / width, sy = layer.height / height;
+        return {
+            nativeHole: [(rect.x - left) * sx, (rect.y - top) * sy, rect.width * sx, rect.height * sy],
+            nativeRadius: Math.min(px(12) * Math.min(sx, sy), rect.width * sx / 2, rect.height * sy / 2),
+            nativePixel: (layer.get_resource_scale() || 1) / sx,
+        };
     }
 
     /** The height of the bar the island grows out of; its body starts below. */
@@ -435,13 +560,21 @@ export const Island = GObject.registerClass({
         };
     }
 
-    /** Whether the island's shape, as it is right now, covers `rect`. */
-    covers({x, y, width, height}) {
+    /** Native terminal clients need the rounded silhouette; shelf placement retains its rectangular contract. */
+    covers(rect, {rounded = false} = {}) {
         const [left, top] = this.get_transformed_position();
-        const bodyLeft = left + Math.max(0, this._shoulder.value);
-        const bodyRight = bodyLeft + Math.max(0, this._width.value);
-        return x >= bodyLeft && x + width <= bodyRight && y >= top + (this._pillGap ?? 0) &&
-            y + height <= top + Math.max(0, this._height.value);
+        if (!rounded) {
+            const bodyLeft = left + Math.max(0, this._shoulder.value);
+            const bodyRight = bodyLeft + Math.max(0, this._width.value);
+            return rect.x >= bodyLeft && rect.x + rect.width <= bodyRight && rect.y >= top + (this._pillGap ?? 0) &&
+                rect.y + rect.height <= top + Math.max(0, this._height.value);
+        }
+        const height = Math.max(0, this._height.value);
+        const box = this._box(height);
+        return terminalFitsShape(rect, {
+            x: left + this._islandFraction + box.left, y: top + this._lift + box.gap,
+            width: box.right - box.left, height: height - box.gap, radius: box.radius, crown: box.crown,
+        });
     }
 
     /** Whether the island's shape will cover `rect` once it settles: its body is centred on the monitor. */
@@ -763,8 +896,12 @@ export const Island = GObject.registerClass({
         const margin = Math.max(0, this._shoulder.value);
         const outerWidth = width + 2 * margin;
 
-        this.set_size(Math.ceil(outerWidth), Math.ceil(height));
+        const inputHeight = this._nativeViewport
+            ? Math.max(0, Math.min(height, this._nativeViewport.y - (this._monitor?.y ?? this.y))) : height;
+        this.set_size(Math.ceil(outerWidth), Math.ceil(inputHeight));
         const room = this._roomFor(outerWidth, height);
+        this._shellMaterial.set_size(room.width + 2 * SHAPE_PAD, room.height);
+        this._material.set_size(room.width, room.height);
         // A pixel wider on each side, for the fraction the island is drawn off its whole-pixel place.
         this._shape.set_size(room.width + 2 * SHAPE_PAD, room.height);
         this._glow.set_size(room.width, room.height);
@@ -772,7 +909,8 @@ export const Island = GObject.registerClass({
         // Whole pixels keep text sharp while the island resizes.
         this._stageX = Math.round(margin);
         this._stage.set_position(this._stageX, 0);
-        this._stage.set_size(Math.ceil(width), Math.ceil(height));
+        // Keep the real header's children pickable, but never let its page intercept VTE's pointer input.
+        this._stage.set_size(Math.ceil(width), Math.ceil(inputHeight));
         if (this._monitor) {
             const {x, y, width: monitorWidth} = this._monitor;
             const exact = x + (monitorWidth - outerWidth) / 2;
@@ -790,6 +928,7 @@ export const Island = GObject.registerClass({
         this._syncShape();
         this._syncViews(room);
         this._queueGlow();
+        this._syncNativeViewport();
         this.emit('geometry-changed');
     }
 
@@ -810,11 +949,11 @@ export const Island = GObject.registerClass({
         return this._room;
     }
 
-    /** Cuts the views to the outline while the island moves; at rest they fit, drawn straight. */
+    /** Cut views while moving and around a native card; otherwise draw them straight. */
     _syncViews(room) {
-        const moving = !this._springs.every(spring => spring.settled);
-        this._viewsMask.enabled = moving;
-        if (!moving)
+        const masking = !this._springs.every(spring => spring.settled) || Boolean(this._nativeViewport);
+        this._viewsMask.enabled = masking;
+        if (!masking)
             return;
         const height = Math.max(0, this._height.value);
         const {left, right, top, radius, shoulder, crown, gap} = this._box(height);
@@ -987,6 +1126,7 @@ export const Island = GObject.registerClass({
 
     /** Stops the springs and a pending glow redraw. */
     _onDestroy() {
+        this._nativeBacking?.destroy();
         this._pulse?.stop();
         this._pulse = null;
         this._liftTimeline?.stop();

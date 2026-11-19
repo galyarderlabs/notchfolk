@@ -1,0 +1,207 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/* The fitted Glass window is transparent down to Shell's material, including its margins. */
+window.termi-notch,
+.termi-notch .terminal-body {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.termi-notch label {
+    color: #d8d8d8;
+}
+
+.termi-notch .terminal-header {
+    margin: 4px 12px 2px;
+}
+
+.termi-notch button,
+.terminal-menu button {
+    min-width: 24px;
+    min-height: 24px;
+    padding: 2px;
+    background: transparent;
+    background-image: none;
+    color: #a9a9a9;
+    border: none;
+    border-radius: 6px;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.termi-notch button image {
+    -gtk-icon-size: 14px;
+}
+
+.termi-notch button:hover,
+.terminal-menu button:hover {
+    background: #1e1e1e;
+    color: #ffffff;
+}
+
+.termi-notch button:active,
+.terminal-menu button:active {
+    background: #303030;
+}
+
+.termi-notch button:disabled,
+.terminal-menu button:disabled {
+    background: transparent;
+    color: #505050;
+}
+
+.termi-notch button:focus-visible,
+.terminal-menu button:focus-visible {
+    outline: 2px solid #dddddd;
+    outline-offset: -2px;
+}
+
+.termi-notch .terminal-message {
+    padding: 6px 14px;
+    background: #151515;
+}
+
+.termi-notch vte-terminal,
+.termi-notch notebook,
+.termi-notch notebook > stack,
+.termi-notch notebook > stack > box {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.termi-notch notebook > header {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0 8px 2px;
+}
+
+.termi-notch notebook > header tab {
+    min-height: 24px;
+    margin: 0;
+    padding: 0 6px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.termi-notch notebook > header tab:checked {
+    background: #181818;
+}
+
+.termi-notch .terminal-tab label {
+    font-size: 11px;
+    color: #929292;
+}
+
+.termi-notch notebook > header tab:checked label {
+    color: #e0e0e0;
+}
+
+.termi-notch button.tab-close {
+    min-width: 20px;
+    min-height: 20px;
+    padding: 0;
+}
+
+.termi-notch notebook > header > tabs > arrow {
+    min-width: 20px;
+    min-height: 20px;
+    background: transparent;
+    color: #a9a9a9;
+    border: none;
+}
+
+.terminal-menu > contents {
+    background: #101010;
+    color: #dedede;
+    border: 1px solid #303030;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.terminal-menu label {
+    color: #dedede;
+}
+
+.terminal-menu button {
+    padding: 6px 10px;
+}
+
+/* Only controls paint on top of the glass; leave empty cells and margins clear. */
+.termi-notch.terminal-glass .terminal-message,
+.termi-notch.terminal-glass notebook > header tab:checked {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.termi-notch.terminal-glass label {
+    color: #eeeeee;
+}
+
+.termi-notch.terminal-glass .terminal-tab label {
+    color: #c4c4c4;
+}
+
+.termi-notch.terminal-glass notebook > header tab:checked label {
+    color: #ffffff;
+}
+
+.termi-notch.terminal-glass button:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.termi-notch.terminal-glass button:active {
+    background: rgba(255, 255, 255, 0.20);
+}
+
+.termi-notch.terminal-glass button:disabled {
+    background: transparent;
+    color: #888888;
+}
+
+/* Only the path and each action paint a pill. A dark local fill keeps the
+ * text and symbolic icons legible even over bright, lightly tinted glass. */
+.termi-notch .terminal-header .terminal-cwd,
+.termi-notch .terminal-actions > button {
+    background: rgba(44, 44, 46, 0.84);
+    color: #f5f5f5;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+}
+
+.termi-notch .terminal-header .terminal-cwd {
+    font-size: 12px;
+    padding: 2px 10px;
+}
+
+.termi-notch .terminal-header-hint {
+    background: #242424;
+    color: #f5f5f5;
+    padding: 4px 10px;
+    border: 1px solid #505050;
+    border-radius: 8px;
+}
+
+.termi-notch .terminal-actions > button {
+    min-width: 28px;
+    min-height: 24px;
+    padding: 2px 4px;
+}
+
+.termi-notch .terminal-actions > button:hover {
+    background: #48484a;
+    color: #ffffff;
+}
+
+.termi-notch .terminal-actions > button:active {
+    background: #555557;
+}
+
+.termi-notch .terminal-actions > button:disabled {
+    background: rgba(44, 44, 46, 0.70);
+    color: #b0b0b2;
+}

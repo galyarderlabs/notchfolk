@@ -1251,6 +1251,8 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
             ['standard', 'Standard'],
             ['large', 'Large'],
         ]));
+        look.add(terminalFontRow(settings, window));
+        look.add(externalTerminalRow(settings, window));
         look.add(switchRow(settings, 'privacy-indicators', 'Privacy indicators', 'Dots when the camera, microphone or screen sharing is in use'));
         look.add(choiceRow(settings, 'island-monitor', 'Display', 'With more than one display, where the island is', [
             ['primary', 'Main display'],
@@ -1674,6 +1676,145 @@ function switchRow(settings, key, title, subtitle) {
     return row;
 }
 
+/** The helper is authoritative: preferences never maintain a second app/argv list. */
+function externalTerminalRow(settings, window) {
+    const key = 'terminal-external-app';
+    const row = new Adw.ComboRow({title: 'Default external terminal',
+        subtitle: 'Choose where “Open in external terminal” sends the live shell',
+        model: Gtk.StringList.new(['Ask every time'])});
+    const refresh = new Gtk.Button({icon_name: 'view-refresh-symbolic',
+        tooltip_text: 'Refresh installed terminals', valign: Gtk.Align.CENTER});
+    row.add_suffix(refresh);
+    let targets = [];
+    let ids = [''];
+    let syncing = false;
+    let closed = false;
+    let process = null;
+    let discoveryError = '';
+    const cancellable = new Gio.Cancellable();
+    const sync = () => {
+        const saved = settings.get_string(key);
+        const missing = saved && !targets.some(([id]) => id === saved);
+        ids = ['', ...targets.map(([id]) => id)];
+        const labels = ['Ask every time', ...targets.map(([, label]) => label)];
+        if (missing) {
+            ids.push(saved);
+            labels.push('Unavailable — ask every time');
+        }
+        syncing = true;
+        row.model = Gtk.StringList.new(labels);
+        row.selected = ids.indexOf(saved);
+        syncing = false;
+        row.subtitle = discoveryError || (missing
+            ? 'The saved app is unavailable; handoff will show the picker'
+            : 'Detected capable apps only. Wave opens with an explicit copy-and-paste attach step.');
+    };
+    row.connect('notify::selected', () => {
+        if (!syncing && ids[row.selected] !== undefined)
+            settings.set_string(key, ids[row.selected]);
+    });
+    const discover = () => {
+        const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', 'notchfolk-terminal']);
+        const binary = GLib.file_test(local, GLib.FileTest.IS_REGULAR) &&
+            GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE) ? local : GLib.find_program_in_path('notchfolk-terminal');
+        discoveryError = '';
+        if (!binary) {
+            discoveryError = 'Install the Terminal helper to detect external terminals';
+            sync();
+            return;
+        }
+        try {
+            refresh.sensitive = false;
+            process = Gio.Subprocess.new([binary, '--list-terminals'],
+                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
+            process.communicate_utf8_async(null, cancellable, (child, result) => {
+                try {
+                    const [, output] = child.communicate_utf8_finish(result);
+                    if (closed)
+                        return;
+                    if (!child.get_successful())
+                        throw new Error('Terminal discovery failed');
+                    targets = output.trim().split('\n').filter(Boolean).map(line => {
+                        const fields = line.split('\t');
+                        if (fields.length !== 2)
+                            throw new Error('Invalid terminal discovery response');
+                        return fields.map(decodeURIComponent);
+                    });
+                } catch (error) {
+                    if (!closed)
+                        discoveryError = 'Could not detect terminals; update the helper and try Refresh';
+                } finally {
+                    process = null;
+                    if (!closed) {
+                        refresh.sensitive = true;
+                        sync();
+                    }
+                }
+            });
+        } catch (error) {
+            process = null;
+            refresh.sensitive = true;
+            discoveryError = 'Could not start terminal discovery; try Refresh';
+            sync();
+        }
+    };
+    refresh.connect('clicked', discover);
+    const changed = settings.connect(`changed::${key}`, sync);
+    window.connect('close-request', () => {
+        closed = true;
+        settings.disconnect(changed);
+        cancellable.cancel();
+        process?.force_exit();
+        return false;
+    });
+    sync();
+    discover();
+    return row;
+}
+
+/** An installed font and point size for the terminal, without changing the rest of the island. */
+function terminalFontRow(settings, window) {
+    const row = new Adw.ActionRow({title: 'Terminal font',
+        subtitle: 'Font and size for text in the Terminal page'});
+    // No monospace filter: some Nerd Font families do not advertise themselves as monospace.
+    const font = new Gtk.FontDialogButton({
+        dialog: new Gtk.FontDialog({title: 'Terminal font'}),
+        level: Gtk.FontLevel.FONT,
+        valign: Gtk.Align.CENTER,
+        tooltip_text: 'Choose an installed font and point size',
+    });
+    const reset = new Gtk.Button({label: 'Reset', valign: Gtk.Align.CENTER,
+        tooltip_text: `Reset to ${settings.get_default_value('terminal-font').unpack()}`});
+    row.add_suffix(font);
+    row.add_suffix(reset);
+    row.activatable_widget = font;
+    let syncing = false;
+    const sync = () => {
+        const description = Pango.FontDescription.from_string(settings.get_string('terminal-font'));
+        if (!font.font_desc?.equal(description)) {
+            syncing = true;
+            font.font_desc = description;
+            syncing = false;
+        }
+        reset.sensitive = settings.get_user_value('terminal-font') !== null;
+    };
+    sync();
+    font.connect('notify::font-desc', () => {
+        if (syncing || !font.font_desc)
+            return;
+        const value = font.font_desc.to_string();
+        if (value !== settings.get_string('terminal-font'))
+            settings.set_string('terminal-font', value);
+    });
+    reset.connect('clicked', () => settings.reset('terminal-font'));
+    const changed = settings.connect('changed::terminal-font', sync);
+    window.connect('close-request', () => {
+        settings.disconnect(changed);
+        return false;
+    });
+    return row;
+}
+
 /** How dark the Glass look is, Clear to Dark; shown only while the island is glass. */
 function glassRow(settings, window) {
     const row = new Adw.ActionRow({title: 'Glass'});
@@ -1798,6 +1939,7 @@ const PAGES = [
     ['focus', 'Timer', 'alarm-symbolic', 'Pomodoro focus sessions and breaks'],
     ['reminders', 'Reminders', 'object-select-symbolic', 'Your to-do list'],
     ['shelf', 'Shelf', 'edit-paste-symbolic', 'Clipboard history (Super+V), the files tray and sharing with a phone'],
+    ['terminal', 'Terminal', 'utilities-terminal-symbolic', 'A real shell with tabs and live handoff to an external terminal'],
     ['calendar', 'Calendar', 'x-office-calendar-symbolic', 'The month, its events and world clocks'],
     ['calories', 'Calories', 'accessories-calculator-symbolic', 'Your food log and daily calorie goal'],
     ['water', 'Water', 'weather-showers-symbolic', 'Your water log and daily hydration goal'],
@@ -1811,7 +1953,7 @@ const SHORTCUT_PAGES = [...PAGES.map(([name, title, iconName]) => [name, title, 
     ['devices', 'Devices', 'bluetooth-active-symbolic'], ['usage', 'AI Usage', 'power-profile-performance-symbolic'],
     ['weather', 'Weather', 'weather-clear-symbolic'], ['vitals', 'Vitals', 'utilities-system-monitor-symbolic']];
 
-/** A shortcut per page, none at first: GNOME's own shortcuts keep their keys (see `shortcutRow`). */
+/** Per-page shortcuts; all can be cleared or changed with the same recorder. */
 function shortcutsGroup(settings) {
     const group = new Adw.PreferencesGroup({
         title: 'Shortcuts',
@@ -2680,7 +2822,8 @@ function shortcutTakenBy(accelerator, settings, ownKey) {
                 return `your shortcut “${own.get_string('name')}”`;
         }
     }
-    const rows = [['voice-shortcut', 'Assistant'], ...SHORTCUT_PAGES.map(([name, title]) => [`shortcut-${name}`, title])];
+    const rows = [['voice-shortcut', 'Assistant'],
+        ...SHORTCUT_PAGES.map(([name, title]) => [`shortcut-${name}`, title])];
     for (const [other, title] of rows) {
         if (other !== ownKey && same(settings.get_strv(other)))
             return `Isle’s ${title} shortcut`;
