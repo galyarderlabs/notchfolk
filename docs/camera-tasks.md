@@ -76,10 +76,13 @@ so the preview is no longer deferred.
       preview first; `StartPreview` while recording refuses; while already
       running it is a no-op success. Unit tests for the preview start/stop
       logic; `cargo test`, clippy clean.
-- [ ] Extension: preview Bin filling the page body (JPEG as CSS
-      `background-image`, reloaded on mtime change, ~125 ms poll while
-      active); controls as a bottom row over the preview; start on page
-      activate, stop on deactivate/destroy. `node --check`, eslint,
-      extension tests green.
+- [ ] Extension: preview Bin filling the page body (JPEG decoded into a
+      `St.ImageContent` as it changes, ~125 ms poll while active — never
+      `Clutter.Image`, removed in Shell 48); a camera bar under the preview
+      (last capture at the left, shutter and record centred, status at the
+      right); start on page activate, stop on deactivate/destroy. A preview
+      that cannot show says why in the bar (no file, no size, undecodable
+      frame, image-content refusal), never a silent blank. `node --check`,
+      eslint, extension tests green.
 - [ ] Device test on Galih's laptop: preview appears and moves, stops during
       photo/record, resumes after; screenshot is the evidence.

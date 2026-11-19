@@ -113,11 +113,14 @@ and stays out. Instead:
   `StartPreview` while recording refuses (camera busy); called while already
   running it is a no-op success. Preview never auto-resumes; the page
   re-starts it when active and not recording.
-- Extension: a preview Bin filling the page body, the JPEG as its CSS
-  `background-image` (the same pattern as the thumbnail), reloaded when the
-  file's mtime changes (~125 ms poll while the page is active, cache-busted
-  with the mtime). Controls become a bottom row over the preview. Preview
-  starts on page activate, stops on deactivate/destroy.
+- Extension: a preview Bin filling the page body, the JPEG decoded into a
+  `St.ImageContent` as it changes (~125 ms poll while the page is active).
+  Never `Clutter.Image`: removed in GNOME Shell 48, its replacement is
+  `St.ImageContent` since Shell 45. Controls become a camera bar under the
+  preview: last capture at the left, shutter and record centred, status at
+  the right. Preview starts on page activate, stops on deactivate/destroy.
+  A preview that cannot show says why in the bar (no file, no size,
+  undecodable frame, image-content refusal), never a silent blank.
 - Privacy, honestly: preview opens `/dev/video0`, so `camera_in_use` goes
   true and the privacy dot lights while previewing. That is correct.
 - If 8 fps proves too slow for framing, the upgrade is GStreamer in the

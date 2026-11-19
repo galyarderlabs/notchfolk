@@ -4,12 +4,14 @@
 
 // The camera, from the notch: a photo, or a video, with the computer's camera.
 // A live preview fills the page — ffmpeg in the daemon overwriting one JPEG
-// ~8 times a second, the page decoding it as it changes — with the shutter
-// and record buttons in a row under it, and the last capture as a thumbnail
-// beside them; tap it and it opens in the default viewer. The daemon owns
-// capture (Camera1 over ffmpeg); this page only asks and shows. Off until its
-// switch in Settings is on; the tab shows whenever it is on, and the page says
-// in the daemon's own words when there is no camera or no ffmpeg.
+// ~8 times a second, the page decoding it as it changes — with a camera bar
+// under it: the last capture at the left, the shutter and record in the
+// middle, what is happening at the right. Tap the thumbnail and it opens in
+// the default viewer. The daemon owns capture (Camera1 over ffmpeg); this page
+// only asks and shows. Off until its switch in Settings is on; the tab shows
+// whenever it is on, and the page says in the daemon's own words when there
+// is no camera or no ffmpeg. A preview that cannot show says why in the bar,
+// never a blank page with nothing to read.
 
 import Clutter from 'gi://Clutter';
 import Cogl from 'gi://Cogl';
@@ -25,11 +27,13 @@ import {coverKey, icon, iconButton, label} from '../widgets.js';
 import {Page} from './page.js';
 
 /** The last capture's thumbnail, in CSS pixels. */
-const THUMB_SIZE = 40;
+const THUMB_SIZE = 48;
 /** How often the recording time is re-read, in milliseconds. */
 const TICK_MS = 1000;
 /** How often the preview JPEG is re-read, in milliseconds. */
 const PREVIEW_MS = 125;
+/** Ticks with no frame shown before the bar says why (~2 s). */
+const STALL_TICKS = Math.round(2000 / PREVIEW_MS);
 
 export const CameraPage = GObject.registerClass(
 class CameraPage extends Page {
@@ -48,6 +52,9 @@ class CameraPage extends Page {
         this._previewKey = null;
         /** A StartPreview call is in flight; the daemon's answer is its own guard. */
         this._previewStarting = false;
+        /** Ticks in a row that showed no frame, and whether the bar says why. */
+        this._previewStalled = 0;
+        this._previewStallShown = false;
         this._thumbnails = new Thumbnails();
         this.connect('destroy', () => {
             this._thumbnails.destroy();
@@ -68,8 +75,9 @@ class CameraPage extends Page {
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         this._liveBin.child = this._liveActor;
 
-        // The controls under the preview: the last capture, the shutter, the
-        // record toggle, and what is happening beside them.
+        // The controls under the preview, shaped like a camera: the last
+        // capture at the left, the shutter and record in the middle, what is
+        // happening at the right.
         const controls = new St.BoxLayout({style_class: 'notchfolk-camera-controls'});
         this._thumb = new St.Button({style_class: 'notchfolk-camera-thumb',
             can_focus: true, accessible_name: 'Open the last capture'});
@@ -77,23 +85,22 @@ class CameraPage extends Page {
             width: px(THUMB_SIZE), height: px(THUMB_SIZE)});
         this._thumb.child = this._preview;
         this._thumb.connect('clicked', () => this._openLast());
-        this._thumbLabel = label('', 'notchfolk-camera-name', {x_expand: true});
-        // No capture yet: say so from the first frame. _updateCapture() returns
-        // early when the path is unchanged, so this cannot wait for the state.
-        this._thumbLabel.text = 'No photo or video yet';
+        // No capture yet: the camera icon from the first frame. _updateCapture()
+        // returns early when the path is unchanged, so this cannot wait for the state.
         this._preview.child = new St.Icon({gicon: icon('notchfolk-camera-symbolic'),
             icon_size: 28});
         this._shutter = iconButton('notchfolk-camera-symbolic',
             'notchfolk-button-round notchfolk-camera-shutter',
-            () => this._capturePhoto(), {size: 24, accessibleName: 'Take a photo'});
+            () => this._capturePhoto(), {size: 28, accessibleName: 'Take a photo'});
         this._record = iconButton('notchfolk-record-symbolic',
             'notchfolk-button-round notchfolk-camera-record',
             () => this._toggleRecording(), {size: 16, accessibleName: 'Record a video'});
-        this._hint = label('', 'notchfolk-camera-hint', {x_expand: true});
+        this._hint = label('', 'notchfolk-camera-hint', {x_align: Clutter.ActorAlign.END});
         controls.add_child(this._thumb);
-        controls.add_child(this._thumbLabel);
+        controls.add_child(new St.Bin({x_expand: true}));
         controls.add_child(this._shutter);
         controls.add_child(this._record);
+        controls.add_child(new St.Bin({x_expand: true}));
         controls.add_child(this._hint);
 
         this._body = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
@@ -148,7 +155,10 @@ class CameraPage extends Page {
 
     /** One preview frame: the JPEG decoded at the bin's size, when it changed
      * since the last one, and again shortly while the page is open. A frame
-     * torn mid-write fails its decode and is skipped; the last good one stays. */
+     * torn mid-write fails its decode and is skipped, the last good one
+     * staying; a frame the image content itself refuses is an API error, and
+     * the bar says so. Ticks that show nothing say why after ~2 s, so a blank
+     * preview is a readable failure, never a silent one. */
     _tickPreview() {
         if (!this.active || this._destroyed)
             return;
@@ -159,13 +169,29 @@ class CameraPage extends Page {
             return;
         }
         const key = coverKey(path);
-        if (key !== this._previewKey) {
-            const width = Math.round(this._liveBin.width);
-            const height = Math.round(this._liveBin.height);
-            if (width >= 10 && height >= 10) {
+        if (key === this._previewKey) {
+            this._previewStalled = 0;
+            this.later('preview', PREVIEW_MS, () => this._tickPreview());
+            return;
+        }
+        const width = Math.round(this._liveBin.width);
+        const height = Math.round(this._liveBin.height);
+        if (key === null) {
+            // The file is not there at all yet.
+            this._stallPreview('preview file never appeared');
+        } else if (width < 10 || height < 10) {
+            this._stallPreview('preview has no size yet');
+        } else {
+            let pixbuf = null;
+            try {
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    path, width, height, true);
+            } catch {
+                // Torn mid-write: keep the last good frame.
+                this._stallPreview('preview frame would not decode');
+            }
+            if (pixbuf) {
                 try {
-                    const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                        path, width, height, true);
                     this._liveImage.set_data(
                         global.stage.context.get_backend().get_cogl_context(),
                         pixbuf.get_pixels(),
@@ -175,12 +201,31 @@ class CameraPage extends Page {
                         pixbuf.get_width(), pixbuf.get_height(),
                         pixbuf.get_rowstride());
                     this._previewKey = key;
-                } catch {
-                    // Torn mid-write: keep the last good frame.
+                    this._previewStalled = 0;
+                    if (this._previewStallShown) {
+                        this._previewStallShown = false;
+                        this._hint.text = '';
+                    }
+                } catch (e) {
+                    // The image content itself refused the frame: an API
+                    // error, not a torn file. Say so and stop burning frames
+                    // on it; coming back to the page starts it again.
+                    this._hint.text = `Preview failed: ${e.message}`;
+                    this.cancel('preview');
+                    return;
                 }
             }
         }
         this.later('preview', PREVIEW_MS, () => this._tickPreview());
+    }
+
+    /** A tick that showed no frame: after ~2 s of them, the bar says why. */
+    _stallPreview(cause) {
+        this._previewStalled += 1;
+        if (this._previewStalled === STALL_TICKS && !this._previewStallShown) {
+            this._previewStallShown = true;
+            this._hint.text = cause;
+        }
     }
 
     /** A photo with the camera; the new thumbnail arrives with the state. */
@@ -280,12 +325,10 @@ class CameraPage extends Page {
         this._preview.remove_style_class_name('thumbnail');
         this._preview.child = null;
         if (!path) {
-            this._thumbLabel.text = 'No photo or video yet';
             this._preview.child = new St.Icon({gicon: icon('notchfolk-camera-symbolic'),
                 icon_size: 28});
             return;
         }
-        this._thumbLabel.text = GLib.path_get_basename(path);
         const uri = GLib.filename_to_uri(path, null);
         this._thumbnails.get(uri).then(shown => {
             if (this._destroyed || this._lastPath !== path || !shown)
