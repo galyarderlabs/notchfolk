@@ -9,7 +9,7 @@ pub const TINT_KEY: &str = "glass-tint";
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Appearance {
     pub glass: bool,
-    pub background: gdk::RGBA,
+    standalone_background: gdk::RGBA,
 }
 
 impl Appearance {
@@ -31,22 +31,32 @@ impl Appearance {
 
     fn from_theme(theme: &str, tint: i32) -> Self {
         let glass = theme == "glass";
-        // GTK cannot use Shell's backdrop shader. A single smoked translucent
-        // layer keeps text readable over both bright and dark desktop content.
-        // Tint darkens only that layer, never the window or its glyphs.
-        let background = if glass {
+        // Outside Shell there is no blurred backdrop. Use one translucent,
+        // blue-grey surface with enough contrast over an unfiltered white window.
+        let standalone_background = if glass {
             let tint = tint.clamp(0, 100) as f32 / 100.0;
-            gdk::RGBA::new(0.035, 0.04, 0.05, 0.64 + 0.20 * tint)
+            let early = tint.sqrt();
+            let mix = |clear: f32, dark: f32| clear + (dark - clear) * early;
+            gdk::RGBA::new(mix(0.30, 0.06), mix(0.33, 0.07), mix(0.40, 0.07), 0.82)
         } else {
             gdk::RGBA::BLACK
         };
-        Self { glass, background }
+        Self {
+            glass,
+            standalone_background,
+        }
+    }
+
+    pub fn body_background(self, embedded: bool) -> Option<gdk::RGBA> {
+        // The fitted client has the actual Shell glass directly behind it.
+        // Even a faint second layer here would leave a rectangular seam.
+        (!embedded || !self.glass).then_some(self.standalone_background)
     }
 
     pub fn apply_terminal(self, terminal: &vte4::Terminal) {
-        // TerminalBody supplies the one background layer, including margins.
-        // Do not stack another tint or lower widget opacity: text/ANSI colours
-        // and selection/cursor rendering must retain their full contrast.
+        // Backgrounds only: never lower widget opacity or dim ANSI glyphs.
+        let white = if self.glass { 1.0 } else { 0.88 };
+        terminal.set_color_foreground(&gdk::RGBA::new(white, white, white, 1.0));
         terminal.set_color_background(&if self.glass {
             gdk::RGBA::new(0.0, 0.0, 0.0, 0.0)
         } else {
@@ -74,18 +84,31 @@ mod tests {
             Appearance::from_theme("unknown", 0),
         ] {
             assert!(!appearance.glass);
-            assert_eq!(appearance.background, gdk::RGBA::BLACK);
+            assert_eq!(appearance.body_background(false), Some(gdk::RGBA::BLACK));
+            assert_eq!(appearance.body_background(true), Some(gdk::RGBA::BLACK));
         }
     }
 
     #[test]
-    fn glass_stays_translucent_across_tint_range() {
+    fn fitted_glass_adds_no_layer_at_any_tint() {
+        for tint in [0, 25, 50, 100] {
+            let appearance = Appearance::from_theme("glass", tint);
+            assert!(appearance.glass);
+            assert_eq!(appearance.body_background(true), None);
+        }
+    }
+
+    #[test]
+    fn standalone_glass_has_its_own_readable_tinted_background() {
         let clear = Appearance::from_theme("glass", 0);
         let dark = Appearance::from_theme("glass", 100);
-        assert!(clear.glass && dark.glass);
-        assert!(clear.background.alpha() > 0.0);
-        assert!(clear.background.alpha() < dark.background.alpha());
-        assert!(dark.background.alpha() < 1.0);
+        let bg = |a: Appearance| a.body_background(false).unwrap();
+        assert!(bg(clear).red() > bg(Appearance::from_theme("glass", 25)).red());
+        assert!(bg(Appearance::from_theme("glass", 25)).red() > bg(dark).red());
+        // Even over solid white, the lightest fallback's brightest channel
+        // stays below 0.5; this is a backing, not a change to text opacity.
+        assert!(bg(clear).blue() * bg(clear).alpha() + (1.0 - bg(clear).alpha()) < 0.51);
+        assert!(bg(clear).alpha() < 1.0 && bg(dark).alpha() < 1.0);
         assert_eq!(Appearance::from_theme("glass", -1), clear);
         assert_eq!(Appearance::from_theme("glass", 101), dark);
     }

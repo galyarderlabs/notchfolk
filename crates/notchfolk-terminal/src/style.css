@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* Shell supplies the shared header/outline; GSK clips one native backdrop layer. */
+/* The fitted Glass window is transparent down to Shell's material, including its margins. */
 window.termi-notch,
 .termi-notch .terminal-body {
     background: transparent;
@@ -171,9 +171,7 @@ window.termi-notch,
     color: #626262;
 }
 
-/* Glass is genuine surface alpha, not window/widget opacity. The body snapshot
- * supplies a single smoked tint; children must not repaint an opaque card.
- * This is a translucent fallback, not a reproduction of Shell's blur shader. */
+/* Only controls paint on top of the glass; leave empty cells and margins clear. */
 .termi-notch.terminal-glass .terminal-message,
 .termi-notch.terminal-glass notebook > header tab:checked {
     background: rgba(255, 255, 255, 0.07);

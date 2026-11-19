@@ -181,10 +181,14 @@ fn main() -> glib::ExitCode {
     let hide_state = state.clone();
     hide.connect_activate(move |_, _| hide_existing_window(&hide_state));
     app.add_action(&hide);
-    let restore = gio::SimpleAction::new("restore", None);
-    let restore_state = state.clone();
-    restore.connect_activate(move |_, _| restore_existing_window(&restore_state));
-    app.add_action(&restore);
+    for action in ["restore", "detach"] {
+        let restore = gio::SimpleAction::new(action, None);
+        let restore_state = state.clone();
+        restore.connect_activate(move |_, _| {
+            restore_existing_window(&restore_state, action == "detach");
+        });
+        app.add_action(&restore);
+    }
     let expanded = expanded_state_action();
     app.add_action(&expanded);
     let fit = gio::SimpleAction::new(
@@ -318,11 +322,14 @@ fn hide_existing_window(state: &RefCell<Option<Rc<TerminalWindow>>>) {
     }
 }
 
-fn restore_existing_window(state: &RefCell<Option<Rc<TerminalWindow>>>) {
+fn restore_existing_window(state: &RefCell<Option<Rc<TerminalWindow>>>, detach: bool) {
     let window = state.borrow().clone();
     if let Some(window) = window
         && !window.quitting.get()
     {
+        if detach {
+            window.set_embedded(false);
+        }
         // Page navigation is not application activation: preserve even an empty
         // notebook, and map without present(), focus_current() or a new shell.
         window.window.set_visible(true);
@@ -356,6 +363,7 @@ fn fit_existing_window(
     {
         // Wayland geometry must be requested by the GTK client, not forced by
         // Shell. Fitting must never present a hidden window or alter user mode.
+        window.set_embedded(true);
         window.window.set_default_size(width, height);
     }
     Ok(())
@@ -367,13 +375,13 @@ mod terminal_body {
     use std::cell::Cell;
 
     pub struct TerminalBody {
-        pub background: Cell<gtk::gdk::RGBA>,
+        pub background: Cell<Option<gtk::gdk::RGBA>>,
     }
 
     impl Default for TerminalBody {
         fn default() -> Self {
             Self {
-                background: Cell::new(gtk::gdk::RGBA::BLACK),
+                background: Cell::new(Some(gtk::gdk::RGBA::BLACK)),
             }
         }
     }
@@ -395,7 +403,9 @@ mod terminal_body {
                 graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32);
             // Clip the backdrop and all child drawing, including VTE, together.
             snapshot.push_rounded_clip(&gsk::RoundedRect::from_rect(bounds, 12.0));
-            snapshot.append_color(&self.background.get(), &bounds);
+            if let Some(background) = self.background.get() {
+                snapshot.append_color(&background, &bounds);
+            }
             self.parent_snapshot(snapshot);
             snapshot.pop();
         }
@@ -431,6 +441,7 @@ struct TerminalWindow {
     window: gtk::ApplicationWindow,
     root: TerminalBody,
     appearance: Cell<appearance::Appearance>,
+    embedded: Cell<bool>,
     notebook: gtk::Notebook,
     empty: gtk::Label,
     cwd: gtk::Label,
@@ -570,6 +581,7 @@ impl TerminalWindow {
             window,
             root,
             appearance: Cell::new(appearance::Appearance::read(None)),
+            embedded: Cell::new(false),
             notebook,
             empty,
             cwd,
@@ -685,11 +697,26 @@ impl TerminalWindow {
         } else {
             self.window.remove_css_class("terminal-glass");
         }
-        self.root.imp().background.set(appearance.background);
-        self.root.queue_draw();
+        self.sync_background();
         // Update hidden tabs too; switching tabs must never expose an old theme.
         for tab in self.tabs.borrow().iter() {
             appearance.apply_terminal(&tab.terminal);
+        }
+    }
+
+    fn set_embedded(&self, embedded: bool) {
+        if self.embedded.replace(embedded) != embedded {
+            // GTK normally remembers each compositor allocation as the next default size.
+            // A late compact configure must not replace the island's requested viewport.
+            self.window.set_resizable(!embedded);
+            self.sync_background();
+        }
+    }
+
+    fn sync_background(&self) {
+        let background = self.appearance.get().body_background(self.embedded.get());
+        if self.root.imp().background.replace(background) != background {
+            self.root.queue_draw();
         }
     }
 
@@ -715,6 +742,7 @@ impl TerminalWindow {
     fn hide(&self) {
         self.popover.popdown();
         self.window.set_visible(false);
+        self.set_embedded(false);
     }
 
     fn new_tab(self: &Rc<Self>, cwd: Option<PathBuf>, inherit: Option<Arc<Session>>) {
@@ -751,7 +779,6 @@ impl TerminalWindow {
                 DEFAULT_TERMINAL_FONT,
             )));
         }
-        terminal.set_color_foreground(&gdk::RGBA::new(0.88, 0.88, 0.88, 1.0));
         self.appearance.get().apply_terminal(&terminal);
         terminal.set_margin_start(14);
         terminal.set_margin_end(14);
@@ -1691,10 +1718,19 @@ mod tests {
         assert_eq!(abbreviated_cwd(Path::new("/tmp"), home), "/tmp");
     }
 
-    #[test]
+    fn test_window(id: &str) -> Rc<TerminalWindow> {
+        let app = gtk::Application::builder()
+            .application_id(id)
+            .flags(gio::ApplicationFlags::NON_UNIQUE)
+            .build();
+        app.register(None::<&gio::Cancellable>).unwrap();
+        app.add_action(&expanded_state_action());
+        TerminalWindow::new(&app)
+    }
+
+    #[gtk::test]
     #[ignore = "requires an isolated GTK display"]
     fn header_allocates_the_path_without_displacing_actions() {
-        gtk::init().unwrap();
         let provider = gtk::CssProvider::new();
         provider.load_from_string(include_str!("style.css"));
         gtk::style_context_add_provider_for_display(
@@ -1702,12 +1738,7 @@ mod tests {
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
-        let app = gtk::Application::builder()
-            .flags(gio::ApplicationFlags::NON_UNIQUE)
-            .build();
-        app.register(None::<&gio::Cancellable>).unwrap();
-        app.add_action(&expanded_state_action());
-        let ui = TerminalWindow::new(&app); // Never present a window or start a shell.
+        let ui = test_window("org.notchfolk.TestHeader"); // Never present a window or start a shell.
         let header = ui.cwd.parent().unwrap();
         let actions = ui.expand.parent().unwrap();
         let allocate = |width| {
@@ -1750,6 +1781,23 @@ mod tests {
         assert!(right <= header.width() as f32);
     }
 
+    #[gtk::test]
+    #[ignore = "requires an isolated GTK display"]
+    fn late_compact_layout_cannot_overwrite_an_embedded_fit() {
+        let ui = test_window("org.notchfolk.TestViewport");
+        let state = RefCell::new(Some(ui.clone()));
+        ui.window.set_visible(true); // Realize the native surface without activating or creating a shell.
+        let surface = ui.window.surface().unwrap();
+        let viewport = (834_i32, 240_i32);
+        fit_existing_window(&state, Some(&viewport.to_variant())).unwrap();
+        surface.emit_by_name::<()>("layout", &[&COMPACT_SIZE.0, &COMPACT_SIZE.1]);
+        assert_eq!(ui.window.default_size(), viewport);
+        assert!(!ui.window.is_resizable());
+        restore_existing_window(&state, true);
+        assert!(ui.window.is_resizable());
+        ui.window.close();
+    }
+
     #[test]
     fn hiding_an_uncreated_window_is_idempotent_and_does_not_activate() {
         let state = RefCell::new(None);
@@ -1759,10 +1807,10 @@ mod tests {
     }
 
     #[test]
-    fn restoring_an_uncreated_window_never_creates_a_shell_or_window() {
+    fn restoring_or_detaching_an_uncreated_window_never_creates_a_shell_or_window() {
         let state = RefCell::new(None);
-        restore_existing_window(&state);
-        restore_existing_window(&state);
+        restore_existing_window(&state, false);
+        restore_existing_window(&state, true);
         assert!(state.borrow().is_none());
     }
 
