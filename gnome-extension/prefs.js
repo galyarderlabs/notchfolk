@@ -1945,6 +1945,7 @@ const PAGES = [
     ['water', 'Water', 'weather-showers-symbolic', 'Your water log and daily hydration goal'],
     ['prayer', 'Prayer', 'preferences-system-time-symbolic', 'Prayer times for your selected city'],
     ['vitals', 'Vitals', 'utilities-system-monitor-symbolic', 'CPU, memory, temperature, network and disk, sampled by the daemon'],
+    ['camera', 'Camera', 'camera-web-symbolic', 'A photo, or a video, with the computer camera'],
 ];
 
 /** The pages a shortcut of their own may open from anywhere, as the controller's SHORTCUT_PAGES, with their names. */

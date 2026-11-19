@@ -202,6 +202,16 @@ const INTERFACES = {
             <method name="MuteCall"><arg name="id" type="s" direction="in"/></method>`),
         properties: {},
     },
+    camera: {
+        xml: node('Camera1', `
+            <method name="CapturePhoto"><arg type="s" direction="out"/></method>
+            <method name="StartRecording"><arg type="s" direction="out"/></method>
+            <method name="StopRecording"><arg type="s" direction="out"/></method>
+            <method name="StartPreview"><arg type="s" direction="out"/></method>
+            <method name="StopPreview"><arg type="s" direction="out"/></method>
+            <property name="State" type="s" access="read"/>`),
+        properties: {State: 'camera'},
+    },
     assistant: {
         xml: node('Assistant1', `
             <method name="Warm"><arg name="context" type="s" direction="in"/></method>

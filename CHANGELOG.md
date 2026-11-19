@@ -20,6 +20,7 @@ Isle's changelog from before the fork, kept for reference.
 - **Terminal.** Run a shell inside the island. Pin it above other windows while
   you work, switch pages without ending the job, or move the shell to a desktop
   terminal from its header.
+- **Camera — a photo, or a video, with the computer's camera.** A page in the expanded island (off by default; turn it on in Settings → Pages): a live preview filling the page, a shutter button for a photo, a record button that starts and stops a video, and the last capture as a thumbnail — tap it and it opens in the default viewer. The daemon owns capture (`Camera1` over ffmpeg, as the spoken-reply decode does): a photo is one frame, a video is libx264 (or mpeg4 when libx264 is not there), saved in Pictures as `notchfolk-YYYYMMDD-HHMMSS-photo.jpg` / `-video.mp4`, and the preview is one ffmpeg child overwriting a JPEG ~8 times a second in the cache dir. No camera or no ffmpeg is said in the page's own words, never a blank page; a capture lights the privacy dot, as it should. The preview stops while a photo is taken or a video records, and starts again after.
 
 ## [1.5.0] - 2026-11-13
 

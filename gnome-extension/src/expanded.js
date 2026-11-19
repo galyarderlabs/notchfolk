@@ -50,6 +50,7 @@ const TABS = {
     phone: {icon: 'notchfolk-devices', label: 'Phone'},
     devices: {icon: 'notchfolk-headphones', label: 'Devices'},
     router: {icon: 'notchfolk-router', label: 'Router'},
+    camera: {icon: 'notchfolk-camera', label: 'Camera'},
 };
 /** How bright a tab's icon is: open, under the pointer, otherwise. */
 const TAB_OPACITY = {open: 255, hover: 200, idle: 140};
