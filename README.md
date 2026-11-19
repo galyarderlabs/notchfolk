@@ -180,6 +180,12 @@ Hermes Agent<br>
 <b>More AIs.</b>
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top" align="center">
+<img src="docs/images/terminal.png" alt="Terminal page: the shell running notchfolkd --doctor, reporting version 1.5.0, the service running, and the voice assistant runtimes" width="100%"><br>
+<b>Terminal.</b>
+</td>
+</tr>
 </table>
 </td>
 </tr>
