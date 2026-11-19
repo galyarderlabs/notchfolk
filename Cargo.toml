@@ -19,9 +19,6 @@ edition = "2024"
 rust-version = "1.88"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/galyarderlabs/notchfolk"
-description = "Notchfolk: A living notch-style desktop island and AI companion for GNOME Shell with MCP and local voice support"
-keywords = ["gnome", "desktop-island", "dynamic-island", "ai-assistant", "mcp"]
-categories = ["command-line-utilities", "multimedia", "accessibility"]
 # Released as programs, not on crates.io.
 publish = false
 
