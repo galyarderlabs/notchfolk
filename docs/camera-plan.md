@@ -126,7 +126,12 @@ and stays out. Instead:
   `*Remote` on the proxy, and `attempt` swallows the throw into a null
   result — the page went black with no reason until `StartPreview` /
   `StopPreview` were added there (19 Nov). `cameraInterface.test.js`
-  enforces the XML against `camera.rs`.
+  enforces the XML against `camera.rs`. And `St.ImageContent` reports only
+  an explicit preferred size (default -1) which `set_data` never sets, so
+  the page must set it from each decoded frame or the actor allocates 0x0
+  and nothing paints — the second black-preview cause, found 19 Nov from
+  the Shell source after the daemon was proven writing frames.
+  `cameraPreviewPaint.test.js` guards it.
 - Privacy, honestly: preview opens `/dev/video0`, so `camera_in_use` goes
   true and the privacy dot lights while previewing. That is correct.
 - If 8 fps proves too slow for framing, the upgrade is GStreamer in the

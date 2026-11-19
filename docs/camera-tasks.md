@@ -93,5 +93,11 @@ so the preview is no longer deferred.
       Camera1 methods from `camera.rs` and asserts the XML declares them
       all. `_startPreview` also says so in the bar when the call never
       reached the daemon (null result, no error).
+- [x] Page painting: `St.ImageContent` reports only an explicit preferred
+      size (default -1) and `set_data` never sets it, so the actor allocated
+      0x0 and nothing painted even with the daemon writing frames (19 Nov:
+      preview file existed, 12 KB, journal clean). `_tickPreview` now sets
+      the preferred size from each decoded frame; `cameraPreviewPaint.test.js`
+      guards it.
 - [ ] Device test on Galih's laptop: preview appears and moves, stops during
       photo/record, resumes after; screenshot is the evidence.
