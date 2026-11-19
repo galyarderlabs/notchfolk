@@ -132,45 +132,6 @@ window.termi-notch,
     padding: 6px 10px;
 }
 
-.termi-notch .terminal-footer {
-    padding: 6px 12px 10px;
-    background: transparent;
-}
-
-.termi-notch button.terminal-handoff {
-    min-height: 24px;
-    padding: 4px 14px;
-    background: #242424;
-    border: 1px solid #343434;
-    border-radius: 999px;
-    color: #d8d8d8;
-}
-
-.termi-notch .terminal-handoff label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #dedede;
-}
-
-.termi-notch button.terminal-handoff:hover {
-    background: #303030;
-    border-color: #454545;
-}
-
-.termi-notch button.terminal-handoff:active {
-    background: #3a3a3a;
-}
-
-.termi-notch button.terminal-handoff:disabled {
-    background: #171717;
-    border-color: #262626;
-    color: #626262;
-}
-
-.termi-notch .terminal-handoff:disabled label {
-    color: #626262;
-}
-
 /* Only controls paint on top of the glass; leave empty cells and margins clear. */
 .termi-notch.terminal-glass .terminal-message,
 .termi-notch.terminal-glass notebook > header tab:checked {
@@ -189,11 +150,6 @@ window.termi-notch,
     color: #ffffff;
 }
 
-.termi-notch.terminal-glass button.terminal-handoff {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.18);
-}
-
 .termi-notch.terminal-glass button:hover {
     background: rgba(255, 255, 255, 0.14);
 }
@@ -207,19 +163,10 @@ window.termi-notch,
     color: #888888;
 }
 
-.termi-notch.terminal-glass button.terminal-handoff:disabled {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
-.termi-notch.terminal-glass .terminal-handoff:disabled label {
-    color: #888888;
-}
-
 /* Only the path and each action paint a pill. A dark local fill keeps the
  * text and symbolic icons legible even over bright, lightly tinted glass. */
 .termi-notch .terminal-header .terminal-cwd,
-.termi-notch .terminal-header button {
+.termi-notch .terminal-actions > button {
     background: rgba(44, 44, 46, 0.84);
     color: #f5f5f5;
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -231,22 +178,22 @@ window.termi-notch,
     padding: 2px 10px;
 }
 
-.termi-notch .terminal-header button {
+.termi-notch .terminal-actions > button {
     min-width: 28px;
     min-height: 24px;
     padding: 2px 4px;
 }
 
-.termi-notch .terminal-header button:hover {
+.termi-notch .terminal-actions > button:hover {
     background: #48484a;
     color: #ffffff;
 }
 
-.termi-notch .terminal-header button:active {
+.termi-notch .terminal-actions > button:active {
     background: #555557;
 }
 
-.termi-notch .terminal-header button:disabled {
+.termi-notch .terminal-actions > button:disabled {
     background: rgba(44, 44, 46, 0.70);
     color: #b0b0b2;
 }

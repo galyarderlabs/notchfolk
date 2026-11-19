@@ -490,6 +490,7 @@ impl TerminalWindow {
         cwd.add_css_class("terminal-cwd");
         header.append(&cwd);
         let actions = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+        actions.add_css_class("terminal-actions");
         actions.set_hexpand(true);
         actions.set_halign(gtk::Align::End);
         header.append(&actions);
@@ -503,8 +504,10 @@ impl TerminalWindow {
         );
         close_current.set_sensitive(false);
         actions.append(&close_current);
-        let hide = icon_button("window-minimize-symbolic", "Hide; keep shells running");
-        actions.append(&hide);
+        let handoff = icon_button("document-send-symbolic", "Open in external terminal");
+        handoff.set_focus_on_click(false);
+        handoff.set_sensitive(false);
+        actions.append(&handoff);
         root.append(&header);
         let message_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         message_box.add_css_class("terminal-message");
@@ -534,31 +537,6 @@ impl TerminalWindow {
         notebook.set_show_tabs(false);
         notebook.set_visible(false);
         root.append(&notebook);
-        let footer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        footer.add_css_class("terminal-footer");
-        let handoff_content = gtk::Box::new(gtk::Orientation::Horizontal, 8);
-        let external_icon = gtk::Image::from_icon_name("document-send-symbolic");
-        external_icon.set_pixel_size(14);
-        handoff_content.append(&external_icon);
-        let handoff_label = gtk::Label::new(Some("Open in external terminal"));
-        handoff_label.set_hexpand(true);
-        handoff_label.set_xalign(0.0);
-        handoff_content.append(&handoff_label);
-        let chevron = gtk::Image::from_icon_name("pan-up-symbolic");
-        chevron.set_pixel_size(10);
-        handoff_content.append(&chevron);
-        let handoff = gtk::Button::builder()
-            .child(&handoff_content)
-            .tooltip_text("Open in external terminal")
-            .hexpand(true)
-            .sensitive(false)
-            .build();
-        handoff.add_css_class("terminal-handoff");
-        handoff.update_property(&[gtk::accessible::Property::Label(
-            "Open in external terminal",
-        )]);
-        footer.append(&handoff);
-        root.append(&footer);
         window.set_child(Some(&root));
         let popover = gtk::Popover::new();
         popover.add_css_class("terminal-menu");
@@ -570,12 +548,23 @@ impl TerminalWindow {
         choices.set_margin_end(12);
         let handoff_cwd = gtk::Label::builder()
             .wrap(true)
-            .max_width_chars(48)
+            .wrap_mode(pango::WrapMode::WordChar)
+            .max_width_chars(32)
             .xalign(0.0)
             .build();
         choices.append(&handoff_cwd);
-        popover.set_position(gtk::PositionType::Top);
-        popover.set_child(Some(&choices));
+        // Open inward from the rightmost header action. Scroll a long list instead
+        // of putting its last targets outside the compact terminal card.
+        let scroller = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .propagate_natural_width(true)
+            .propagate_natural_height(true)
+            .max_content_height(COMPACT_SIZE.1 - 64)
+            .child(&choices)
+            .build();
+        popover.set_position(gtk::PositionType::Bottom);
+        popover.set_halign(gtk::Align::End);
+        popover.set_child(Some(&scroller));
         popover.set_parent(&handoff);
         let ui = Rc::new(Self {
             window,
@@ -611,7 +600,6 @@ impl TerminalWindow {
                 .and_then(|tab| tab.session.borrow().clone());
             ui.new_tab(None, session);
         });
-        on_click(&hide, &ui, |ui| ui.hide());
         on_click(&ui.expand, &ui, |ui| ui.toggle_size());
         on_click(&ui.close_current, &ui, |ui| {
             if let Some(tab) = ui.current_tab() {
@@ -1123,7 +1111,15 @@ impl TerminalWindow {
             )));
         }
         for target in targets {
-            let button = gtk::Button::with_label(&target.label);
+            let label = gtk::Label::builder()
+                .label(target.label.as_str())
+                .ellipsize(pango::EllipsizeMode::End)
+                .max_width_chars(32)
+                .build();
+            let button = gtk::Button::builder()
+                .child(&label)
+                .tooltip_text(target.label.as_str())
+                .build();
             let target = Arc::new(target);
             on_click(&button, self, move |ui| ui.choose_handoff(target.clone()));
             self.choices.append(&button);
@@ -1146,7 +1142,7 @@ impl TerminalWindow {
         self.clear_handoff_choices();
         self.choices.append(&gtk::Label::builder()
             .label("Wave requires a manual attach. Copy the one-use command, then paste it into a local Wave terminal and press Enter within 2 minutes. Your shell stays here until Wave connects.")
-            .wrap(true).max_width_chars(48).xalign(0.0).build());
+            .wrap(true).max_width_chars(32).xalign(0.0).build());
         let copy = gtk::Button::with_label("Copy command & open Wave");
         on_click(&copy, self, move |ui| ui.handoff_current(target.clone()));
         self.choices.append(&copy);
@@ -1750,6 +1746,7 @@ mod tests {
         let path = "/a-long-folder-name".repeat(20);
         ui.cwd.set_text(&path);
         let (min, natural, _, _) = header.measure(gtk::Orientation::Horizontal, -1);
+        assert!(min <= 320, "compact header must fit at 320 logical pixels");
         allocate(natural + 100);
         let wide_path = ui.cwd.width();
         let wide_actions = actions.width();
@@ -1767,18 +1764,36 @@ mod tests {
         assert_eq!(buttons.n_items(), 4);
         let cwd = ui.cwd.compute_bounds(&header).unwrap();
         let mut right = cwd.x() + cwd.width();
-        for index in 0..buttons.n_items() {
+        for (index, (icon, label)) in [
+            ("view-fullscreen-symbolic", "Expand terminal"),
+            ("list-add-symbolic", "New shell tab"),
+            (
+                "window-close-symbolic",
+                "Close this shell and its running jobs",
+            ),
+            ("document-send-symbolic", "Open in external terminal"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let button = buttons
-                .item(index)
+                .item(index as u32)
                 .unwrap()
                 .downcast::<gtk::Button>()
                 .unwrap();
-            assert!(button.is_focusable() && button.tooltip_text().is_some());
+            assert!(button.is_focusable() && button.can_target());
+            assert_eq!(button.icon_name().as_deref(), Some(icon));
+            assert_eq!(button.tooltip_text().as_deref(), Some(label));
             let bounds = button.compute_bounds(&header).unwrap();
-            assert!(bounds.x() > right && bounds.width() > 0.0);
+            assert!(bounds.x() > right && bounds.width() >= 24.0 && bounds.height() >= 24.0);
             right = bounds.x() + bounds.width();
         }
         assert!(right <= header.width() as f32);
+        assert!(ui.notebook.next_sibling().is_none(), "no handoff footer");
+        assert_eq!(
+            ui.popover.parent().as_ref(),
+            Some(ui.handoff.upcast_ref::<gtk::Widget>())
+        );
     }
 
     #[gtk::test]
