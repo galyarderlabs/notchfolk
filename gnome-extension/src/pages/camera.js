@@ -65,6 +65,11 @@ class CameraPage extends Page {
         this._thumbLabel = label('', 'notchfolk-camera-name', {x_expand: true});
         capture.add_child(this._thumb);
         capture.add_child(this._thumbLabel);
+        // No capture yet: say so from the first frame. _updateCapture() returns
+        // early when the path is unchanged, so this cannot wait for the state.
+        this._thumbLabel.text = 'No photo or video yet';
+        this._preview.child = new St.Icon({gicon: icon('notchfolk-camera-symbolic'),
+            icon_size: 28});
 
         this._body = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
             style_class: 'notchfolk-camera-body'});
