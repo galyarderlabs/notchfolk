@@ -6,7 +6,9 @@
 //! from the notch. The daemon owns capture — ffmpeg, as the spoken-reply decode
 //! in `assistant/cloud.rs` does — and the extension never touches `/dev/video*`.
 //! A capture opens the camera, so the privacy dot lights while one runs; that is
-//! correct, and is not suppressed for our own use.
+//! correct, and is not suppressed for our own use. The live preview is the same
+//! ffmpeg, writing one JPEG ~8 times a second to the cache dir for the page
+//! to show; it holds the device, so a photo or a recording stops it first.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -54,6 +56,10 @@ struct CameraState {
     recording_path: Option<String>,
     /// When the recording started, in milliseconds since the epoch.
     recording_started: Option<i64>,
+    /// The preview is running: ffmpeg overwriting the preview JPEG.
+    preview: bool,
+    /// The preview JPEG, while the preview runs.
+    preview_path: Option<String>,
     last_capture: Option<Capture>,
 }
 
@@ -62,6 +68,12 @@ struct Recording {
     child: Child,
     path: PathBuf,
     started_ms: i64,
+}
+
+/// The live preview: ffmpeg's child and the JPEG it overwrites.
+struct Preview {
+    child: Child,
+    path: PathBuf,
 }
 
 /// notchfolkd's `Camera1` D-Bus object.
@@ -77,6 +89,8 @@ pub struct CameraService {
     /// Whether ffmpeg's encoders include libx264, once looked up.
     has_x264: Option<bool>,
     recording: Option<Recording>,
+    /// The live preview, while it runs.
+    preview: Option<Preview>,
     last_capture: Option<Capture>,
 }
 
@@ -102,7 +116,27 @@ impl CameraService {
         Ok(path)
     }
 
-    /// The `/dev/video*` nodes there are now, in order, as `system/camera.rs` sees them.
+    /// The preview JPEG: one file in the XDG cache dir, overwritten ~8 times
+    /// a second while the preview runs. Cache, never Pictures — it is not a
+    /// capture, and nothing else should ever list it.
+    fn preview_path() -> PathBuf {
+        let dir = dirs::cache_dir()
+            .unwrap_or_else(|| dirs::home_dir().unwrap_or_default().join(".cache"))
+            .join("notchfolk");
+        dir.join("camera-preview.jpg")
+    }
+
+    /// Stops the preview child, if one runs, without publishing: the caller
+    /// publishes once it has done its own work. The preview holds the device,
+    /// so a photo or a recording calls this first — two ffmpeg readers on one
+    /// v4l2 node do not share.
+    async fn stop_preview_child(&mut self) {
+        let Some(mut preview) = self.preview.take() else {
+            return;
+        };
+        let _ = preview.child.kill().await;
+        let _ = preview.child.wait().await;
+    }
     fn camera_nodes() -> Vec<PathBuf> {
         let Ok(entries) = fs::read_dir("/dev") else {
             return Vec::new();
@@ -220,6 +254,11 @@ impl CameraService {
                 .recording
                 .as_ref()
                 .map(|recording| recording.started_ms),
+            preview: self.preview.is_some(),
+            preview_path: self
+                .preview
+                .as_ref()
+                .map(|preview| preview.path.to_string_lossy().into_owned()),
             last_capture: self.last_capture.clone(),
         }
     }
@@ -237,6 +276,8 @@ impl CameraService {
         &mut self,
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> fdo::Result<String> {
+        // The preview holds the device; stop it first or the grab fails busy.
+        self.stop_preview_child().await;
         let device = self.probe_device().await?;
         let path = Self::fresh_path("photo", "jpg").map_err(|err| {
             fdo::Error::Failed(format!("could not make a file in Pictures: {err}"))
@@ -267,6 +308,8 @@ impl CameraService {
         if self.recording.is_some() {
             return Err(fdo::Error::Failed("already recording".into()));
         }
+        // The preview holds the device; stop it first or ffmpeg fails busy.
+        self.stop_preview_child().await;
         let device = self.probe_device().await?;
         let path = Self::fresh_path("video", "mp4").map_err(|err| {
             fdo::Error::Failed(format!("could not make a file in Pictures: {err}"))
@@ -374,6 +417,97 @@ impl CameraService {
         Ok(self.last_capture.as_ref().expect("just set").path.clone())
     }
 
+    /// Starts the live preview and returns the JPEG it overwrites: one ffmpeg
+    /// child writing ~8 frames a second to the cache dir. While recording it
+    /// refuses — the device is busy. Called while already running it is a
+    /// no-op success, returning the same path. The preview never resumes on
+    /// its own; the page starts it again when it is active.
+    async fn start_preview(
+        &mut self,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+    ) -> fdo::Result<String> {
+        if self.recording.is_some() {
+            return Err(fdo::Error::Failed("camera busy — recording".into()));
+        }
+        if let Some(preview) = &self.preview {
+            return Ok(preview.path.to_string_lossy().into_owned());
+        }
+        let device = self.probe_device().await?;
+        let path = Self::preview_path();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|err| {
+                fdo::Error::Failed(format!("could not make a cache folder: {err}"))
+            })?;
+        }
+        let mut child = Command::new("ffmpeg")
+            .args(["-hide_banner", "-loglevel", "error"])
+            .args(["-f", "v4l2", "-i"])
+            .arg(&device)
+            .args(["-vf", "fps=8,scale=640:-2", "-q:v", "5", "-update", "1"])
+            .arg("-y")
+            .arg(&path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()
+            .map_err(|err| {
+                if err.kind() == std::io::ErrorKind::NotFound {
+                    fdo::Error::Failed("ffmpeg is missing (sudo pacman -S ffmpeg)".into())
+                } else {
+                    fdo::Error::Failed(format!("could not run ffmpeg: {err}"))
+                }
+            })?;
+        // A fresh preview has to prove it is really running, the way a
+        // recording does: a bad device kills ffmpeg at once.
+        sleep(START_SETTLE).await;
+        if let Ok(Some(status)) = child.try_wait() {
+            let mut stderr = String::new();
+            if let Some(mut pipe) = child.stderr.take() {
+                let _ = pipe.read_to_string(&mut stderr).await;
+            }
+            let reason = if status.success() {
+                "ffmpeg stopped at once".to_string()
+            } else {
+                last_line(stderr.as_bytes())
+            };
+            self.error = Some(reason.clone());
+            self.publish(&emitter).await?;
+            return Err(fdo::Error::Failed(reason));
+        }
+        // The preview runs for as long as the page is open: its stderr must
+        // be drained the whole time, or ffmpeg blocks once the pipe fills.
+        if let Some(mut stderr) = child.stderr.take() {
+            tokio::spawn(async move {
+                let _ = tokio::io::copy(&mut stderr, &mut tokio::io::sink()).await;
+            });
+        }
+        self.preview = Some(Preview {
+            child,
+            path: path.clone(),
+        });
+        self.error = None;
+        self.publish(&emitter).await?;
+        Ok(path.to_string_lossy().into_owned())
+    }
+
+    /// Stops the live preview and returns the JPEG it was overwriting, or an
+    /// empty string when none was running. The last frame stays in the file,
+    /// so the page keeps showing it until a new preview starts.
+    async fn stop_preview(
+        &mut self,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+    ) -> fdo::Result<String> {
+        let path = self
+            .preview
+            .as_ref()
+            .map(|preview| preview.path.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        self.stop_preview_child().await;
+        self.publish(&emitter).await?;
+        Ok(path)
+    }
+
     /// The camera state as JSON, for the page.
     #[zbus(property)]
     fn state(&self) -> String {
@@ -455,6 +589,8 @@ mod tests {
             "recording",
             "recording_path",
             "recording_started",
+            "preview",
+            "preview_path",
             "last_capture",
         ] {
             assert!(
@@ -462,6 +598,22 @@ mod tests {
                 "{key} missing in {json}"
             );
         }
+    }
+
+    #[test]
+    fn preview_path_is_one_cache_jpeg() {
+        let path = CameraService::preview_path();
+        assert_eq!(
+            path.file_name().unwrap().to_string_lossy(),
+            "camera-preview.jpg"
+        );
+        assert_eq!(
+            path.parent()
+                .and_then(|parent| parent.file_name())
+                .unwrap()
+                .to_string_lossy(),
+            "notchfolk"
+        );
     }
 
     #[test]

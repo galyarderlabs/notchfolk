@@ -88,15 +88,45 @@ The daemon owns capture; the extension never touches `/dev/video*`.
 - Choosing between cameras when several work — first working node wins.
 - Burst, timer, or a save-location setting.
 
+## Live preview (v2 — decided 19 Nov 2026)
+
+The shutter proved itself on Galih's laptop (photo saved + thumbnail shown,
+19 Nov), so the preview is no longer deferred. The page without it is a black
+void with two buttons — that is the bug report that decided it, not a nice-to-have.
+
+**Decision: daemon-owned frame stream, not GStreamer in the Shell.** The
+extension never touches `/dev/video*` (the plan's standing rule), and a
+pipeline fault must not sit inside GNOME Shell — both rule out GJS Gst +
+a Clutter sink for now. The 1 fps still-grab middle step is janky by nature
+and stays out. Instead:
+
+- Daemon `Camera1` gains `StartPreview` / `StopPreview` and `preview`
+  (bool) + `preview_path` in the State JSON.
+- Preview is one ffmpeg child: `ffmpeg -hide_banner -loglevel error -f v4l2
+  -i <device> -vf fps=8,scale=640:-1 -q:v 5 -update 1 <cache>/camera-preview.jpg`,
+  overwriting one JPEG ~8 times a second. No new dependency: ffmpeg is
+  already required for capture. The file lives in the XDG cache dir
+  (`~/.cache/notchfolk/camera-preview.jpg`), never in Pictures; the daemon
+  publishes its path in the state so the extension never guesses it.
+- Device contention is the daemon's problem, not the page's: `CapturePhoto`
+  and `StartRecording` stop any running preview child first, then proceed.
+  `StartPreview` while recording refuses (camera busy); called while already
+  running it is a no-op success. Preview never auto-resumes; the page
+  re-starts it when active and not recording.
+- Extension: a preview Bin filling the page body, the JPEG as its CSS
+  `background-image` (the same pattern as the thumbnail), reloaded when the
+  file's mtime changes (~125 ms poll while the page is active, cache-busted
+  with the mtime). Controls become a bottom row over the preview. Preview
+  starts on page activate, stops on deactivate/destroy.
+- Privacy, honestly: preview opens `/dev/video0`, so `camera_in_use` goes
+  true and the privacy dot lights while previewing. That is correct.
+- If 8 fps proves too slow for framing, the upgrade is GStreamer in the
+  Shell (GJS Gst + appsink into a `Clutter.Image`) — named here, not built.
+
 ## Open questions (Galih's call)
 
-1. **Live preview, or blind shutter?** v1 as planned has no preview: tap, and the
-   thumbnail of the last capture appears after. A live preview means GStreamer in
-   the shell process (GJS Gst + a Clutter sink) — the first Gst code the extension
-   ever carries, and a pipeline fault would sit inside GNOME Shell itself. A
-   middle step exists (still grabs: one frame every second or two, shown as a
-   slowly updating picture) but it is janky by nature. Recommendation: ship v1
-   blind, add preview only if the shutter proves itself.
+1. **Live preview, or blind shutter?** ANSWERED 19 Nov: preview, by the
+   design above. v1 shipped blind; v2 adds the preview.
 2. **Save location: flat in Pictures, or a `Notchfolk` subfolder?** The plan says
    flat (`~/Pictures/notchfolk-….jpg`), the way a camera app saves. A subfolder
    keeps the folder tidy but hides captures from apps that only look at the top

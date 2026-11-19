@@ -3,13 +3,17 @@
 // Copyright (C) 2026 Galyarder Labs
 
 // The camera, from the notch: a photo, or a video, with the computer's camera.
-// A shutter button, a record button that starts and stops, and the last capture
-// as a thumbnail — tap it and it opens in the default viewer. The daemon owns
+// A live preview fills the page — ffmpeg in the daemon overwriting one JPEG
+// ~8 times a second, the page decoding it as it changes — with the shutter
+// and record buttons in a row under it, and the last capture as a thumbnail
+// beside them; tap it and it opens in the default viewer. The daemon owns
 // capture (Camera1 over ffmpeg); this page only asks and shows. Off until its
 // switch in Settings is on; the tab shows whenever it is on, and the page says
 // in the daemon's own words when there is no camera or no ffmpeg.
 
 import Clutter from 'gi://Clutter';
+import Cogl from 'gi://Cogl';
+import GdkPixbuf from 'gi://GdkPixbuf';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -17,13 +21,15 @@ import St from 'gi://St';
 
 import {VERTICAL, px} from '../compat.js';
 import {Thumbnails} from '../thumbnails.js';
-import {icon, iconButton, label} from '../widgets.js';
+import {coverKey, icon, iconButton, label} from '../widgets.js';
 import {Page} from './page.js';
 
 /** The last capture's thumbnail, in CSS pixels. */
-const THUMB_SIZE = 72;
+const THUMB_SIZE = 40;
 /** How often the recording time is re-read, in milliseconds. */
 const TICK_MS = 1000;
+/** How often the preview JPEG is re-read, in milliseconds. */
+const PREVIEW_MS = 125;
 
 export const CameraPage = GObject.registerClass(
 class CameraPage extends Page {
@@ -38,24 +44,30 @@ class CameraPage extends Page {
         /** The path the thumbnail on screen is of, if any; a capture still in flight. */
         this._lastPath = null;
         this._busy = false;
+        /** The preview JPEG's key (path + mtime) the image on screen is of, if any. */
+        this._previewKey = null;
+        /** A StartPreview call is in flight; the daemon's answer is its own guard. */
+        this._previewStarting = false;
         this._thumbnails = new Thumbnails();
-        this.connect('destroy', () => this._thumbnails.destroy());
+        this.connect('destroy', () => {
+            this._thumbnails.destroy();
+            // The page is gone: the preview child in the daemon would keep
+            // holding the camera for nobody. Best effort; attempt never throws.
+            this.daemon.attempt('camera', 'StopPreview');
+        });
 
-        // The shutter, the record toggle, and what is happening beside them.
+        // The live preview: one JPEG the daemon overwrites ~8 times a second,
+        // decoded as it changes into this image, centred in the bin.
+        this._liveBin = new St.Bin({style_class: 'notchfolk-camera-preview',
+            x_expand: true, y_expand: true});
+        this._liveImage = new Clutter.Image();
+        this._liveActor = new Clutter.Actor({content: this._liveImage,
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        this._liveBin.child = this._liveActor;
+
+        // The controls under the preview: the last capture, the shutter, the
+        // record toggle, and what is happening beside them.
         const controls = new St.BoxLayout({style_class: 'notchfolk-camera-controls'});
-        this._shutter = iconButton('notchfolk-camera-symbolic',
-            'notchfolk-button-round notchfolk-camera-shutter',
-            () => this._capturePhoto(), {size: 24, accessibleName: 'Take a photo'});
-        this._record = iconButton('notchfolk-record-symbolic',
-            'notchfolk-button-round notchfolk-camera-record',
-            () => this._toggleRecording(), {size: 16, accessibleName: 'Record a video'});
-        this._hint = label('', 'notchfolk-camera-hint', {x_expand: true});
-        controls.add_child(this._shutter);
-        controls.add_child(this._record);
-        controls.add_child(this._hint);
-
-        // The last capture: its thumbnail, and its name beside it.
-        const capture = new St.BoxLayout({style_class: 'notchfolk-camera-capture'});
         this._thumb = new St.Button({style_class: 'notchfolk-camera-thumb',
             can_focus: true, accessible_name: 'Open the last capture'});
         this._preview = new St.Bin({style_class: 'notchfolk-shelf-preview',
@@ -63,18 +75,28 @@ class CameraPage extends Page {
         this._thumb.child = this._preview;
         this._thumb.connect('clicked', () => this._openLast());
         this._thumbLabel = label('', 'notchfolk-camera-name', {x_expand: true});
-        capture.add_child(this._thumb);
-        capture.add_child(this._thumbLabel);
         // No capture yet: say so from the first frame. _updateCapture() returns
         // early when the path is unchanged, so this cannot wait for the state.
         this._thumbLabel.text = 'No photo or video yet';
         this._preview.child = new St.Icon({gicon: icon('notchfolk-camera-symbolic'),
             icon_size: 28});
+        this._shutter = iconButton('notchfolk-camera-symbolic',
+            'notchfolk-button-round notchfolk-camera-shutter',
+            () => this._capturePhoto(), {size: 24, accessibleName: 'Take a photo'});
+        this._record = iconButton('notchfolk-record-symbolic',
+            'notchfolk-button-round notchfolk-camera-record',
+            () => this._toggleRecording(), {size: 16, accessibleName: 'Record a video'});
+        this._hint = label('', 'notchfolk-camera-hint', {x_expand: true});
+        controls.add_child(this._thumb);
+        controls.add_child(this._thumbLabel);
+        controls.add_child(this._shutter);
+        controls.add_child(this._record);
+        controls.add_child(this._hint);
 
         this._body = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true,
             style_class: 'notchfolk-camera-body'});
+        this._body.add_child(this._liveBin);
         this._body.add_child(controls);
-        this._body.add_child(capture);
         this._status = label('', 'notchfolk-camera-status',
             {x_expand: true, y_expand: true, x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER});
@@ -88,6 +110,72 @@ class CameraPage extends Page {
     /** Called as the page comes on screen: the recording time starts moving again. */
     onActivate() {
         this._update();
+    }
+
+    /** Called as the page goes off screen: the preview stops with it, so a
+     * closed island costs nothing and the camera is free. */
+    onDeactivate() {
+        this.cancel('preview');
+        this.daemon.attempt('camera', 'StopPreview');
+    }
+
+    /** Starts the live preview, if the page is on screen and the camera is
+     * free; a running preview only needs its frames re-read. */
+    async _startPreview() {
+        if (!this.active || this._destroyed || this._previewStarting)
+            return;
+        const state = this.daemon.state.camera;
+        if (!state?.available || state.recording)
+            return;
+        if (state.preview) {
+            this._tickPreview();
+            return;
+        }
+        this._previewStarting = true;
+        const {error, unknownMethod} = await this.daemon.attempt('camera', 'StartPreview');
+        this._previewStarting = false;
+        if (this._destroyed || !this.active)
+            return;
+        if (error || unknownMethod) {
+            this._hint.text = error ?? 'Restart notchfolkd to use the camera';
+            return;
+        }
+        this._tickPreview();
+    }
+
+    /** One preview frame: the JPEG decoded at the bin's size, when it changed
+     * since the last one, and again shortly while the page is open. A frame
+     * torn mid-write fails its decode and is skipped; the last good one stays. */
+    _tickPreview() {
+        if (!this.active || this._destroyed)
+            return;
+        const path = this.daemon.state.camera?.preview_path ?? null;
+        if (!path) {
+            // The preview is not running (a photo or a recording stopped it);
+            // the next state change starts it again.
+            return;
+        }
+        const key = coverKey(path);
+        if (key !== this._previewKey) {
+            const width = Math.round(this._liveBin.width);
+            const height = Math.round(this._liveBin.height);
+            if (width >= 10 && height >= 10) {
+                try {
+                    const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                        path, width, height, true);
+                    this._liveImage.set_data(pixbuf.get_pixels(),
+                        pixbuf.get_has_alpha()
+                            ? Cogl.PixelFormat.RGBA_8888
+                            : Cogl.PixelFormat.RGB_888,
+                        pixbuf.get_width(), pixbuf.get_height(),
+                        pixbuf.get_rowstride());
+                    this._previewKey = key;
+                } catch {
+                    // Torn mid-write: keep the last good frame.
+                }
+            }
+        }
+        this.later('preview', PREVIEW_MS, () => this._tickPreview());
     }
 
     /** A photo with the camera; the new thumbnail arrives with the state. */
@@ -138,6 +226,7 @@ class CameraPage extends Page {
         }
         if (!state.available) {
             this.cancel('tick');
+            this.cancel('preview');
             this._body.visible = false;
             this._status.visible = true;
             this._status.text = state.error ?? 'No camera on this computer';
@@ -150,10 +239,17 @@ class CameraPage extends Page {
         this._record.reactive = !this._busy;
         this._record.child.gicon = icon(recording
             ? 'notchfolk-stop-symbolic' : 'notchfolk-record-symbolic');
-        if (recording)
+        if (recording) {
             this._updateElapsed();
-        else
+            // The daemon stopped the preview for the recording; the tick
+            // would read a file that no longer changes.
+            this.cancel('preview');
+        } else {
             this.cancel('tick');
+            // A photo or a recording stopped the preview; the page starts it
+            // again, and a running one only needs its frames re-read.
+            this._startPreview();
+        }
         if (!recording)
             this._hint.text = state.error ?? '';
         this._updateCapture(state.last_capture);
