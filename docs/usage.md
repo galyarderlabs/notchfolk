@@ -261,6 +261,8 @@ More AIs for the assistant.
 
 Select **Terminal** in the island's tab row. Switching to another page hides
 the shell; switching back restores it, including any command waiting for input.
+Pin the island to keep the terminal visible while you work in another window
+or switch workspaces. Unpin it to let the island close when the pointer leaves.
 
 | Do this | To |
 |---|---|

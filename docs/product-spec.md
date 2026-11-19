@@ -420,13 +420,14 @@ stopped mid-session. (Settings → Timer → While Focusing → Do Not Disturb.)
 
 **Terminal** is an interactive shell inside the open island. Its card uses the
 shared header and stays within the pill or notch outline, even when expanded.
-In Glass the terminal background is translucent and the text stays opaque;
-the native client does not need to reproduce the Shell's blur.
+In Glass the terminal shares the island's backdrop and tint. Black stays
+opaque. Neither theme dims shell text or the cursor.
 
 Leaving the page hides the shell without ending it. Returning restores the
-same tab, working directory and running job without another Open. Warming a
-page must never start a shell. The global shortcut starts unset, like other
-page shortcuts. **Open in external terminal** uses the user's chosen terminal,
+same tab, working directory and running job without another Open. A pinned
+terminal follows the island across workspaces; a hidden tab does not follow
+on its own. Warming a page must never start a shell. The global shortcut starts
+unset, like other page shortcuts. **Open in external terminal** uses the user's chosen terminal,
 or offers an installed one. It transfers the running shell, not just its
 directory; if the destination doesn't attach, the original tab remains usable.
 
