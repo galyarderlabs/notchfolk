@@ -142,12 +142,18 @@ class CameraPage extends Page {
             return;
         }
         this._previewStarting = true;
-        const {error, unknownMethod} = await this.daemon.attempt('camera', 'StartPreview');
+        const {result, error, unknownMethod} = await this.daemon.attempt('camera', 'StartPreview');
         this._previewStarting = false;
         if (this._destroyed || !this.active)
             return;
         if (error || unknownMethod) {
             this._hint.text = error ?? 'Restart notchfolkd to use the camera';
+            return;
+        }
+        if (!result) {
+            // The call never reached the daemon (no proxy, or the method is
+            // not on it): say so, instead of a black preview with no reason.
+            this._hint.text = 'The preview could not be started';
             return;
         }
         this._tickPreview();

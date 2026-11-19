@@ -121,6 +121,12 @@ and stays out. Instead:
   the right. Preview starts on page activate, stops on deactivate/destroy.
   A preview that cannot show says why in the bar (no file, no size,
   undecodable frame, image-content refusal), never a silent blank.
+  Every daemon method must also be declared in the extension's `Camera1`
+  XML (`gnome-extension/src/daemon.js`): a missing declaration means no
+  `*Remote` on the proxy, and `attempt` swallows the throw into a null
+  result — the page went black with no reason until `StartPreview` /
+  `StopPreview` were added there (19 Nov). `cameraInterface.test.js`
+  enforces the XML against `camera.rs`.
 - Privacy, honestly: preview opens `/dev/video0`, so `camera_in_use` goes
   true and the privacy dot lights while previewing. That is correct.
 - If 8 fps proves too slow for framing, the upgrade is GStreamer in the

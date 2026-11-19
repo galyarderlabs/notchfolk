@@ -84,5 +84,14 @@ so the preview is no longer deferred.
       that cannot show says why in the bar (no file, no size, undecodable
       frame, image-content refusal), never a silent blank. `node --check`,
       eslint, extension tests green.
+- [x] Extension XML: every daemon method must be declared in the
+      `Camera1` XML in `gnome-extension/src/daemon.js` — `StartPreview` /
+      `StopPreview` were missing there (added 19 Nov), so the proxy had no
+      `StartPreviewRemote`, the call threw inside `attempt` (which swallows
+      it into a null result), and the page went black with no reason.
+      `tests/extension/cameraInterface.test.js` now derives the daemon's
+      Camera1 methods from `camera.rs` and asserts the XML declares them
+      all. `_startPreview` also says so in the bar when the call never
+      reached the daemon (null result, no error).
 - [ ] Device test on Galih's laptop: preview appears and moves, stops during
       photo/record, resumes after; screenshot is the evidence.

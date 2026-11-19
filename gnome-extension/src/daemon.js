@@ -207,6 +207,8 @@ const INTERFACES = {
             <method name="CapturePhoto"><arg type="s" direction="out"/></method>
             <method name="StartRecording"><arg type="s" direction="out"/></method>
             <method name="StopRecording"><arg type="s" direction="out"/></method>
+            <method name="StartPreview"><arg type="s" direction="out"/></method>
+            <method name="StopPreview"><arg type="s" direction="out"/></method>
             <property name="State" type="s" access="read"/>`),
         properties: {State: 'camera'},
     },
