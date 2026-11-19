@@ -46,6 +46,101 @@ export class TerminalReturn {
     }
 }
 
+function misses(rect, x1, y1, x2, y2) {
+    return [x1, y1, x2, y2].every(Number.isFinite) && x1 < x2 && y1 < y2 &&
+        (x1 >= rect.x + rect.width || x2 <= rect.x || y1 >= rect.y + rect.height || y2 <= rect.y);
+}
+
+/** Mutter owns the stack. Borrow the above flag, never focus or continuously raise; an equal or
+ * higher layer can still win. Watch only the actors above the primary while the card needs them. */
+export class TerminalStack {
+    constructor(changed) {
+        this._changed = changed;
+        this._higher = new Map();
+        this._window = null;
+        this._addedAbove = false;
+    }
+
+    hold(window) {
+        if (this._window !== window) {
+            this.release();
+            this._window = window;
+            this._addedAbove = !window.is_above();
+        }
+        if (!window.is_above())
+            window.make_above();
+    }
+
+    _watch(actor) {
+        const watch = {window: actor.meta_window};
+        this._higher.set(actor, watch);
+        // The input frame and the painted actor have independent lifetimes and notifications.
+        // In particular a closing effect may outlive an unmanaged Meta.Window.
+        watch.window?.connectObject('position-changed', this._changed, 'size-changed', this._changed,
+            'unmanaged', () => {
+                watch.window.disconnectObject(watch);
+                watch.window = null;
+            }, watch);
+        actor.connectObject('notify', this._changed, 'destroy', () => {
+            watch.window?.disconnectObject(watch);
+            this._higher.delete(actor);
+        }, this);
+    }
+
+    _unwatch(actor, watch) {
+        actor.disconnectObject(this);
+        watch.window?.disconnectObject(watch);
+        this._higher.delete(actor);
+    }
+
+    /** Inspect the actual compositor siblings, lowest first. A higher client moving into just one
+     * edge matters, even if it never takes focus. Include transformed shadows and map effects. */
+    uncovered(primary, rect, siblings, popups) {
+        const window = this._window;
+        const at = siblings.indexOf(primary);
+        if (!window || at < 0 || window.get_compositor_private() !== primary || !primary.mapped ||
+            primary.get_paint_opacity() !== 255 || !window.is_above())
+            return false;
+        const higher = new Set([...siblings.slice(at + 1), ...popups]);
+        for (const [actor, watch] of this._higher) {
+            if (!higher.has(actor))
+                this._unwatch(actor, watch);
+        }
+        let safe = true;
+        for (const actor of higher) {
+            if (!this._higher.has(actor))
+                this._watch(actor);
+            if (!safe || !actor.mapped)
+                continue;
+            const other = this._higher.get(actor).window;
+            if (other && other.get_compositor_private() === actor) {
+                if (window.is_ancestor_of_transient(other) && other.get_pid() === window.get_pid())
+                    continue;
+                // An input frame needn't paint all of its pixels (and can move ahead of an effect).
+                const frame = other.get_frame_rect();
+                if (!misses(rect, frame.x, frame.y, frame.x + frame.width, frame.y + frame.height)) {
+                    safe = false;
+                    continue;
+                }
+            }
+            // A rotated actor's transformed origin is NOT necessarily the corner of its bounding box.
+            // Clutter's paint box conservatively bounds its whole projection, including children.
+            const [known, box] = actor.get_paint_box();
+            safe = Boolean(known && box && misses(rect, box.x1, box.y1, box.x2, box.y2));
+        }
+        return safe;
+    }
+
+    release({unmanaged = false} = {}) {
+        for (const [actor, watch] of this._higher)
+            this._unwatch(actor, watch);
+        const window = this._window;
+        this._window = null;
+        if (!unmanaged && window && this._addedAbove && window.is_above())
+            window.unmake_above();
+    }
+}
+
 /** A clip and its signal connections belong to one specific compositor actor, not the GTK app.
  * Mutter can retire that actor before Meta.Window::unmanaged or leave it around for a closing effect. */
 export class TerminalBody {
@@ -63,7 +158,10 @@ export class TerminalBody {
             // Clutter/Shell retire the actor's connections. Never even ask a disposed wrapper if it is alive.
             this._clear();
             onDestroy(this);
-        }, 'notify::allocation', geometryChanged, 'effects-completed', geometryChanged, 'notify::mapped', () => {
+        }, 'notify::allocation', geometryChanged, 'notify::opacity', geometryChanged,
+        'notify::scale-x', geometryChanged, 'notify::scale-y', geometryChanged,
+        'notify::translation-x', geometryChanged, 'notify::translation-y', geometryChanged,
+        'effects-completed', geometryChanged, 'notify::mapped', () => {
             if (this.actor)
                 onMapped();
         }, this);

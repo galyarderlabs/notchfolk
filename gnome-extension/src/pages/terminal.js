@@ -33,7 +33,10 @@ export const TerminalPage = GObject.registerClass({
         this._bodyWidth = COMPACT_WIDTH;
         this._bodyHeight = COMPACT_HEIGHT;
         this._viewportWidth = 0;
-        this._area = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true});
+        // Keep native input closed until the helper is ready. The island already paints its
+        // complete themed surface behind this page when there is no native viewport.
+        this._area = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true,
+            reactive: true});
         this._area.connect('notify::allocation', () => this.emit('helper-area-changed'));
         onUiScale(this._area, scale => (this._area.height = (this._pageHeight - PAGE_TOP) * scale));
         this.add_child(this._area);
@@ -110,12 +113,16 @@ export const TerminalPage = GObject.registerClass({
 
     setStatus(state, message = '') {
         const opening = state === 'opening';
+        const covered = state === 'covered';
         this._empty.visible = state !== 'ready';
-        this._title.text = opening ? 'Opening terminal…' : state === 'error' ? 'Terminal unavailable' : 'Terminal';
-        this._hint.text = message || 'Your shell, here or in an external terminal';
+        this._title.text = covered ? 'Terminal is covered' : opening ? 'Opening terminal…' :
+            state === 'error' ? 'Terminal unavailable' : 'Terminal';
+        this._hint.text = covered ? 'Your shell will reappear when the window moves away.' :
+            message || 'Your shell, here or in an external terminal';
         this._openLabel.text = state === 'error' ? 'Try again' : 'Open terminal';
         this._open.accessible_name = this._openLabel.text;
-        setEnabled(this._open, !opening && state !== 'ready');
+        this._open.visible = !covered;
+        setEnabled(this._open, !covered && !opening && state !== 'ready');
     }
 
     onActivate() {

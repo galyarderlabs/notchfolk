@@ -9,8 +9,9 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {px, uiScale} from './compat.js';
+import {isWayland, px, uiScale} from './compat.js';
 import {GlassBackdrop} from './glass.js';
 import {RIM_FUNCTIONS, RIM_UNIFORMS, rimCode, rimUniforms} from './glow.js';
 import {effectPoint, shaderEffect} from './shader.js';
@@ -217,6 +218,7 @@ export const Island = GObject.registerClass({
         /** A native window inside a page: Shell keeps the shared header, outer shape and margins. */
         this._nativeViewport = null;
         this._nativeBacking = null;
+        this._nativeMargins = null;
         this._hovered = false;
         this._autoHidden = false;
         this._band = 0;
@@ -355,6 +357,36 @@ export const Island = GObject.registerClass({
         this._backdrop.excludedWindow = rect?.actor ?? null;
         this._nativeViewport = rect;
         this._sync();
+        this._syncNativeMargins(this._nativeViewport);
+    }
+
+    /** The header alone is tracked as chrome while GTK is embedded. Keep the other three strips
+     * around the client pickable too, without intercepting even an edge pixel of native input. */
+    _syncNativeMargins(rect) {
+        if (!rect) {
+            this._nativeMargins?.forEach(guard => guard.hide());
+            return;
+        }
+        this._nativeMargins ??= Array.from({length: 3}, () => {
+            const guard = new St.Widget({reactive: true, visible: false});
+            this.add_child(guard);
+            // On X11, picking a Shell child also requires that strip in the stage's input region.
+            if (!isWayland())
+                Main.layoutManager.trackChrome(guard, {affectsInputRegion: true, trackFullscreen: false});
+            return guard;
+        });
+        const [left, top] = this.get_transformed_position();
+        const x = rect.x - left, y = rect.y - top, bottom = y + rect.height;
+        const strips = [[0, y, x, rect.height], [x + rect.width, y, this.width - x - rect.width, rect.height],
+            [0, bottom, this.width, Math.ceil(this._height.value) - bottom]];
+        strips.forEach(([gx, gy, w, h], i) => {
+            const guard = this._nativeMargins[i];
+            guard.visible = w > 0 && h > 0;
+            if (guard.visible) {
+                guard.set_position(gx, gy);
+                guard.set_size(w, h);
+            }
+        });
     }
 
     _syncNativeViewport() {

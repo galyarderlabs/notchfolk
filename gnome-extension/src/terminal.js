@@ -9,9 +9,10 @@ import Meta from 'gi://Meta';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Signals from 'resource:///org/gnome/shell/misc/signals.js';
+import {MonitorGroup} from 'resource:///org/gnome/shell/ui/workspaceAnimation.js';
 
 import {uiScale} from './compat.js';
-import {TerminalBody, TerminalReturn} from './terminalLifecycle.js';
+import {TerminalBody, TerminalReturn, TerminalStack} from './terminalLifecycle.js';
 import {ownsTerminalWindow, terminalActorViewport, terminalCanOpen,
     terminalOwnsPointer, terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from './terminalRules.js';
 
@@ -47,6 +48,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._pinned = false;
         this._pinnedWindow = null;
         this._body = null;
+        this._stack = new TerminalStack(() => this._stackChanged());
         this._launchPid = null;
         this._placementError = null;
         this._return = new TerminalReturn();
@@ -77,12 +79,25 @@ export class TerminalHelper extends Signals.EventEmitter {
                     this._hideBody();
                 this.sync();
             })],
-            [island, island.connect('notify::mapped', () => this.sync())],
+            [island, island.connect('notify::mapped', () => this._visibilityChanged())],
             [Main.layoutManager, Main.layoutManager.connect('monitors-changed', () => this._geometryChanged())],
             [global.display, global.display.connect('workareas-changed', () => this._geometryChanged())],
-            [global.display, global.display.connect('notify::focus-window', () => this.emit('held-changed'))],
+            [global.display, global.display.connect('notify::focus-window', () => {
+                if (global.display.focus_window && global.display.focus_window !== this._window)
+                    this._focusRequested = false;
+                this._stackChanged();
+                this.emit('held-changed');
+            })],
+            [global.display, global.display.connect('restacked', () => this._stackChanged())],
             [global.workspace_manager, global.workspace_manager.connect('active-workspace-changed', () => this._visibilityChanged())],
             [global.window_manager, global.window_manager.connect('map', (_wm, actor) => this._watchWindow(actor))],
+            // Changes to the actual actor groups include closing effects, and Shell inserts workspace
+            // animation clones above the entire window group until a switch/gesture finishes.
+            ...[global.window_group, global.top_window_group, Main.uiGroup].flatMap(group =>
+                ['child-added', 'child-removed'].map(signal => [group, group.connect(signal, (_group, child) => {
+                    if (group !== Main.uiGroup || child instanceof MonitorGroup)
+                        this._stackChanged();
+                })])),
             [Main.overview, Main.overview.connect('showing', () => this._visibilityChanged())],
             [Main.overview, Main.overview.connect('hidden', () => this._visibilityChanged())],
             [Main.sessionMode, Main.sessionMode.connect('updated', () => {
@@ -234,6 +249,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         ++this._request;
         this._endOpening();
         this._hideBody();
+        this._stack.release();
         this._syncWorkspacePin(false);
         this._page.setStatus('idle');
         // Hiding GTK before Mutter sees its first window can prevent that map entirely.
@@ -437,6 +453,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             this._body = null;
             this._shown = false;
             this._pinnedWindow = null;
+            this._stack.release({unmanaged: !window.get_compositor_private()});
             this._clearViewport();
             this.restore();
         }, () => this._geometryChanged(), () => {
@@ -461,6 +478,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             this._geometryChanged();
         }, 'position-changed', () => this._geometryChanged(),
         'notify::minimized', () => this._visibilityChanged(),
+        'notify::above', () => this._stackChanged(),
         'workspace-changed', () => this._visibilityChanged(), this);
         if (!this._wanted && this._return.mapped(this._identity.busName))
             this._hideExisting();
@@ -490,9 +508,36 @@ export class TerminalHelper extends Signals.EventEmitter {
             this.emit('closed');
             return;
         }
-        if (this._wanted && !this._shown)
+        if (this._wanted && (!this._shown || !this._island.mapped))
             this._hideBody();
-        this.sync();
+        this._stackChanged();
+    }
+
+    _uncovered(actor, rect) {
+        return !Main.uiGroup.get_children().some(child => child instanceof MonitorGroup) &&
+            this._stack.uncovered(actor, rect, global.window_group.get_children(), global.top_window_group.get_children());
+    }
+
+    _stackChanged() {
+        if (this._destroyed || !this._wanted)
+            return;
+        const actor = this._actor;
+        if (!this._managed || !this.ownsKeyboard || !this._shown || !actor || !this._island.mapped ||
+            Main.sessionMode.isLocked || Main.overview.visible) {
+            this._stack.release({unmanaged: this._window && !this._window.get_compositor_private()});
+            if (this._revealed)
+                this._hideBody();
+            return;
+        }
+        try {
+            this._stack.hold(this._window);
+            // Seal an already-open hole immediately, not after an idle during which a drag can start.
+            if (this._revealed && !this._uncovered(actor, this._window.get_frame_rect()))
+                this._hideBody();
+            this.sync();
+        } catch (error) {
+            this._fail(error.message);
+        }
     }
 
     _geometryChanged() {
@@ -522,7 +567,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._body?.release();
     }
 
-    /** Fit the normal page's card under its real header; GTK keeps its own keyboard, PTY and footer. */
+    /** Fit the normal page's card under its real header; GTK keeps its own keyboard and PTY. */
     sync() {
         if (this._destroyed || !this._wanted || !this._page.active || this._placing)
             return;
@@ -535,7 +580,8 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._placing = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._placing = 0;
             const window = this._window;
-            if (!this._wanted || !this._page.active || !window || !this._shown)
+            if (!this._wanted || !this._page.active || !window || !this._shown || !this._island.mapped ||
+                Main.sessionMode.isLocked || Main.overview.visible)
                 return GLib.SOURCE_REMOVE;
             try {
                 const rect = this._island.restingRect(this._page.helperArea);
@@ -578,6 +624,15 @@ export class TerminalHelper extends Signals.EventEmitter {
                         this._hideBody();
                         return GLib.SOURCE_REMOVE;
                     }
+                    if (!this._uncovered(actor, target)) {
+                        this._hideBody();
+                        // Geometry was acknowledged. A competing window is not a launch failure,
+                        // and moving it away later is not a request to focus the terminal.
+                        this._endOpening();
+                        this._focusRequested = false;
+                        this._page.setStatus('covered');
+                        return GLib.SOURCE_REMOVE;
+                    }
                     // Meta's frame is the interactive client; its buffer/actor can include GTK shadows.
                     // GTK clips its own 12px corners; the actor clip removes all pixels outside the frame.
                     const justRevealed = !this._revealed;
@@ -614,6 +669,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._shown = false;
         this._fitSent = null;
         this._clearViewport();
+        this._stack.release({unmanaged});
         window?.disconnectObject(this);
         if (unpin)
             this._syncWorkspacePin(false);
