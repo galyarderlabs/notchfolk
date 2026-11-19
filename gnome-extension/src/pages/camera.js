@@ -58,9 +58,12 @@ class CameraPage extends Page {
 
         // The live preview: one JPEG the daemon overwrites ~8 times a second,
         // decoded as it changes into this image, centred in the bin.
+        // St.ImageContent, not Clutter.Image: Clutter.Image was removed in
+        // GNOME Shell 48 (Mutter 48.alpha), and St.ImageContent is its
+        // replacement since Shell 45 — it covers every version we support.
         this._liveBin = new St.Bin({style_class: 'notchfolk-camera-preview',
             x_expand: true, y_expand: true});
-        this._liveImage = new Clutter.Image();
+        this._liveImage = new St.ImageContent();
         this._liveActor = new Clutter.Actor({content: this._liveImage,
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         this._liveBin.child = this._liveActor;
@@ -163,7 +166,9 @@ class CameraPage extends Page {
                 try {
                     const pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                         path, width, height, true);
-                    this._liveImage.set_data(pixbuf.get_pixels(),
+                    this._liveImage.set_data(
+                        global.stage.context.get_backend().get_cogl_context(),
+                        pixbuf.get_pixels(),
                         pixbuf.get_has_alpha()
                             ? Cogl.PixelFormat.RGBA_8888
                             : Cogl.PixelFormat.RGB_888,
