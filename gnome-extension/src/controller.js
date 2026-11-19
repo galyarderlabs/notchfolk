@@ -389,15 +389,14 @@ export class Controller {
             if (this._expanded.page === this._terminalPage)
                 this.collapse();
         });
-        this._terminal.connect('held-changed', () => {
-            if (this._expandWanted && this._expanded.page === this._terminalPage && !this._island.hovered)
-                this._later('collapse', COLLAPSE_DELAY_MS, () => this._collapseUnlessHeld());
-        });
+        this._terminal.connect('held-changed', () => this._syncTerminalHover());
+        this._terminalPage.connect('active-changed', () => this._syncTerminalHover());
         for (const view of [...this._peeks, this._expanded, this._voice])
             this._island.addView(view);
         // GNOME Shell shutting down takes the island with the stage, Notchfolk still on, and GNOME 51 runs on a
         // moment after: nothing of Notchfolk's may run on it then.
         this._island.connect('destroy', () => {
+            this._stopTerminalPointer();
             for (const name of [...this._timeouts.keys()])
                 this._cancel(name);
             this._destroying = true;
@@ -574,7 +573,15 @@ export class Controller {
         expanded.connect('tint-changed', () => this._syncTint());
         // The pin: the island stays open when the pointer leaves, until the pin again or
         // a real close (Esc, the pages' own) - which resets it for the next opening.
-        expanded.connect('pin-toggled', (_view, pinned) => (this._pinned = pinned));
+        expanded.connect('pin-toggled', (_view, pinned) => {
+            if (this._pinned === pinned)
+                return;
+            this._pinned = pinned;
+            if (this._terminal) {
+                this._terminal.pinned = pinned;
+                this._syncTerminalHover();
+            }
+        });
         expanded.connect('tint-motion', (_view, time, level) => {
             if (this._presentation === 'expanded')
                 this._island.setTintMotion(time, level);
@@ -1931,6 +1938,10 @@ export class Controller {
                 this._later('alert', Math.min(ALERT_LEAVE_MS, this._alert.duration ?? ALERT_LEAVE_MS),
                     () => this._dismissAlert(true));
         }
+        if (this._terminal?.ownsKeyboard) {
+            this._syncTerminalHover();
+            return;
+        }
         if (this._island.hovered) {
             this._cancel('collapse');
             if (!this._expandWanted && this._settings.get_string('open-on') === 'hover' && !this._alertHoldsHover)
@@ -2043,10 +2054,40 @@ export class Controller {
         });
     }
 
-    /** Closes unless pinned or a native page still owns the pointer or keyboard. */
+    /** A native surface receives its own pointer events. Observe the cursor only while needed, and
+     * sample after Mutter has picked the new surface. Keyboard-only opening isn't a pointer leave. */
+    _syncTerminalHover() {
+        if (!this._terminal?.ownsKeyboard || this._pinned || this._destroying) {
+            this._stopTerminalPointer();
+            return;
+        }
+        if (!this._terminalCursor) {
+            this._terminalCursor = global.backend.get_cursor_tracker?.() ?? Meta.CursorTracker.get_for_display(global.display);
+            this._terminalMotion = this._terminalCursor.connect('position-invalidated', () => {
+                if (!this._timeouts.has('terminal-pointer'))
+                    this._later('terminal-pointer', 0, () => this._syncTerminalHover());
+            });
+        }
+        const held = this._terminal.holdsOpen;
+        if (held)
+            this._cancel('collapse');
+        else if (this._terminalHeld && this._expandWanted && !this._keyboardGrab)
+            this._later('collapse', COLLAPSE_DELAY_MS, () => this._collapseUnlessHeld());
+        this._terminalHeld = held;
+    }
+
+    _stopTerminalPointer() {
+        if (this._terminalCursor) {
+            this._terminalCursor.disconnect(this._terminalMotion);
+            this._terminalCursor = null;
+            this._cancel('terminal-pointer');
+        }
+        this._terminalHeld = false;
+    }
+
+    /** The grace period expired. A pin, a keyboard grab or the native page under the pointer wins. */
     _collapseUnlessHeld() {
-        // Pinned open: the pointer leaving does not close it (the pin button, one opening).
-        if (this._pinned || this._terminal?.holdsOpen)
+        if (this._pinned || this._keyboardGrab || this._terminal?.holdsOpen)
             return;
         // The shelf helper window covers the island; the pointer may be on it.
         if (this._shelfHelper.containsPointer()) {
@@ -2242,7 +2283,6 @@ export class Controller {
         this._cancel('collapse');
         this._setKeyboard(false);
         // The pin lasted this opening; the next starts unpinned.
-        this._pinned = false;
         this._expanded?.resetPin();
         // Once closed and settled, what changed meanwhile is laid out for next time (see `_warmUp`); the
         // alert and voice views keep their layout, unless the theme changed.
@@ -2255,9 +2295,6 @@ export class Controller {
         if (!this._expandWanted)
             return;
         this._expandWanted = false;
-        // The pin lasted this opening; the next starts unpinned.
-        this._pinned = false;
-        this._expanded?.resetPin();
         this._nextAlert();
     }
 
@@ -2275,8 +2312,9 @@ export class Controller {
     _prepareTerminal() {
         this._cancel('expand');
         this._cancel('hover');
-        this._cancel('collapse');
         this._setKeyboard(false);
+        this._cancel('collapse');
+        this._syncTerminalHover();
     }
 
     // Super+V (GNOME's calendar shortcut, taken over) opens the clipboard history, search ready, or the Calendar
@@ -2835,7 +2873,6 @@ export class Controller {
         this._cancel('collapse');
         this._expandWanted = false;
         // The pin lasted this opening; the next starts unpinned.
-        this._pinned = false;
         this._expanded?.resetPin();
         this._shelveAnswer();
         this._voiceOpen = true;
@@ -2960,7 +2997,6 @@ export class Controller {
         this._cancel('collapse');
         this._expandWanted = false;
         // The pin lasted this opening; the next starts unpinned.
-        this._pinned = false;
         this._expanded?.resetPin();
         this._shelveAnswer();
         this._voiceOpen = true;

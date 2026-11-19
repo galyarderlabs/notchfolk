@@ -223,6 +223,7 @@ class GlassBackdrop extends St.Widget {
         this._bar = null;
         this._windows = new Map();
         this._watched = new Set();
+        this._excludedWindow = null;
         this._places = null;
         this._later = 0;
         // Going with the island (Notchfolk off, the shell shutting down): its signals and copies go with it; only a
@@ -251,6 +252,20 @@ class GlassBackdrop extends St.Widget {
             this._stop();
         }
         this._syncVisible();
+    }
+
+    /** Never sample the fitted terminal: its transparent surface is in front of this material.
+     * Drop an existing copy synchronously, before the material is also painted behind that window. */
+    set excludedWindow(actor) {
+        if (this._excludedWindow === actor)
+            return;
+        this._excludedWindow = actor;
+        const copy = this._windows.get(actor);
+        if (copy) {
+            this._windows.delete(actor);
+            copy.destroy();
+        }
+        this._queueSync();
     }
 
     /** Copies and follows what is behind the island. */
@@ -335,7 +350,7 @@ class GlassBackdrop extends St.Widget {
                     this._queueSync();
                 }, this);
         }
-        this._places = actors.filter(actor => actor.visible && !actor.meta_window?.is_override_redirect())
+        this._places = actors.filter(actor => actor !== this._excludedWindow && actor.visible && !actor.meta_window?.is_override_redirect())
             .map(actor => ({actor, x: actor.x, y: actor.y, width: actor.width, height: actor.height}));
         return this._places;
     }

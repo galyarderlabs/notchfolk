@@ -21,6 +21,18 @@ export function terminalCanRestore({active, available, managed, verified, live, 
         live === true && sameWorkspace === true && locked === false && overview === false;
 }
 
+/** Mutter picks the native surface, not necessarily its toplevel: a GTK popover can extend past the card. */
+export function terminalOwnsPointer(window, picked) {
+    if (!window)
+        return false;
+    for (let actor = picked; actor; actor = actor.get_parent()) {
+        const target = actor.meta_window;
+        if (target)
+            return target === window || window.is_ancestor_of_transient(target);
+    }
+    return false;
+}
+
 /** A newly mapped page can still have its empty state's natural size. Never fit a client to that size. */
 export function terminalViewportSettled({rect, position, size, morphing, opacity}) {
     // Transformed allocations can round differently; a subpixel gap is fine, a whole stage pixel isn't.
@@ -79,4 +91,12 @@ export function terminalActorViewport({frame, buffer, target, actor, width, heig
     const sx = width / actor.width, sy = height / actor.height;
     return {x: (frame.x - actor.x) * sx, y: (frame.y - actor.y) * sy,
         width: frame.width * sx, height: frame.height * sy};
+}
+
+/** Crop the island material into a window child's coordinate space without fitting/stretching it to the
+ * viewport. `clip` is the acknowledged actor-local client frame; the parent may scale its children again. */
+export function terminalMaterialGeometry(rect, [x, y, width, height], scale, [left, top], [w, h]) {
+    const frame = {x: x / scale, y: y / scale, width: width / scale, height: height / scale};
+    const sx = frame.width / rect.width, sy = frame.height / rect.height;
+    return {frame, source: {x: (left - rect.x) * sx, y: (top - rect.y) * sy, width: w * sx, height: h * sy}};
 }

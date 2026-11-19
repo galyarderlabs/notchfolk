@@ -7,7 +7,8 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 
 import {ownsTerminalWindow, terminalActorViewport, terminalCanOpen, terminalCanRestore, terminalFitsShape,
-    terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from '../../gnome-extension/src/terminalRules.js';
+    terminalMaterialGeometry, terminalOwnsPointer, terminalViewport, terminalViewportSettled,
+    TERMINAL_APP_ID} from '../../gnome-extension/src/terminalRules.js';
 
 const owner = {busName: ':1.42', pid: 4200};
 const terminal = {appId: TERMINAL_APP_ID, busName: owner.busName, pid: owner.pid};
@@ -22,6 +23,17 @@ test('terminal ownership needs the exact application id, verified process and un
     assert.equal(ownsTerminalWindow({...terminal, pid: 4201}, owner), false);
     assert.equal(ownsTerminalWindow({...terminal, busName: ':1.43'}, owner), false);
     assert.equal(ownsTerminalWindow({...terminal, busName: null}, owner), false);
+});
+
+test('the native card and its own popup hold the island; another window or the desktop does not', () => {
+    const popup = {};
+    const window = {is_ancestor_of_transient: candidate => candidate === popup};
+    const surface = metaWindow => ({get_parent: () => ({meta_window: metaWindow})});
+    assert.equal(terminalOwnsPointer(window, surface(window)), true);
+    assert.equal(terminalOwnsPointer(window, surface(popup)), true);
+    assert.equal(terminalOwnsPointer(window, surface({})), false);
+    assert.equal(terminalOwnsPointer(window, {get_parent: () => null}), false);
+    assert.equal(terminalOwnsPointer(null, surface(window)), false);
 });
 
 test('only explicit selection of an active available page may open a shell', () => {
@@ -137,4 +149,22 @@ test('actual Meta frame excludes GTK shadow buffer at every edge', () => {
     assert.equal(terminalActorViewport({...geometry, actor: {...buffer, width: 600}}), null);
     assert.equal(terminalActorViewport({...geometry, buffer: {...buffer, height: 200}}), null);
     assert.equal(terminalActorViewport({...geometry, width: 0}), null);
+});
+
+test('native glass continues at the same material pixel across a shadowed, scaled viewport', () => {
+    // A secondary monitor above and left of the primary; the client starts 24 × 44 stage px into the island.
+    const rect = {x: -1190, y: -556, width: 600, height: 240};
+    const origin = [-1214, -600], size = [648, 320];
+    for (const scale of [1, 1.5, 2]) {
+        // 8 actor-local pixels of GTK shadow; 1/2 an actor-local pixel per stage pixel.
+        const {frame, source} = terminalMaterialGeometry(rect, [8, 8, 300, 120], scale, origin, size);
+        assert.equal(frame.x * scale, 8);
+        assert.equal(frame.y * scale, 8);
+        for (const [x, y] of [[0, 0], [1, 120], [599, 239]]) {
+            const u = (x * frame.width / rect.width - source.x) / source.width;
+            const v = (y * frame.height / rect.height - source.y) / source.height;
+            assert.ok(Math.abs(u * size[0] - (24 + x)) < 1e-9);
+            assert.ok(Math.abs(v * size[1] - (44 + y)) < 1e-9);
+        }
+    }
 });

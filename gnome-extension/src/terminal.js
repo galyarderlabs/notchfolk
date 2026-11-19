@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Galyarder Labs
 
 // A local GTK terminal, never a daemon command endpoint. Only a click or keybinding launches it.
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
@@ -10,8 +11,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Signals from 'resource:///org/gnome/shell/misc/signals.js';
 
 import {uiScale} from './compat.js';
-import {ownsTerminalWindow, terminalActorViewport, terminalCanOpen, terminalCanRestore,
-    terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from './terminalRules.js';
+import {TerminalBody, TerminalReturn} from './terminalLifecycle.js';
+import {ownsTerminalWindow, terminalActorViewport, terminalCanOpen,
+    terminalOwnsPointer, terminalViewport, terminalViewportSettled, TERMINAL_APP_ID} from './terminalRules.js';
 
 const PROGRAM = 'notchfolk-terminal';
 const OPEN_TIMEOUT_MS = 10000;
@@ -32,7 +34,7 @@ function executableIdentity(path) {
     return `${info.get_attribute_as_string('unix::device')}:${info.get_attribute_as_string('unix::inode')}`;
 }
 
-// Signals: opening (release the modal grab), closed (native window closed), held-changed (focus changed).
+// Signals: opening (release the modal grab), closed (native window closed), held-changed (recheck native input).
 export class TerminalHelper extends Signals.EventEmitter {
     constructor(island, page, monitor) {
         super();
@@ -42,16 +44,15 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._owner = null;
         this._identity = null;
         this._window = null;
-        this._windowSignals = [];
-        this._clippedActor = null;
-        this._previousClip = null;
+        this._pinned = false;
+        this._pinnedWindow = null;
+        this._body = null;
+        this._launchPid = null;
         this._placementError = null;
-        this._restoreOwner = null;
-        this._restoreWorkspace = null;
+        this._return = new TerminalReturn();
         this._restoreAvailable = false;
         this._wanted = false;
         this._managed = false;
-        this._pendingHide = false;
         this._shown = false;
         this._revealed = false;
         this._focusRequested = false;
@@ -66,6 +67,8 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._destroyed = false;
         this._cancellable = new Gio.Cancellable();
         this._signals = [
+            [page, page.connect('destroy', () => this.destroy({dying: page}))],
+            [island, island.connect('destroy', () => this.destroy({dying: island}))],
             [page, page.connect('active-changed', () => page.active ? this.restore() : this.hide())],
             [page, page.connect('open-requested', () => this.open())],
             [page, page.connect('helper-area-changed', () => this._geometryChanged())],
@@ -79,7 +82,7 @@ export class TerminalHelper extends Signals.EventEmitter {
             [global.display, global.display.connect('workareas-changed', () => this._geometryChanged())],
             [global.display, global.display.connect('notify::focus-window', () => this.emit('held-changed'))],
             [global.workspace_manager, global.workspace_manager.connect('active-workspace-changed', () => this._visibilityChanged())],
-            [global.window_manager, global.window_manager.connect('map', (_wm, actor) => this._watchWindow(actor.meta_window))],
+            [global.window_manager, global.window_manager.connect('map', (_wm, actor) => this._watchWindow(actor))],
             [Main.overview, Main.overview.connect('showing', () => this._visibilityChanged())],
             [Main.overview, Main.overview.connect('hidden', () => this._visibilityChanged())],
             [Main.sessionMode, Main.sessionMode.connect('updated', () => {
@@ -91,14 +94,9 @@ export class TerminalHelper extends Signals.EventEmitter {
         // NONE is deliberately not AUTO_START: constructing, warming or hovering a page creates no shell.
         this._watch = Gio.bus_watch_name(Gio.BusType.SESSION, TERMINAL_APP_ID, Gio.BusNameWatcherFlags.NONE,
             (connection, _name, owner) => this._verifyOwner(connection, owner), () => {
-                this._owner = null;
-                this._identity = null;
-                this._restoreOwner = null;
-                this._restoreWorkspace = null;
-                this._dropActions();
-                this._forgetWindow();
-                if (this._wanted && !this._opening)
-                    this._fail('The terminal stopped. Open it again to start a shell.');
+                // Initial "vanished" is not a lost owner; an explicitly launched process may be starting.
+                if (!this._destroyed && this._owner)
+                    this._ownerLost();
             });
     }
 
@@ -111,16 +109,40 @@ export class TerminalHelper extends Signals.EventEmitter {
     }
 
     get holdsOpen() {
-        if (!this.ownsKeyboard)
-            return false;
-        const focus = global.display.focus_window;
-        if (this._opening || this._window && (focus === this._window || focus?.get_transient_for() === this._window))
-            return true;
-        if (!this._revealed || !this._window)
+        if (!this.ownsKeyboard || this._destroyed)
             return false;
         const [x, y] = global.get_pointer();
-        const frame = this._window.get_frame_rect();
-        return x >= frame.x && x < frame.x + frame.width && y >= frame.y && y < frame.y + frame.height;
+        const picked = global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y);
+        if (picked && this._island.contains(picked))
+            return true;
+        if (!this._actor || !this._revealed)
+            return false;
+        const window = this._window;
+        const focus = global.display.focus_window;
+        if (focus?.get_window_type() === Meta.WindowType.MODAL_DIALOG && window.is_ancestor_of_transient(focus))
+            return true;
+        return terminalOwnsPointer(window, picked);
+    }
+
+    /** The controller owns the pin for this opening, including tab changes before the helper maps. */
+    set pinned(pinned) {
+        if (this._pinned === pinned)
+            return;
+        this._pinned = pinned;
+        if (this._actor)
+            this._syncWorkspacePin(pinned && this._managed && this.ownsKeyboard && !Main.sessionMode.isLocked);
+    }
+
+    _syncWorkspacePin(wanted) {
+        const window = this._window; // Only _watchWindow's verified primary; never the focused window.
+        if (wanted && !this._pinnedWindow && window && !window.is_on_all_workspaces()) {
+            this._pinnedWindow = window; // stick/unstick may emit workspace-changed synchronously.
+            window.stick();
+        } else if (!wanted && this._pinnedWindow) {
+            const owned = this._pinnedWindow;
+            this._pinnedWindow = null;
+            owned.unstick();
+        }
     }
 
     /** Called only by an explicit tab, shortcut or page button, never by Page.onActivate/warmUp. */
@@ -140,7 +162,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         const request = ++this._request;
         this._wanted = true;
         this._managed = true;
-        this._pendingHide = false;
+        this._return.open(global.workspace_manager.get_active_workspace());
         this._fitSent = null;
         this._focusRequested = true;
         this._hideBody();
@@ -148,7 +170,7 @@ export class TerminalHelper extends Signals.EventEmitter {
         this.emit('opening');
         Main.overview.hide();
         try {
-            if (this._window) {
+            if (this._actor) {
                 const workspace = global.workspace_manager.get_active_workspace();
                 if (!this._window.located_on_workspace(workspace))
                     this._window.change_workspace(workspace);
@@ -157,15 +179,18 @@ export class TerminalHelper extends Signals.EventEmitter {
             }
             if (this._identity) {
                 this._applicationCall('Activate', new GLib.Variant('(a{sv})', [{}]), request);
-            } else {
+            } else if (!this._launchPid) {
                 const process = Gio.Subprocess.new([this._binary], Gio.SubprocessFlags.NONE);
+                const pid = this._launchPid = Number(process.get_identifier());
                 process.wait_check_async(null, (child, result) => {
                     try {
                         child.wait_check_finish(result);
                     } catch (error) {
                         console.warn(`Notchfolk: terminal helper failed: ${error.message}`);
-                        if (!this._destroyed && request === this._request)
-                            this._fail(error.message);
+                        if (!this._destroyed && this._launchPid === pid) {
+                            this._launchPid = null;
+                            this._cancelManagement(error.message);
+                        }
                     }
                 });
             }
@@ -178,17 +203,15 @@ export class TerminalHelper extends Signals.EventEmitter {
     /** Re-enter only the verified primary whose existing window this page hid. The restore action maps
      * that window without Activate/present or creating a first shell; warmUp never activates the page. */
     restore() {
-        if (this._destroyed || this._wanted || !this._restoreAvailable || !terminalCanRestore({
+        if (this._destroyed || this._wanted || !this._restoreAvailable || !this._return.canRestore({
             active: this._page.active, available: this._page.available, managed: this._managed,
-            verified: Boolean(this._identity && this._owner === this._identity.busName),
-            live: Boolean(this._restoreOwner && this._restoreOwner === this._identity?.busName),
-            sameWorkspace: this._restoreWorkspace === global.workspace_manager.get_active_workspace(),
+            owner: this._owner, identity: this._identity, workspace: global.workspace_manager.get_active_workspace(),
+            mapped: this._actor?.mapped,
             locked: Main.sessionMode.isLocked, overview: Main.overview.visible,
         }))
             return;
         ++this._request;
         this._wanted = true;
-        this._pendingHide = false;
         this._focusRequested = false;
         this._hideBody();
         this._beginOpening();
@@ -198,24 +221,25 @@ export class TerminalHelper extends Signals.EventEmitter {
 
     /** Clear drawing and input immediately; the existing primary then hides without ending any shell. */
     hide({remember = true} = {}) {
-        if (!remember) {
-            this._restoreOwner = null;
-            this._restoreWorkspace = null;
-        }
+        if (!remember)
+            this._return.revoke();
         if (!this._wanted && !this._opening && !this._revealed)
             return;
-        if (remember && this._window && this._identity) {
-            this._restoreOwner = this._identity.busName;
-            this._restoreWorkspace = global.workspace_manager.get_active_workspace();
-        }
+        const window = this._identity && this._actor ? this._window : null;
+        const workspace = window?.is_on_all_workspaces()
+            ? global.workspace_manager.get_active_workspace() : window?.get_workspace();
+        this._return.leave(remember, workspace, window ? this._identity.busName : null, this._request);
         this._wanted = false;
         this._focusRequested = false;
-        this._pendingHide = !this._window;
         ++this._request;
         this._endOpening();
         this._hideBody();
+        this._syncWorkspacePin(false);
         this._page.setStatus('idle');
-        this._hideExisting();
+        // Hiding GTK before Mutter sees its first window can prevent that map entirely.
+        // Authenticate the map first; until then there's no existing window to remember.
+        if (window || !remember)
+            this._hideExisting();
     }
 
     _hideExisting() {
@@ -229,20 +253,25 @@ export class TerminalHelper extends Signals.EventEmitter {
             Gio.DBusCallFlags.NO_AUTO_START, -1, this._cancellable, (connection, result) => {
                 try {
                     connection.call_finish(result);
-                    if (this._destroyed || request !== this._request)
-                        return;
-                    this._visibilityChanged();
                 } catch (error) {
                     if (error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                         return;
                     console.warn(`Notchfolk: terminal ${method} failed: ${error.message}`);
+                    // Leave superseded this request while its first map was outstanding.
+                    if (this._return.pendingMap === request)
+                        this._return.open(null);
                     if (!this._destroyed && request === this._request) {
-                        this._restoreBody();
+                        this._return.revoke();
                         if (this._wanted)
                             this._fail(error.message);
                         else
                             Main.notifyError('Notchfolk Terminal', `Could not hide the terminal: ${error.message}`);
                     }
+                    return;
+                }
+                if (!this._destroyed && request === this._request) {
+                    this._visibilityChanged();
+                    this.restore();
                 }
             });
     }
@@ -270,36 +299,64 @@ export class TerminalHelper extends Signals.EventEmitter {
         this.emit('held-changed');
     }
 
+    _cancelManagement(message) {
+        const wanted = this._wanted;
+        this._wanted = false;
+        this._managed = false;
+        this._focusRequested = false;
+        this._launchPid = null;
+        this._return.open(null);
+        ++this._request;
+        this._endOpening();
+        this._forgetWindow();
+        if (wanted) {
+            this._page.setStatus('error', message);
+            this.emit('held-changed');
+        }
+    }
+
+    _ownerLost() {
+        this._owner = null;
+        this._identity = null;
+        this._cancelManagement('The terminal stopped. Open it again to start a shell.');
+        this._dropActions();
+    }
+
     /** Authenticate the GTK bus owner against the local executable before touching any window. */
     _verifyOwner(connection, owner) {
+        if (this._destroyed)
+            return;
+        if (this._owner && this._owner !== owner)
+            this._ownerLost();
         this._owner = owner;
-        this._identity = null;
-        this._restoreOwner = null;
-        this._restoreWorkspace = null;
-        this._forgetWindow();
-        this._dropActions();
         connection.call('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
             'GetConnectionUnixProcessID', new GLib.Variant('(s)', [owner]), new GLib.VariantType('(u)'),
             Gio.DBusCallFlags.NO_AUTO_START, -1, this._cancellable, (bus, result) => {
+                let pid;
                 try {
-                    const [pid] = bus.call_finish(result).deep_unpack();
+                    [pid] = bus.call_finish(result).deep_unpack();
                     if (this._destroyed || this._owner !== owner)
                         return;
                     const binary = findBinary();
                     if (!Number.isInteger(pid) || pid <= 0 || !binary ||
-                        executableIdentity(`/proc/${pid}/exe`) !== executableIdentity(binary)) {
-                        console.warn('Notchfolk: ignoring a terminal bus owner that is not the installed helper');
-                        return;
-                    }
-                    this._binary = binary;
-                    this._identity = {busName: owner, pid};
-                    this._bindActions();
-                    for (const actor of global.get_window_actors())
-                        this._watchWindow(actor.meta_window);
+                        executableIdentity(`/proc/${pid}/exe`) !== executableIdentity(binary))
+                        throw new Error('The terminal application name is not owned by the installed helper.');
                 } catch (error) {
-                    if (!error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
+                    if (!error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
                         console.warn(`Notchfolk: could not identify the terminal helper: ${error.message}`);
+                        if (!this._destroyed && this._owner === owner)
+                            this._cancelManagement(error.message);
+                    }
+                    return;
                 }
+                // A replacement primary cannot inherit a launch that had yet to acquire the name.
+                if (this._launchPid && this._launchPid !== pid)
+                    this._cancelManagement('The terminal owner changed. Open it again to use this helper.');
+                this._launchPid = null;
+                this._identity = {busName: owner, pid};
+                this._bindActions();
+                for (const actor of global.get_window_actors())
+                    this._watchWindow(actor);
             });
     }
 
@@ -363,52 +420,61 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._fitSent = null;
     }
 
-    _watchWindow(window) {
-        if (this._destroyed || !window || window === this._window || window.get_transient_for() ||
+    _watchWindow(actor) {
+        if (this._destroyed || !this._identity || !actor || actor.is_destroyed())
+            return;
+        const window = actor.meta_window;
+        if (!window || actor === this._actor || window.get_compositor_private() !== actor || window.get_transient_for() ||
             window.get_window_type() !== Meta.WindowType.NORMAL || !ownsTerminalWindow({
                 appId: window.get_gtk_application_id(), busName: window.get_gtk_unique_bus_name(), pid: window.get_pid(),
             }, this._identity))
             return;
         this._forgetWindow();
         this._window = window;
-        const actor = window.get_compositor_private();
-        if (this._managed && (this._wanted || this._pendingHide))
+        this._body = new TerminalBody(window, actor, body => {
+            if (this._body !== body)
+                return;
+            this._body = null;
+            this._shown = false;
+            this._pinnedWindow = null;
+            this._clearViewport();
+            this.restore();
+        }, () => this._geometryChanged(), () => {
+            this._visibilityChanged();
+            this.restore();
+        });
+        if (this._managed && (this._wanted || this._return.pendingMap !== null))
             this._hideBody();
-        const watch = (object, name, callback) => this._windowSignals.push([object, object.connect(name, callback)]);
-        watch(window, 'unmanaged', () => {
+        window.connectObject('unmanaged', () => {
             const closed = this._wanted && !this._opening;
-            this._forgetWindow();
+            this._forgetWindow({unmanaged: true});
             if (closed) {
                 this.hide({remember: false});
                 this.emit('closed');
+            } else {
+                this.restore();
             }
-        });
-        watch(window, 'size-changed', () => {
+        }, 'size-changed', () => {
             // A compositor allocation acknowledges a fit; it never determines the user's compact/expanded mode.
             if (this._revealed)
                 this._fitSent = null;
             this._geometryChanged();
-        });
-        watch(window, 'position-changed', () => this._geometryChanged());
-        watch(window, 'notify::minimized', () => this._visibilityChanged());
-        watch(window, 'workspace-changed', () => this._visibilityChanged());
-        if (actor) {
-            watch(actor, 'notify::allocation', () => this._geometryChanged());
-            watch(actor, 'notify::mapped', () => this._visibilityChanged());
-        }
-        if (this._pendingHide && !this._wanted) {
-            this._pendingHide = false;
-            this._hideBody();
+        }, 'position-changed', () => this._geometryChanged(),
+        'notify::minimized', () => this._visibilityChanged(),
+        'workspace-changed', () => this._visibilityChanged(), this);
+        if (!this._wanted && this._return.mapped(this._identity.busName))
             this._hideExisting();
-        }
         this._visibilityChanged();
     }
 
-    /** Passive workspace, overview and lock changes never activate or move a window into this workspace. */
+    /** Only a pinned, attached helper follows workspaces. Passive changes never activate it. */
     _visibilityChanged() {
         if (this._destroyed)
             return;
-        const actor = this._window?.get_compositor_private();
+        const actor = this._actor;
+        const pinned = this._pinned && this._managed && this.ownsKeyboard && !Main.sessionMode.isLocked;
+        if (actor)
+            this._syncWorkspacePin(pinned);
         // Hide's D-Bus reply can precede the compositor unmap. Keep the old frame clipped/invisible
         // until it is really gone, otherwise its GTK shadow flashes outside the closing island.
         if (!this._wanted && !actor?.mapped)
@@ -416,7 +482,10 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._shown = Boolean(!Main.sessionMode.isLocked && !Main.overview.visible && actor?.mapped &&
             !this._window.minimized && this._window.showing_on_its_workspace() &&
             this._window.located_on_workspace(global.workspace_manager.get_active_workspace()));
-        if (!this._shown && this._wanted && !this._opening && !Main.overview.visible) {
+        // Workspace/overview animations can briefly unmap the actor. While pinned that's not a close;
+        // GTK withdrawing the window is handled by 'unmanaged', and an explicit minimize here.
+        if (!this._shown && this._wanted && !this._opening && !Main.overview.visible &&
+            (!pinned || this._window?.minimized)) {
             this.hide({remember: false});
             this.emit('closed');
             return;
@@ -432,28 +501,25 @@ export class TerminalHelper extends Signals.EventEmitter {
         this.sync();
     }
 
-    _hideBody() {
-        const actor = this._window?.get_compositor_private();
-        if (actor && this._managed)
-            actor.opacity = 0;
+    get _actor() {
+        return this._body?.actor ?? null;
+    }
+
+    _clearViewport() {
         this._revealed = false;
-        this._island.nativeViewport = null;
+        if (this._island)
+            this._island.nativeViewport = null;
+    }
+
+    _hideBody() {
+        if (this._managed)
+            this._body?.hide();
+        this._clearViewport();
     }
 
     _restoreBody() {
-        if (this._clippedActor) {
-            if (this._previousClip)
-                this._clippedActor.set_clip(...this._previousClip);
-            else
-                this._clippedActor.remove_clip();
-        }
-        this._clippedActor = null;
-        this._previousClip = null;
-        const actor = this._window?.get_compositor_private();
-        if (actor && this._managed)
-            actor.opacity = 255;
-        this._revealed = false;
-        this._island.nativeViewport = null;
+        this._clearViewport();
+        this._body?.release();
     }
 
     /** Fit the normal page's card under its real header; GTK keeps its own keyboard, PTY and footer. */
@@ -482,7 +548,7 @@ export class TerminalHelper extends Signals.EventEmitter {
                 const area = monitor && global.workspace_manager.get_active_workspace().get_work_area_for_monitor(monitor.index);
                 const scale = uiScale();
                 const target = terminalViewport(rect, area, scale);
-                const actor = window.get_compositor_private();
+                const actor = this._actor;
                 if (!target || !actor || !this._island.covers(target, {rounded: true})) {
                     this._hideBody();
                     return GLib.SOURCE_REMOVE;
@@ -503,6 +569,7 @@ export class TerminalHelper extends Signals.EventEmitter {
                     this._hideBody();
                     window.move_frame(false, target.x, target.y);
                 } else if (frame.width === target.width && frame.height === target.height) {
+                    this._placementError = null;
                     const [x, y] = actor.get_transformed_position();
                     const [actorWidth, actorHeight] = actor.get_transformed_size();
                     const clip = terminalActorViewport({frame, buffer: window.get_buffer_rect(), target,
@@ -513,16 +580,15 @@ export class TerminalHelper extends Signals.EventEmitter {
                     }
                     // Meta's frame is the interactive client; its buffer/actor can include GTK shadows.
                     // GTK clips its own 12px corners; the actor clip removes all pixels outside the frame.
-                    if (!this._clippedActor) {
-                        this._clippedActor = actor;
-                        this._previousClip = actor.has_clip ? actor.get_clip() : null;
-                    }
-                    actor.set_clip(clip.x, clip.y, clip.width, clip.height);
-                    this._island.nativeViewport = target;
-                    actor.opacity = 255;
+                    const justRevealed = !this._revealed;
+                    if (!this._body?.reveal(clip))
+                        return GLib.SOURCE_REMOVE;
+                    this._island.nativeViewport = {...target, actor};
                     this._revealed = true;
                     this._endOpening();
                     this._page.setStatus('ready');
+                    if (justRevealed)
+                        this.emit('held-changed');
                     if (this._focusRequested) {
                         this._focusRequested = false;
                         Main.activateWindow(window);
@@ -540,19 +606,29 @@ export class TerminalHelper extends Signals.EventEmitter {
         });
     }
 
-    _forgetWindow() {
-        this._restoreBody();
-        for (const [object, id] of this._windowSignals)
-            object.disconnect(id);
-        this._windowSignals = [];
+    _forgetWindow({unmanaged = false, detach = false} = {}) {
+        const window = this._window, body = this._body;
+        const unpin = !unmanaged && body?.actor;
         this._window = null;
+        this._body = null;
         this._shown = false;
         this._fitSent = null;
+        this._clearViewport();
+        window?.disconnectObject(this);
+        if (unpin)
+            this._syncWorkspacePin(false);
+        else
+            this._pinnedWindow = null;
+        body?.release({forget: true, detach});
     }
 
-    destroy() {
-        const reveal = this._managed && this._identity;
+    destroy({dying = null} = {}) {
+        if (this._destroyed)
+            return;
+        const reveal = !dying && !Main.sessionMode.isLocked && this._managed && this._identity;
         this._destroyed = true;
+        if (dying)
+            this._island = null;
         this.disconnectAll();
         if (this._placing)
             GLib.source_remove(this._placing);
@@ -560,13 +636,16 @@ export class TerminalHelper extends Signals.EventEmitter {
         this._cancellable.cancel();
         this._dropActions();
         Gio.bus_unwatch_name(this._watch);
-        for (const [object, id] of this._signals)
-            object.disconnect(id);
-        this._forgetWindow();
+        for (const [object, id] of this._signals) {
+            if (object !== dying)
+                object.disconnect(id);
+        }
+        this._signals = [];
+        this._forgetWindow({detach: true});
         // Removing UI never ends a shell or job. Reveal only the authenticated existing primary, no autostart.
         if (reveal) {
             Gio.DBus.session.call(reveal.busName, '/io/galyarderlabs/notchfolk/Terminal',
-                'org.freedesktop.Application', 'Activate', new GLib.Variant('(a{sv})', [{}]), null,
+                'org.freedesktop.Application', 'ActivateAction', new GLib.Variant('(sava{sv})', ['detach', [], {}]), null,
                 Gio.DBusCallFlags.NO_AUTO_START, -1, null, (connection, result) => {
                     try {
                         connection.call_finish(result);
