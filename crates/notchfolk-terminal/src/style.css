@@ -178,6 +178,14 @@ window.termi-notch,
     padding: 2px 10px;
 }
 
+.termi-notch .terminal-header-hint {
+    background: #242424;
+    color: #f5f5f5;
+    padding: 4px 10px;
+    border: 1px solid #505050;
+    border-radius: 8px;
+}
+
 .termi-notch .terminal-actions > button {
     min-width: 28px;
     min-height: 24px;

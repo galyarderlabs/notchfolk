@@ -445,6 +445,7 @@ struct TerminalWindow {
     notebook: gtk::Notebook,
     empty: gtk::Label,
     cwd: gtk::Label,
+    header_hint: gtk::Label,
     handoff_cwd: gtk::Label,
     choices: gtk::Box,
     handoff_cancellations: RefCell<Vec<std::sync::Weak<AtomicBool>>>,
@@ -494,21 +495,47 @@ impl TerminalWindow {
         actions.set_hexpand(true);
         actions.set_halign(gtk::Align::End);
         header.append(&actions);
-        let expand = icon_button("view-fullscreen-symbolic", "Expand terminal");
+        // A compositor tooltip can extend past the notch. Paint help over the
+        // content below the header without changing its allocation or input.
+        let header_hint = gtk::Label::builder()
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Start)
+            .margin_start(12)
+            .margin_end(12)
+            .wrap(true)
+            .wrap_mode(pango::WrapMode::WordChar)
+            .can_target(false)
+            .accessible_role(gtk::AccessibleRole::Presentation)
+            .visible(false)
+            .build();
+        header_hint.add_css_class("terminal-header-hint");
+        let expand = header_button("view-fullscreen-symbolic", "Expand terminal", &header_hint);
         actions.append(&expand);
-        let new = icon_button("list-add-symbolic", "New shell tab");
+        let new = header_button("list-add-symbolic", "New shell tab", &header_hint);
         actions.append(&new);
-        let close_current = icon_button(
+        let close_current = header_button(
             "window-close-symbolic",
             "Close this shell and its running jobs",
+            &header_hint,
         );
         close_current.set_sensitive(false);
         actions.append(&close_current);
-        let handoff = icon_button("document-send-symbolic", "Open in external terminal");
+        let handoff = header_button(
+            "document-send-symbolic",
+            "Open in external terminal",
+            &header_hint,
+        );
         handoff.set_focus_on_click(false);
         handoff.set_sensitive(false);
         actions.append(&handoff);
         root.append(&header);
+        let content = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let overlay = gtk::Overlay::new();
+        overlay.set_vexpand(true);
+        overlay.set_child(Some(&content));
+        overlay.add_overlay(&header_hint);
+        overlay.set_clip_overlay(&header_hint, true);
+        root.append(&overlay);
         let message_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         message_box.add_css_class("terminal-message");
         let message = gtk::Label::builder()
@@ -521,13 +548,13 @@ impl TerminalWindow {
         message_box.append(&message);
         message_box.append(&dismiss);
         message_box.set_visible(false);
-        root.append(&message_box);
+        content.append(&message_box);
         let empty = gtk::Label::new(Some("No shells open. Use + to start a new tab."));
         empty.set_vexpand(true);
         empty.set_wrap(true);
         empty.set_margin_start(20);
         empty.set_margin_end(20);
-        root.append(&empty);
+        content.append(&empty);
         let notebook = gtk::Notebook::builder()
             .scrollable(true)
             .hexpand(true)
@@ -536,7 +563,7 @@ impl TerminalWindow {
         notebook.set_show_border(false);
         notebook.set_show_tabs(false);
         notebook.set_visible(false);
-        root.append(&notebook);
+        content.append(&notebook);
         window.set_child(Some(&root));
         let popover = gtk::Popover::new();
         popover.add_css_class("terminal-menu");
@@ -574,6 +601,7 @@ impl TerminalWindow {
             notebook,
             empty,
             cwd,
+            header_hint,
             handoff_cwd,
             choices,
             handoff_cancellations: RefCell::new(Vec::new()),
@@ -728,6 +756,7 @@ impl TerminalWindow {
     }
 
     fn hide(&self) {
+        self.header_hint.set_visible(false);
         self.popover.popdown();
         self.window.set_visible(false);
         self.set_embedded(false);
@@ -1270,7 +1299,7 @@ impl TerminalWindow {
         } else {
             "Expand terminal"
         };
-        name_button(&self.expand, label);
+        name_header_button(&self.expand, label);
         // Publish only the explicit user's mode change. Compositor allocations
         // and fit-viewport requests never feed back into this state.
         self.expanded.set_state(&expanded.to_variant());
@@ -1278,6 +1307,7 @@ impl TerminalWindow {
     }
 
     fn run_shortcut(self: &Rc<Self>, action: TerminalAction) {
+        self.header_hint.set_visible(false);
         match action {
             TerminalAction::NewTab => {
                 let session = self
@@ -1537,6 +1567,31 @@ fn name_button(button: &gtk::Button, label: &str) {
     button.update_property(&[gtk::accessible::Property::Label(label)]);
 }
 
+fn name_header_button(button: &gtk::Button, label: &str) {
+    name_button(button, label);
+    // Keep tooltip-text as the help string (also for the mutable expand
+    // action), but never let GTK open a separate tooltip surface.
+    button.set_has_tooltip(false);
+}
+
+fn header_button(icon: &str, label: &str, hint: &gtk::Label) -> gtk::Button {
+    let button = gtk::Button::from_icon_name(icon);
+    name_header_button(&button, label);
+    let help = hint.clone();
+    button.connect_state_flags_changed(move |button, previous| {
+        let hovered = button.state_flags().contains(gtk::StateFlags::PRELIGHT);
+        if hovered != previous.contains(gtk::StateFlags::PRELIGHT) {
+            if hovered && let Some(text) = button.tooltip_text() {
+                help.set_text(&text);
+            }
+            help.set_visible(hovered);
+        }
+    });
+    let help = hint.clone();
+    button.connect_clicked(move |_| help.set_visible(false));
+    button
+}
+
 fn on_click(
     button: &gtk::Button,
     ui: &Rc<TerminalWindow>,
@@ -1783,7 +1838,24 @@ mod tests {
                 .unwrap();
             assert!(button.is_focusable() && button.can_target());
             assert_eq!(button.icon_name().as_deref(), Some(icon));
-            assert_eq!(button.tooltip_text().as_deref(), Some(label));
+            assert_eq!(button.accessible_role(), gtk::AccessibleRole::Button);
+            assert!(gtk::test_accessible_has_property(
+                &button,
+                gtk::AccessibleProperty::Label
+            ));
+            assert!(!button.has_tooltip());
+            button.set_sensitive(true);
+            button.set_state_flags(gtk::StateFlags::PRELIGHT, false);
+            assert!(ui.header_hint.get_visible());
+            assert_eq!(ui.header_hint.text().as_str(), label);
+            assert!(!ui.header_hint.can_target());
+            let overlay = ui.header_hint.parent().unwrap();
+            overlay.allocate(320, 180, -1, None);
+            let hint = ui.header_hint.compute_bounds(&overlay).unwrap();
+            assert!(hint.x() >= 0.0 && hint.x() + hint.width() <= 320.0);
+            assert!(hint.y() >= 0.0 && hint.y() + hint.height() <= 180.0);
+            button.unset_state_flags(gtk::StateFlags::PRELIGHT);
+            assert!(!ui.header_hint.get_visible());
             let bounds = button.compute_bounds(&header).unwrap();
             assert!(bounds.x() > right && bounds.width() >= 24.0 && bounds.height() >= 24.0);
             right = bounds.x() + bounds.width();
