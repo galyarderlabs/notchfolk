@@ -2,8 +2,8 @@
 // Copyright (C) 2026 zickrian
 // Copyright (C) 2026 Galyarder Labs
 
-// Square previews and colours for shelf files, decoded on a worker thread and
-// cached as small PNGs in ~/.cache/notchfolk/shelf.
+// Square previews and colours for a page's files, decoded on a worker thread
+// and cached as small PNGs under ~/.cache/notchfolk/<page>.
 
 import GdkPixbuf from 'gi://GdkPixbuf';
 import Gio from 'gi://Gio';
@@ -30,11 +30,12 @@ function call(begin, finish) {
     });
 }
 
-/** The shelf's previews, each file loaded once and shared by every tile showing it. */
+/** One page's previews, each file loaded once and shared by every tile showing it. Pages keep separate
+ * subdirectories: keepOnly() sweeps its own directory, so two pages sharing one would delete each other's. */
 export class Thumbnails {
     /** Nothing is read until a tile asks. */
-    constructor() {
-        this._dir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'notchfolk', 'shelf']);
+    constructor(subdir = 'shelf') {
+        this._dir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'notchfolk', subdir]);
         /** uri → Promise of what `get` returns. */
         this._loads = new Map();
         this._cancellable = new Gio.Cancellable();

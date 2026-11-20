@@ -55,7 +55,7 @@ class CameraPage extends Page {
         /** Ticks in a row that showed no frame, and whether the bar says why. */
         this._previewStalled = 0;
         this._previewStallShown = false;
-        this._thumbnails = new Thumbnails();
+        this._thumbnails = new Thumbnails('camera');
         this.connect('destroy', () => {
             this._thumbnails.destroy();
             // The page is gone: the preview child in the daemon would keep
@@ -70,11 +70,13 @@ class CameraPage extends Page {
         // replacement since Shell 45 — it covers every version we support.
         // Its preferred size is explicit only (default -1) and set_data
         // never sets it, so _tickPreview sets it from each frame before
-        // set_data; without that the actor allocates 0x0 and nothing paints.
+        // set_data. The actor must ask for CONTENT_SIZE: the default
+        // request-mode ignores the content's size and allocates 0x0.
         this._liveBin = new St.Bin({style_class: 'notchfolk-camera-preview',
             x_expand: true, y_expand: true});
         this._liveImage = new St.ImageContent();
         this._liveActor = new Clutter.Actor({content: this._liveImage,
+            request_mode: Clutter.RequestMode.CONTENT_SIZE,
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         this._liveBin.child = this._liveActor;
 
@@ -201,14 +203,13 @@ class CameraPage extends Page {
             }
             if (pixbuf) {
                 try {
-                    // St.ImageContent reports only an explicit preferred
-                    // size (it defaults to -1, and set_data never sets it),
-                    // so without this the actor allocates 0x0 and nothing
-                    // paints — a decoded frame with no error and no image.
-                    // The size must be set BEFORE set_data: that call is
-                    // what invalidates the size, so the actor re-reads it
-                    // then; setting it after leaves the actor at 0x0, and a
-                    // later frame the same size invalidates nothing.
+                    // The actor asks for CONTENT_SIZE (see _init), so it
+                    // sizes from this preferred size. St.ImageContent defaults
+                    // to -1 and set_data never sets it, so without this the
+                    // actor allocates 0x0 and nothing paints. Set it BEFORE
+                    // set_data: that call invalidates the size only when the
+                    // texture dims change, so a later same-size frame would
+                    // not re-read a size set afterwards.
                     this._liveImage.set_preferred_width(pixbuf.get_width());
                     this._liveImage.set_preferred_height(pixbuf.get_height());
                     this._liveImage.set_data(
@@ -349,6 +350,7 @@ class CameraPage extends Page {
             return;
         }
         const uri = GLib.filename_to_uri(path, null);
+        this._thumbnails.keepOnly([uri]);
         this._thumbnails.get(uri).then(shown => {
             if (this._destroyed || this._lastPath !== path || !shown)
                 return;

@@ -8,6 +8,8 @@
 // that call is what invalidates the size, so the actor re-reads it then;
 // setting it after leaves the actor at 0x0, and a later frame the same size
 // invalidates nothing.
+// The actor must also request CONTENT_SIZE: a plain Clutter.Actor's default
+// request-mode never asks the content for its size, so it allocates 0x0 too.
 
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -27,4 +29,6 @@ test('camera preview sets the image preferred size from each frame, before set_d
     assert.ok(dataAt !== -1, 'camera.js must set the image data');
     assert.ok(widthAt < dataAt && heightAt < dataAt,
         'the preferred size must be set before set_data invalidates it');
+    assert.ok(source.includes('request_mode: Clutter.RequestMode.CONTENT_SIZE'),
+        'the preview actor must size itself from its content, or it allocates 0x0');
 });
