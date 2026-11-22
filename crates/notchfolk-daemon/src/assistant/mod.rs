@@ -411,7 +411,16 @@ impl AssistantService {
         let models = tokio::task::spawn_blocking(move || openai::discover(&provider))
             .await
             .map_err(|err| fdo::Error::Failed(err.to_string()))?
-            .map_err(|_| fdo::Error::Failed("could not reach the models endpoint".into()))?;
+            .map_err(|err| {
+                // A missing key or endpoint is a setup error the picker should
+                // name; anything else is the endpoint not answering.
+                let message = err.to_string();
+                if message.contains("Settings → Assistant") {
+                    fdo::Error::Failed(message)
+                } else {
+                    fdo::Error::Failed("could not reach the models endpoint".into())
+                }
+            })?;
         serde_json::to_string(&models).map_err(|err| fdo::Error::Failed(err.to_string()))
     }
 
@@ -2423,9 +2432,7 @@ pub fn report() -> String {
                 (false, _) if provider == Provider::Hermes => {
                     format!("  {name}: API key not configured or Hermes API server unavailable")
                 }
-                _ => format!(
-                    "  {name}: configure NOTCHFOLK_OPENAI_BASE_URL and NOTCHFOLK_OPENAI_API_KEY"
-                ),
+                _ => format!("  {name}: set the base URL and chat API key in Settings → Assistant"),
             }
         } else {
             match provider.program() {

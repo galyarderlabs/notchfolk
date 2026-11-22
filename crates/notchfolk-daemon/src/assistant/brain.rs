@@ -127,7 +127,7 @@ impl Provider {
             Provider::Codex => "codex login",
             Provider::Grok => "grok login",
             Provider::Hermes => "hermes gateway",
-            Provider::OpenAi => "configure NOTCHFOLK_OPENAI_BASE_URL and NOTCHFOLK_OPENAI_API_KEY",
+            Provider::OpenAi => "set the base URL and chat API key in Settings → Assistant",
             Provider::OhMyPi => "omp",
             Provider::Opencode => "opencode auth login",
         }
@@ -488,6 +488,21 @@ pub fn explain(provider: Provider, error: &str) -> Failure {
             model: String::new(),
         };
     }
+    // The OpenAI-compatible endpoint is not configured: its chat key or base
+    // URL is missing. Neither may borrow the speech router's key, so the
+    // answer names what to set instead of failing as an unknown error.
+    if says(&["set the chat api key"]) {
+        return Failure::from((
+            "The chat API key is not set",
+            "Set it in Settings → Assistant.",
+        ));
+    }
+    if says(&["set the endpoint's base url"]) {
+        return Failure::from((
+            "The chat endpoint is not set",
+            "Set the base URL in Settings → Assistant.",
+        ));
+    }
     if matches!(provider, Provider::Hermes | Provider::OpenAi)
         && says(&[
             "unauthorized",
@@ -500,7 +515,7 @@ pub fn explain(provider: Provider, error: &str) -> Failure {
         let hint = if provider == Provider::Hermes {
             "Check API_SERVER_KEY in ~/.hermes/.env and restart `hermes gateway`."
         } else {
-            "Check NOTCHFOLK_OPENAI_API_KEY in ~/.config/notchfolk/ai.env."
+            "Check the chat API key in Settings → Assistant."
         };
         return Failure::from(("The API key was rejected", hint));
     }

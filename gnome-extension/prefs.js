@@ -964,7 +964,7 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
         });
         routerUrl.connect('destroy', () => settings.disconnect(urlChanged));
 
-        const apiKey = new Adw.PasswordEntryRow({title: 'API key'});
+        const apiKey = new Adw.PasswordEntryRow({title: 'Speech API key'});
         if (typeof apiKey.show_peek_icon === 'boolean')
             apiKey.show_peek_icon = true;
         const keyStatus = new Gtk.Label({label: 'Not set', valign: Gtk.Align.CENTER});
@@ -997,8 +997,48 @@ export default class NotchfolkPreferences extends ExtensionPreferences {
                 GLib.source_remove(saveKey);
         });
 
+        // The chat's own key, separate from speech: the chat endpoint and the
+        // speech endpoint can differ, so the chat key lives in ai.env next to
+        // the base URL, never in GSettings - and the speech key never stands
+        // in for it. Empty clears it. A password row keeps the key off the
+        // screen; its eye toggle shows it while held.
+        const chatKey = new Adw.PasswordEntryRow({title: 'Chat API key',
+            text: aiEnvValue('NOTCHFOLK_OPENAI_API_KEY')});
+        if (typeof chatKey.show_peek_icon === 'boolean') {
+            chatKey.show_peek_icon = true;
+        } else {
+            const eye = new Gtk.ToggleButton({icon_name: 'eye-open-negative-1-symbolic', valign: Gtk.Align.CENTER,
+                tooltip_text: 'Show the key'});
+            eye.connect('toggled', () => {
+                chatKey.visibility = eye.active;
+                eye.icon_name = eye.active ? 'eye-close-negative-1-symbolic' : 'eye-open-negative-1-symbolic';
+            });
+            chatKey.add_suffix(eye);
+        }
+        let saveChatKey = 0;
+        chatKey.connect('changed', () => {
+            if (saveChatKey)
+                GLib.source_remove(saveChatKey);
+            saveChatKey = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 600, () => {
+                saveChatKey = 0;
+                saveAiEnvValue('NOTCHFOLK_OPENAI_API_KEY', chatKey.text.trim());
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        chatKey.connect('destroy', () => {
+            if (saveChatKey)
+                GLib.source_remove(saveChatKey);
+        });
+        // Only the OpenAI-compatible provider asks with this key, as the
+        // Hermes rows only show for Hermes.
+        const syncChatKey = () => {
+            chatKey.visible = settings.get_string('voice-provider') === 'openai-compatible';
+        };
+        settings.connect('changed::voice-provider', syncChatKey);
+        syncChatKey();
+
         const options = [provider, model, modelId, hermesUrl, hermesKey, customInstructions];
-        options.push(routerUrl, apiKey);
+        options.push(routerUrl, chatKey, apiKey);
         options.push(choiceRow(settings, 'voice-speech-engine', 'Speech recognition',
             'The router over the network; local Whisper works offline and takes over when the router cannot be reached', [
             ['cloud', 'Cloud (OpenAI-compatible router)'],
@@ -2543,8 +2583,10 @@ function signedIn(id) {
             return false;
         }
     case 'openai-compatible':
+        // Signed in means the chat key and the base URL are both set, in the
+        // environment or in ai.env - an ai.env with only the base URL is not.
         return (env('NOTCHFOLK_OPENAI_API_KEY') && env('NOTCHFOLK_OPENAI_BASE_URL')) ||
-            exists(GLib.get_user_config_dir(), 'notchfolk', 'ai.env');
+            Boolean(aiEnvValue('NOTCHFOLK_OPENAI_API_KEY') && aiEnvValue('NOTCHFOLK_OPENAI_BASE_URL'));
     case 'agy':
         return exists(GLib.get_home_dir(), '.gemini/antigravity-cli/antigravity-oauth-token') ||
             exists(GLib.get_home_dir(), '.gemini/jetski-standalone-oauth-token');
